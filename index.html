@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebHack Academy — Security Education Platform</title>
+
+  <!-- Highlight.js dark theme -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/labs.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <button class="hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="app-title"><span class="prompt">$</span> WebHack Academy</div>
+  </header>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar navigation -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Modules</div>
+      <a class="nav-item" href="#m1" data-module="m1">
+        <span class="module-num">01</span> Encoding &amp; Crypto
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#m2" data-module="m2">
+        <span class="module-num">02</span> SQL Injection
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#m3" data-module="m3">
+        <span class="module-num">03</span> SSTI
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#m4" data-module="m4">
+        <span class="module-num">04</span> IDOR
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#m5" data-module="m5">
+        <span class="module-num">05</span> XSS
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#m6" data-module="m6">
+        <span class="module-num">06</span> Broken Auth
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#m7" data-module="m7">
+        <span class="module-num">07</span> Cookies
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#m8" data-module="m8">
+        <span class="module-num">08</span> Networking
+        <span class="progress-dot"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-section" style="margin-top: 24px; padding: 0 24px;">
+      <button class="btn btn-secondary btn-sm" style="width:100%" onclick="if(confirm('Reset all progress?')){Storage.resetProgress();Router.updateProgressBadges();}">
+        Reset Progress
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content area -->
+  <main class="main-content">
+    <div id="content">
+      <div class="loading-indicator"><div class="spinner"></div>Loading module...</div>
+    </div>
+  </main>
+
+  <!-- External libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Core app scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/router.js"></script>
+
+  <!-- Module scripts -->
+  <script src="js/modules/m1-encoding.js"></script>
+  <script src="js/modules/m2-sqli.js"></script>
+  <script src="js/modules/m3-ssti.js"></script>
+  <script src="js/modules/m4-idor.js"></script>
+  <script src="js/modules/m5-xss.js"></script>
+  <script src="js/modules/m6-auth.js"></script>
+  <script src="js/modules/m7-cookies.js"></script>
+  <script src="js/modules/m8-networking.js"></script>
+
+</body>
+</html>

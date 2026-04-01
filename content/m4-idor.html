@@ -1,0 +1,131 @@
+<section class="module-header">
+  <h1>Module 4: Insecure Direct Object Reference</h1>
+  <p>Learn how broken access controls allow attackers to access unauthorized data by manipulating object identifiers.</p>
+</section>
+
+<section class="theory-section">
+  <h2>Authorization vs Authentication</h2>
+  <p><strong>Authentication</strong> verifies <em>who you are</em> (login credentials). <strong>Authorization</strong> determines <em>what you can access</em> (permissions). IDOR is an authorization failure — the app knows who you are but doesn't check if you're allowed to access a specific resource.</p>
+
+  <h2>What is IDOR?</h2>
+  <p>Insecure Direct Object Reference occurs when an application uses user-supplied input to directly access objects (database records, files, etc.) without verifying the user is authorized to access that specific object.</p>
+
+  <pre><code class="language-python"># Vulnerable endpoint — no authorization check
+@app.route('/api/user/&lt;id&gt;')
+def get_user(id):
+    return db.query("SELECT * FROM users WHERE id = ?", id)
+
+# Safe endpoint — checks authorization
+@app.route('/api/user/&lt;id&gt;')
+@login_required
+def get_user(id):
+    if current_user.id != id and not current_user.is_admin:
+        return {"error": "Forbidden"}, 403
+    return db.query("SELECT * FROM users WHERE id = ?", id)</code></pre>
+
+  <h2>Horizontal vs Vertical Privilege Escalation</h2>
+  <ul>
+    <li><strong>Horizontal:</strong> Accessing another user's data at the same privilege level (user A reads user B's profile)</li>
+    <li><strong>Vertical:</strong> Accessing resources requiring higher privileges (regular user accesses admin panel)</li>
+  </ul>
+
+  <h2>Where IDORs Appear</h2>
+  <ul>
+    <li><strong>URL parameters:</strong> <code>/api/user/123</code>, <code>/invoice?id=456</code></li>
+    <li><strong>POST body:</strong> <code>{"userId": 123, "action": "delete"}</code></li>
+    <li><strong>API responses:</strong> IDs leaked in responses enable further enumeration</li>
+    <li><strong>Headers:</strong> Custom headers like <code>X-User-Id</code></li>
+    <li><strong>Cookies:</strong> User ID embedded in session cookies</li>
+  </ul>
+
+  <h2>Predictable Identifiers</h2>
+  <ul>
+    <li><strong>Sequential integers:</strong> 1, 2, 3... — easiest to enumerate</li>
+    <li><strong>Encoded IDs:</strong> Base64-encoded integers — security through obscurity</li>
+    <li><strong>UUIDs:</strong> Harder to guess but still vulnerable if leaked</li>
+  </ul>
+
+  <h2>Testing Methodology</h2>
+  <ol>
+    <li>Identify all endpoints that reference objects by ID</li>
+    <li>Note your own valid IDs from legitimate requests</li>
+    <li>Modify the ID parameter to another value (increment, decrement, etc.)</li>
+    <li>Observe if the application returns data for the modified ID</li>
+    <li>Check both the response body and status codes</li>
+  </ol>
+
+  <div class="callout callout-danger">
+    <strong>Real-world impact:</strong> IDOR vulnerabilities have led to massive data breaches. In 2019, a major airline exposed 9 million customer records through an IDOR in their API. Always implement server-side authorization checks.
+  </div>
+</section>
+
+<!-- ========== LABS ========== -->
+<h2>Labs</h2>
+
+<!-- Lab 1: Account Portal IDOR -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Account Portal — User IDOR</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> You are logged in as user ID 3. The API has no authorization checks. Find the admin's API key by accessing other user profiles. The admin is user ID 1.
+  </div>
+
+  <div class="panel mb-md">
+    <p class="text-muted" style="font-size:0.85rem;">Your session: <code>user_id = 3 (alice)</code></p>
+  </div>
+
+  <div class="input-group">
+    <label>API Endpoint:</label>
+    <div class="flex gap-sm">
+      <span style="padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-md) 0 0 var(--radius-md);border:1px solid var(--border-default);color:var(--text-muted);font-family:var(--font-mono);font-size:0.85rem;white-space:nowrap;">GET /api/user/</span>
+      <input type="text" class="input-field" id="idor-user-id" value="3" style="max-width:80px;border-radius:0 var(--radius-md) var(--radius-md) 0;">
+      <button class="btn btn-primary" id="idor-fetch-btn">Send Request</button>
+    </div>
+  </div>
+
+  <div class="mt-md">
+    <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Response:</label>
+    <div class="json-response" id="idor-response">// Click "Send Request" to fetch user data</div>
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">
+    &#9989; IDOR exploited! You accessed the admin's API key without authorization.
+  </div>
+</div>
+
+<!-- Lab 2: Order IDOR -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Order IDOR — Discount Discovery</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> You can see your own orders (IDs 1005, 1008). Another user has an order containing a secret discount code. Iterate through order IDs to find it.
+  </div>
+
+  <div class="panel mb-md">
+    <p class="text-muted" style="font-size:0.85rem;">Your orders: <code>#1005</code>, <code>#1008</code></p>
+  </div>
+
+  <div class="input-group">
+    <label>API Endpoint:</label>
+    <div class="flex gap-sm">
+      <span style="padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-md) 0 0 var(--radius-md);border:1px solid var(--border-default);color:var(--text-muted);font-family:var(--font-mono);font-size:0.85rem;white-space:nowrap;">GET /api/order/</span>
+      <input type="text" class="input-field" id="idor-order-id" value="1005" style="max-width:100px;border-radius:0 var(--radius-md) var(--radius-md) 0;">
+      <button class="btn btn-primary" id="idor-order-btn">Send Request</button>
+    </div>
+  </div>
+
+  <div class="mt-md">
+    <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Response:</label>
+    <div class="json-response" id="idor-order-response">// Click "Send Request" to fetch order data</div>
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">
+    &#9989; Found it! You accessed another user's order and found the discount code.
+  </div>
+</div>

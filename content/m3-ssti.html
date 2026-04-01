@@ -1,0 +1,216 @@
+<section class="module-header">
+  <h1>Module 3: Server-Side Template Injection</h1>
+  <p>Explore how unsanitized user input in template engines can lead to remote code execution.</p>
+</section>
+
+<section class="theory-section">
+  <h2>What Are Template Engines?</h2>
+  <p>Template engines allow developers to embed dynamic content in HTML pages. They use special syntax to insert variables, run loops, and execute logic. Popular engines include:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Engine</th><th>Language</th><th>Expression Syntax</th><th>Comment Syntax</th></tr></thead>
+      <tbody>
+        <tr><td>Jinja2</td><td>Python</td><td><code>{{ expr }}</code></td><td><code>{# comment #}</code></td></tr>
+        <tr><td>Twig</td><td>PHP</td><td><code>{{ expr }}</code></td><td><code>{# comment #}</code></td></tr>
+        <tr><td>Mako</td><td>Python</td><td><code>${ expr }</code></td><td><code>## comment</code></td></tr>
+        <tr><td>ERB</td><td>Ruby</td><td><code>&lt;%= expr %&gt;</code></td><td><code>&lt;%# comment %&gt;</code></td></tr>
+        <tr><td>Pug/Jade</td><td>JS</td><td><code>#{ expr }</code></td><td><code>//- comment</code></td></tr>
+        <tr><td>Handlebars</td><td>JS</td><td><code>{{ expr }}</code></td><td><code>{{!-- comment --}}</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>How SSTI Occurs</h2>
+  <p>SSTI happens when user input is concatenated directly into a template string <strong>before</strong> rendering, rather than being passed as a safe variable:</p>
+
+  <h3 class="text-red">Vulnerable Code</h3>
+  <pre><code class="language-python">from flask import Flask, request, render_template_string
+
+@app.route('/greet')
+def greet():
+    name = request.args.get('name', 'World')
+    # DANGEROUS: user input becomes part of the template itself
+    template = f"Hello {name}! Welcome to our site."
+    return render_template_string(template)</code></pre>
+
+  <h3 class="text-green">Safe Code</h3>
+  <pre><code class="language-python">@app.route('/greet')
+def greet():
+    name = request.args.get('name', 'World')
+    # SAFE: user input passed as a variable to render
+    return render_template_string("Hello {{ name }}!", name=name)</code></pre>
+
+  <h2>Detection Probes</h2>
+  <p>To detect SSTI, inject mathematical expressions in various template syntaxes and check if the server evaluates them:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Probe</th><th>Expected if Vulnerable</th><th>Engine(s)</th></tr></thead>
+      <tbody>
+        <tr><td><code>{{7*7}}</code></td><td><code>49</code></td><td>Jinja2, Twig</td></tr>
+        <tr><td><code>{{7*'7'}}</code></td><td><code>7777777</code></td><td>Jinja2 (string repeat)</td></tr>
+        <tr><td><code>${7*7}</code></td><td><code>49</code></td><td>Mako, FreeMarker</td></tr>
+        <tr><td><code>&lt;%= 7*7 %&gt;</code></td><td><code>49</code></td><td>ERB (Ruby)</td></tr>
+        <tr><td><code>#{7*7}</code></td><td><code>49</code></td><td>Pug/Jade</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Jinja2 Exploitation Chain</h2>
+  <p>Once you confirm Jinja2 SSTI, you can traverse Python's object hierarchy to access powerful classes:</p>
+  <pre><code class="language-python"># Step 1: Access the string class
+{{ ''.__class__ }}
+# → &lt;class 'str'&gt;
+
+# Step 2: Traverse to the base object
+{{ ''.__class__.__mro__ }}
+# → (&lt;class 'str'&gt;, &lt;class 'object'&gt;)
+
+# Step 3: List all subclasses of object
+{{ ''.__class__.__mro__[1].__subclasses__() }}
+# → [&lt;class 'type'&gt;, &lt;class 'weakref'&gt;, ... hundreds of classes]
+
+# Step 4: Find useful classes (like subprocess, file readers)
+# and use them for RCE or file read</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Impact:</strong> Successful SSTI can lead to Remote Code Execution (RCE), reading sensitive files, extracting environment variables and secrets, and full server compromise.
+  </div>
+
+  <h2>Engine Identification Flowchart</h2>
+  <div class="network-diagram" style="text-align:center;">
+    <svg viewBox="0 0 700 420" style="max-width:700px;margin:0 auto;">
+      <style>
+        .ssti-box { fill: #161b22; stroke: #30363d; stroke-width: 1.5; rx: 6; }
+        .ssti-text { fill: #e6edf3; font-size: 12px; font-family: monospace; text-anchor: middle; }
+        .ssti-label { fill: #8b949e; font-size: 10px; font-family: sans-serif; text-anchor: middle; }
+        .ssti-yes { fill: #3fb950; font-size: 10px; font-family: sans-serif; font-weight: bold; }
+        .ssti-no { fill: #f85149; font-size: 10px; font-family: sans-serif; font-weight: bold; }
+        .ssti-result { fill: #d29922; font-size: 11px; font-family: monospace; text-anchor: middle; font-weight: bold; }
+        .ssti-arrow { stroke: #8b949e; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); }
+      </style>
+      <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8b949e"/></marker></defs>
+
+      <rect class="ssti-box" x="250" y="10" width="200" height="40"/>
+      <text class="ssti-text" x="350" y="35">Input: {{7*7}}</text>
+
+      <line class="ssti-arrow" x1="350" y1="50" x2="350" y2="80"/>
+      <rect class="ssti-box" x="270" y="80" width="160" height="35"/>
+      <text class="ssti-label" x="350" y="102">Output = 49?</text>
+
+      <line class="ssti-arrow" x1="270" y1="97" x2="140" y2="97"/>
+      <text class="ssti-no" x="200" y="92">No</text>
+      <line class="ssti-arrow" x1="350" y1="115" x2="350" y2="150"/>
+      <text class="ssti-yes" x="365" y="138">Yes</text>
+
+      <!-- No branch: try ${7*7} -->
+      <rect class="ssti-box" x="30" y="80" width="110" height="35"/>
+      <text class="ssti-label" x="85" y="102">Try ${7*7}</text>
+      <line class="ssti-arrow" x1="85" y1="115" x2="85" y2="150"/>
+      <rect class="ssti-box" x="20" y="150" width="130" height="35"/>
+      <text class="ssti-label" x="85" y="172">Output = 49?</text>
+      <line class="ssti-arrow" x1="85" y1="185" x2="85" y2="220"/>
+      <text class="ssti-yes" x="100" y="208">Yes</text>
+      <rect class="ssti-box" x="20" y="220" width="130" height="30"/>
+      <text class="ssti-result" x="85" y="240">Mako / FreeMarker</text>
+
+      <!-- Yes branch: try {{7*'7'}} -->
+      <rect class="ssti-box" x="260" y="150" width="180" height="40"/>
+      <text class="ssti-text" x="350" y="175">Input: {{7*'7'}}</text>
+
+      <line class="ssti-arrow" x1="350" y1="190" x2="350" y2="225"/>
+      <rect class="ssti-box" x="260" y="225" width="180" height="35"/>
+      <text class="ssti-label" x="350" y="247">Output = 7777777?</text>
+
+      <line class="ssti-arrow" x1="350" y1="260" x2="350" y2="300"/>
+      <text class="ssti-yes" x="365" y="285">Yes</text>
+      <rect class="ssti-box" x="290" y="300" width="120" height="30"/>
+      <text class="ssti-result" x="350" y="320">Jinja2</text>
+
+      <line class="ssti-arrow" x1="440" y1="242" x2="530" y2="242"/>
+      <text class="ssti-no" x="480" y="237">No</text>
+      <rect class="ssti-box" x="530" y="225" width="120" height="35"/>
+      <text class="ssti-result" x="590" y="247">Twig</text>
+
+      <!-- ERB branch from No -->
+      <line class="ssti-arrow" x1="20" y1="167" x2="-5" y2="167"/>
+      <text class="ssti-no" x="15" y="162">No</text>
+      <rect class="ssti-box" x="20" y="290" width="130" height="35"/>
+      <text class="ssti-label" x="85" y="312">Try &lt;%= 7*7 %&gt;</text>
+      <line class="ssti-arrow" x1="20" y1="167" x2="20" y2="290"/>
+      <line class="ssti-arrow" x1="85" y1="325" x2="85" y2="360"/>
+      <text class="ssti-yes" x="100" y="348">Yes</text>
+      <rect class="ssti-box" x="30" y="360" width="110" height="30"/>
+      <text class="ssti-result" x="85" y="380">ERB (Ruby)</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ========== LABS ========== -->
+
+<h2>Labs</h2>
+
+<!-- Lab 1: Jinja2 Sandbox -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Jinja2 Template Sandbox</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> A web app renders your input through a Jinja2 template. A secret variable exists in the template context. Find and extract it using template injection.
+  </div>
+
+  <div id="pyodide-loading" class="loading-indicator">
+    <div class="spinner"></div>
+    Loading Python runtime (~10 MB)... This may take a moment.
+  </div>
+
+  <div id="lab1-content" style="display:none;">
+    <div class="callout callout-info mb-md">
+      <strong>Template source:</strong>
+      <pre style="margin:8px 0 0;"><code class="language-python">template = "Hello {{ name }}! Welcome to our site."
+result = template.render(name=user_input, secret_flag=SECRET)</code></pre>
+    </div>
+
+    <div class="input-group">
+      <label>Enter your name (injection point):</label>
+      <input type="text" class="input-field" id="ssti-input" placeholder="e.g., World  or  {{7*7}}  or  {{secret_flag}}">
+    </div>
+
+    <button class="btn btn-primary" id="ssti-render-btn">Render Template</button>
+
+    <div class="mt-md">
+      <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Output:</label>
+      <div class="terminal-output" id="ssti-output">Output will appear here...</div>
+    </div>
+
+    <div class="banner banner-success" id="lab1-banner">
+      &#9989; Secret extracted! You found the hidden flag via template injection.
+    </div>
+  </div>
+</div>
+
+<!-- Lab 2: Engine Detection Quiz -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Engine Detection Quiz</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Given a probe input and the server's response, identify which template engine produced the output. Score at least 4/5 to complete.
+  </div>
+
+  <div id="quiz-container"></div>
+
+  <div id="quiz-result" style="display:none;" class="panel mt-md">
+    <h3 id="quiz-score"></h3>
+    <p id="quiz-feedback"></p>
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">
+    &#9989; Excellent! You can identify template engines from their output.
+  </div>
+</div>

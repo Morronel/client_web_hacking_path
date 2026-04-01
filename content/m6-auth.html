@@ -1,0 +1,165 @@
+<section class="module-header">
+  <h1>Module 6: Broken Authentication &amp; Username Enumeration</h1>
+  <p>Discover how poor authentication implementations leak information and enable credential attacks.</p>
+</section>
+
+<section class="theory-section">
+  <h2>Authentication Flaws</h2>
+  <p>Authentication is the process of verifying identity. Common flaws include:</p>
+  <ul>
+    <li><strong>Verbose error messages</strong> — revealing whether a username exists</li>
+    <li><strong>No rate limiting</strong> — allowing unlimited login attempts</li>
+    <li><strong>Weak password policies</strong> — accepting easily guessable passwords</li>
+    <li><strong>Insecure credential storage</strong> — plaintext or weak hashing</li>
+    <li><strong>Missing MFA</strong> — single factor authentication only</li>
+  </ul>
+
+  <h2>Username Enumeration</h2>
+  <p>When an application responds differently for valid vs invalid usernames, attackers can enumerate valid accounts:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Scenario</th><th>Valid Username</th><th>Invalid Username</th></tr></thead>
+      <tbody>
+        <tr><td>Error message</td><td><code>"Incorrect password"</code></td><td><code>"User not found"</code></td></tr>
+        <tr><td>Response time</td><td>~500ms (password hashed)</td><td>~50ms (quick reject)</td></tr>
+        <tr><td>Account lockout</td><td>Account locked after 5 tries</td><td>No lockout behavior</td></tr>
+        <tr><td>HTTP status</td><td>401 Unauthorized</td><td>404 Not Found</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-success">
+    <strong>Correct implementation:</strong> Always return a generic message like <code>"Invalid username or password"</code> regardless of which field is wrong. Use constant-time comparison for credentials.
+  </div>
+
+  <h2>Credential Attack Types</h2>
+  <ul>
+    <li><strong>Brute force:</strong> Try all possible passwords for one account</li>
+    <li><strong>Credential stuffing:</strong> Use leaked username/password pairs from other breaches</li>
+    <li><strong>Password spraying:</strong> Try a few common passwords against many accounts</li>
+  </ul>
+
+  <h2>Top 20 Weak Passwords</h2>
+  <p>These are consistently found in breach databases year after year:</p>
+  <div class="flex flex-wrap gap-sm mb-md">
+    <code>123456</code> <code>password</code> <code>123456789</code> <code>12345678</code>
+    <code>12345</code> <code>1234567</code> <code>1234567890</code> <code>qwerty</code>
+    <code>abc123</code> <code>111111</code> <code>password1</code> <code>iloveyou</code>
+    <code>1q2w3e4r</code> <code>000000</code> <code>letmein</code> <code>welcome</code>
+    <code>monkey</code> <code>dragon</code> <code>master</code> <code>admin</code>
+  </div>
+
+  <h2>Defenses</h2>
+  <ul>
+    <li><strong>Uniform error messages:</strong> Same response for all login failures</li>
+    <li><strong>Rate limiting:</strong> Lock accounts or add delays after failed attempts</li>
+    <li><strong>CAPTCHA:</strong> After several failed attempts</li>
+    <li><strong>MFA:</strong> Require a second authentication factor</li>
+    <li><strong>Constant-time comparison:</strong> Prevent timing side-channels</li>
+  </ul>
+</section>
+
+<!-- ========== LABS ========== -->
+<h2>Labs</h2>
+
+<!-- Lab 1: Error Message Enumeration -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Username Enumeration via Error Messages</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> This login form returns different error messages for valid and invalid usernames. From the candidate list below, identify all valid usernames (there are 4).
+  </div>
+
+  <div class="panel mb-md">
+    <h4>Candidate Usernames</h4>
+    <div class="flex flex-wrap gap-sm">
+      <code>admin</code> <code>root</code> <code>guest</code> <code>john</code> <code>alice</code>
+      <code>bob</code> <code>charlie</code> <code>test</code> <code>user</code> <code>manager</code>
+    </div>
+  </div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label>Username:</label>
+        <input type="text" class="input-field" id="auth-username" placeholder="Enter username">
+      </div>
+      <div class="input-group">
+        <label>Password:</label>
+        <input type="password" class="input-field" id="auth-password" placeholder="Enter password" value="test123">
+      </div>
+      <button class="btn btn-primary" id="auth-login-btn">Login</button>
+    </div>
+    <div>
+      <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Server Response:</label>
+      <div class="terminal-output" id="auth-response" style="min-height:80px;">Waiting for login attempt...</div>
+    </div>
+  </div>
+
+  <div class="mt-md">
+    <h4>Found Valid Usernames:</h4>
+    <div class="input-group">
+      <label>Enter valid usernames (comma-separated):</label>
+      <div class="flex gap-sm">
+        <input type="text" class="input-field" id="enum-answer" placeholder="e.g., admin, alice, bob, charlie">
+        <button class="btn btn-primary" id="enum-submit">Verify</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">
+    &#9989; Correct! You identified all valid usernames via error message differences.
+  </div>
+  <div class="banner banner-error" id="lab1-error-banner">
+    &#10060; Not quite. Keep testing usernames and observing the error messages.
+  </div>
+</div>
+
+<!-- Lab 2: Credential Stuffing -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Credential Stuffing Attack</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Using the valid usernames from Lab 1, try common passwords to find the account with a weak password. Use the password list below.
+  </div>
+
+  <div class="panel mb-md">
+    <h4>Password List (Top 10)</h4>
+    <div class="flex flex-wrap gap-sm">
+      <code>123456</code> <code>password</code> <code>admin</code> <code>letmein</code> <code>welcome</code>
+      <code>monkey</code> <code>dragon</code> <code>master</code> <code>qwerty</code> <code>abc123</code>
+    </div>
+  </div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label>Username:</label>
+        <input type="text" class="input-field" id="stuff-username" placeholder="Enter username">
+      </div>
+      <div class="input-group">
+        <label>Password:</label>
+        <input type="text" class="input-field" id="stuff-password" placeholder="Enter password">
+      </div>
+      <div class="flex gap-sm">
+        <button class="btn btn-primary" id="stuff-login-btn">Try Login</button>
+        <button class="btn btn-secondary" id="stuff-auto-btn">Try All Combinations</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Results:</label>
+      <div class="terminal-output" id="stuff-response" style="min-height:150px;max-height:300px;">Click "Try All Combinations" or test manually...</div>
+    </div>
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">
+    &#9989; Login successful! You found the account with a weak password.
+  </div>
+</div>
