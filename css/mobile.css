@@ -62,16 +62,73 @@ textarea.query-input {
     background: var(--accent-green-dim);
     color: var(--text-primary);
   }
-
   .btn-secondary:hover {
     background: var(--bg-tertiary);
     border-color: var(--border-default);
   }
-
   .nav-item:hover {
     background: none;
     color: var(--text-secondary);
   }
+}
+
+/* ---- Tables: Fit to Screen (NO horizontal scroll) ---- */
+
+.table-wrapper {
+  overflow-x: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove the scroll fade hint — tables should fit now */
+.table-wrapper::after {
+  display: none;
+}
+
+table {
+  width: 100%;
+  table-layout: auto;
+  font-size: 0.78rem;
+}
+
+table th,
+table td {
+  /* Allow text to wrap — prevents horizontal overflow */
+  white-space: normal;
+  word-break: break-word;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+table th {
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+}
+
+/* Make monospace table cells slightly smaller */
+td code {
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
+/* ---- Code Blocks: Fit to Screen ---- */
+
+pre {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  font-size: 0.75rem;
+  padding: 12px;
+  line-height: 1.5;
+  max-width: 100%;
+}
+
+pre code {
+  font-size: 0.75rem;
+}
+
+code {
+  font-size: 0.78em;
+  word-break: break-word;
 }
 
 /* ---- Responsive Layouts ---- */
@@ -91,63 +148,52 @@ textarea.query-input {
 /* Terminal/JSON output: readable font size */
 .terminal-output,
 .json-response {
-  font-size: 0.875rem;
-  line-height: 1.6;
-  max-height: 250px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  max-height: 220px;
+  word-break: break-word;
 }
 
 /* HTTP request display: allow wrapping */
 .http-request-display {
   white-space: pre-wrap;
   word-break: break-all;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
-/* ---- Tables: Touch-Scrolling ---- */
+/* ---- Flex rows with API path labels: allow wrapping ---- */
 
-.table-wrapper {
-  -webkit-overflow-scrolling: touch;
-  position: relative;
+.flex.gap-sm {
+  flex-wrap: wrap;
 }
 
-/* Fade hint indicating horizontal scroll */
-.table-wrapper::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 24px;
-  background: linear-gradient(to right, transparent, var(--bg-secondary));
-  pointer-events: none;
-  opacity: 0.8;
-}
-
-table th,
-table td {
-  white-space: nowrap;
-  padding: 8px 10px;
+/* API path labels: allow shrinking */
+.flex.gap-sm > span[style*="white-space:nowrap"] {
+  white-space: normal !important;
+  font-size: 0.78rem !important;
 }
 
 /* ---- Network / Handshake Diagram ---- */
 
+.network-diagram {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px;
+}
+
 .handshake-container {
-  min-width: 480px;
+  min-width: 400px;
 }
 
 .handshake-endpoint {
-  min-width: 70px !important;
-  width: 70px !important;
-  font-size: 0.75rem;
-  padding: 8px;
+  min-width: 60px !important;
+  width: 60px !important;
+  font-size: 0.7rem;
+  padding: 6px;
 }
 
 .handshake-msg-label {
   font-size: 0.6rem;
-}
-
-.network-diagram {
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ---- IDOR Inputs (override inline max-width) ---- */
@@ -158,32 +204,83 @@ table td {
   min-width: 60px;
 }
 
+/* ---- Callouts ---- */
+
+.callout {
+  padding: 12px;
+  font-size: 0.85rem;
+}
+
+/* ---- Lab containers ---- */
+
+.lab-objective {
+  font-size: 0.82rem;
+  padding: 10px 12px;
+}
+
+/* ---- Encoder toggle buttons: wrap properly ---- */
+
+.encoder-toggle {
+  flex-wrap: wrap;
+}
+
+.encoder-toggle .btn {
+  min-height: 36px;
+  font-size: 0.78rem;
+}
+
+/* ---- Cookie table: smaller ---- */
+
+.cookie-table th {
+  font-size: 0.6rem;
+}
+
+/* ---- Quiz options: allow wrapping ---- */
+
+.quiz-options {
+  flex-wrap: wrap;
+}
+
 /* ---- Smaller Phones (480px) ---- */
 
 @media (max-width: 480px) {
   .lab-container {
-    padding: 16px;
+    padding: 14px;
   }
 
   .lab-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
   }
 
   .encoder-grid {
-    gap: 12px;
+    gap: 10px;
   }
 
   .panel {
-    padding: 14px;
+    padding: 12px;
   }
 
   pre {
-    padding: 12px;
-    font-size: 0.78rem;
+    padding: 10px;
+    font-size: 0.7rem;
   }
 
-  h1 { font-size: 1.3rem; }
-  h2 { font-size: 1.15rem; }
+  h1 { font-size: 1.25rem; }
+  h2 { font-size: 1.1rem; }
+  h3 { font-size: 1rem; }
+
+  table th, table td {
+    padding: 5px 6px;
+    font-size: 0.7rem;
+  }
+
+  table th {
+    font-size: 0.6rem;
+  }
+
+  .main-content {
+    padding: 12px 10px;
+  }
 }

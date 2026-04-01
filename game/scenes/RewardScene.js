@@ -23,14 +23,14 @@ class RewardScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.add.text(W / 2, 65, 'Select a card to add to your deck', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#8b949e'
+      fontSize: '14px', fontFamily: 'monospace', color: '#8b949e'
     }).setOrigin(0.5);
 
     // Generate card choices
     const choices = this.generateChoices(state);
 
-    // Render cards
-    const spacing = 160;
+    // Render cards — wider spacing for larger cards
+    const spacing = 180;
     const startX = W / 2 - (choices.length - 1) * spacing / 2;
 
     choices.forEach((cardDef, i) => {
@@ -41,9 +41,9 @@ class RewardScene extends Phaser.Scene {
       container.setInteractive({ useHandCursor: true });
 
       // Description below card
-      this.add.text(x, y + 100, cardDef.description || '', {
-        fontSize: '9px', fontFamily: 'monospace', color: '#8b949e',
-        wordWrap: { width: 130 }, align: 'center'
+      this.add.text(x, y + 110, cardDef.description || '', {
+        fontSize: '12px', fontFamily: 'monospace', color: '#8b949e',
+        wordWrap: { width: 160 }, align: 'center'
       }).setOrigin(0.5, 0);
 
       container.on('pointerover', () => container.setScale(1.08));

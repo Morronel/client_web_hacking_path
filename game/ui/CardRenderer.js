@@ -6,10 +6,10 @@ window.Game = window.Game || {};
 
 Game.CardRenderer = (() => {
   const C = { bg: 0x161b22, border: 0x30363d, green: 0x3fb950, amber: 0xd29922, red: 0xf85149, blue: 0x58a6ff, white: 0xe6edf3, dark: 0x0d1117 };
-  const CARD_W = 110;
-  const CARD_H = 150;
-  const SLOT_CARD_W = 100;
-  const SLOT_CARD_H = 130;
+  const CARD_W = 130;
+  const CARD_H = 170;
+  const SLOT_CARD_W = 115;
+  const SLOT_CARD_H = 145;
 
   function tierColor(tier) {
     if (tier === 'module') return C.red;
@@ -34,16 +34,16 @@ Game.CardRenderer = (() => {
     // Cost badge (top-left)
     const costBg = scene.add.graphics();
     costBg.fillStyle(C.amber, 1);
-    costBg.fillCircle(-w / 2 + 14, -h / 2 + 14, 11);
+    costBg.fillCircle(-w / 2 + 16, -h / 2 + 16, 13);
     container.add(costBg);
-    const costText = scene.add.text(-w / 2 + 14, -h / 2 + 14, String(cardDef.cost), {
-      fontSize: '12px', fontFamily: 'monospace', color: '#000', fontStyle: 'bold'
+    const costText = scene.add.text(-w / 2 + 16, -h / 2 + 16, String(cardDef.cost), {
+      fontSize: '15px', fontFamily: 'monospace', color: '#000', fontStyle: 'bold'
     }).setOrigin(0.5);
     container.add(costText);
 
     // Name
-    const name = scene.add.text(0, -h / 2 + 28, cardDef.name, {
-      fontSize: opts.small ? '10px' : '11px', fontFamily: 'monospace', color: '#e6edf3',
+    const name = scene.add.text(0, -h / 2 + 32, cardDef.name, {
+      fontSize: opts.small ? '13px' : '14px', fontFamily: 'monospace', color: '#e6edf3',
       fontStyle: 'bold', wordWrap: { width: w - 16 }, align: 'center'
     }).setOrigin(0.5, 0);
     container.add(name);
@@ -51,8 +51,8 @@ Game.CardRenderer = (() => {
     // Sigil text (center)
     if (cardDef.sigil) {
       const sigilLabel = formatSigil(cardDef.sigil);
-      const sigil = scene.add.text(0, opts.small ? 5 : 10, sigilLabel, {
-        fontSize: '9px', fontFamily: 'monospace', color: '#d29922',
+      const sigil = scene.add.text(0, opts.small ? 8 : 14, sigilLabel, {
+        fontSize: '12px', fontFamily: 'monospace', color: '#d29922',
         wordWrap: { width: w - 12 }, align: 'center'
       }).setOrigin(0.5);
       container.add(sigil);
@@ -60,22 +60,22 @@ Game.CardRenderer = (() => {
 
     // Attack badge (bottom-left)
     const atk = cardDef.currentAttack !== undefined ? cardDef.currentAttack : cardDef.attack;
-    const atkText = scene.add.text(-w / 2 + 16, h / 2 - 18, '⚔' + atk, {
-      fontSize: '13px', fontFamily: 'monospace', color: '#f85149', fontStyle: 'bold'
+    const atkText = scene.add.text(-w / 2 + 20, h / 2 - 20, '⚔' + atk, {
+      fontSize: '16px', fontFamily: 'monospace', color: '#f85149', fontStyle: 'bold'
     }).setOrigin(0.5);
     container.add(atkText);
 
     // Health badge (bottom-right)
     const hp = cardDef.currentHealth !== undefined ? cardDef.currentHealth : cardDef.health;
-    const hpText = scene.add.text(w / 2 - 16, h / 2 - 18, '♥' + hp, {
-      fontSize: '13px', fontFamily: 'monospace', color: '#3fb950', fontStyle: 'bold'
+    const hpText = scene.add.text(w / 2 - 20, h / 2 - 20, '♥' + hp, {
+      fontSize: '16px', fontFamily: 'monospace', color: '#3fb950', fontStyle: 'bold'
     }).setOrigin(0.5);
     container.add(hpText);
 
     // Module lock icon
     if (cardDef.tier === 'module') {
       const lockIcon = scene.add.text(w / 2 - 14, -h / 2 + 14, '★', {
-        fontSize: '14px', color: '#f85149'
+        fontSize: '16px', color: '#f85149'
       }).setOrigin(0.5);
       container.add(lockIcon);
     }
@@ -127,7 +127,7 @@ Game.CardRenderer = (() => {
 
   function animateDamage(scene, container, amount) {
     const txt = scene.add.text(container.x, container.y - 30, '-' + amount, {
-      fontSize: '18px', fontFamily: 'monospace', color: '#f85149', fontStyle: 'bold'
+      fontSize: '22px', fontFamily: 'monospace', color: '#f85149', fontStyle: 'bold'
     }).setOrigin(0.5);
     scene.tweens.add({
       targets: txt,

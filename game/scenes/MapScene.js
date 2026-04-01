@@ -16,11 +16,11 @@ class MapScene extends Phaser.Scene {
 
     // Title
     this.add.text(W / 2, 20, 'SHADOW TERMINAL', {
-      fontSize: '20px', fontFamily: 'monospace', color: '#3fb950', fontStyle: 'bold'
+      fontSize: '24px', fontFamily: 'monospace', color: '#3fb950', fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    this.add.text(W / 2, 42, `Wins: ${state.wins}  |  Deck: ${state.deck.length} cards`, {
-      fontSize: '11px', fontFamily: 'monospace', color: '#8b949e'
+    this.add.text(W / 2, 46, `Wins: ${state.wins}  |  Deck: ${state.deck.length} cards`, {
+      fontSize: '14px', fontFamily: 'monospace', color: '#8b949e'
     }).setOrigin(0.5);
 
     // Layout constants
@@ -74,15 +74,15 @@ class MapScene extends Phaser.Scene {
     }
 
     // Deck view button
-    Game.UI.createButton(this, 80, H - 30, 'VIEW DECK', () => {
+    Game.UI.createButton(this, 90, H - 32, 'VIEW DECK', () => {
       this.showDeckOverlay(state);
-    }, { width: 120, height: 30, color: 0x21262d, textColor: '#e6edf3', fontSize: '11px' });
+    }, { width: 140, height: 38, color: 0x21262d, textColor: '#e6edf3', fontSize: '14px' });
 
     // Quit button
-    Game.UI.createButton(this, W - 80, H - 30, 'QUIT RUN', () => {
+    Game.UI.createButton(this, W - 90, H - 32, 'QUIT RUN', () => {
       Game.SaveManager.clearSave();
       this.scene.start('Boot');
-    }, { width: 120, height: 30, color: 0x21262d, textColor: '#f85149', fontSize: '11px' });
+    }, { width: 140, height: 38, color: 0x21262d, textColor: '#f85149', fontSize: '14px' });
   }
 
   isNodeVisited(state, nodeId) {
@@ -142,14 +142,14 @@ class MapScene extends Phaser.Scene {
 
     // Icon
     const icon = this.add.text(x, y, icons[node.type] || '?', {
-      fontSize: '16px'
+      fontSize: '20px'
     }).setOrigin(0.5);
     if (!reachable && !current && !visited) icon.setAlpha(0.3);
 
     // Label below
     if (node.type === 'boss') {
       this.add.text(x, y + r + 8, node.encounter ? node.encounter.name : 'BOSS', {
-        fontSize: '9px', fontFamily: 'monospace', color: '#8b5cf6'
+        fontSize: '12px', fontFamily: 'monospace', color: '#8b5cf6'
       }).setOrigin(0.5, 0);
     }
 
@@ -188,7 +188,7 @@ class MapScene extends Phaser.Scene {
     overlay.fillRect(0, 0, W, H);
 
     this.add.text(W / 2, 30, 'YOUR DECK', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#d29922', fontStyle: 'bold'
+      fontSize: '20px', fontFamily: 'monospace', color: '#d29922', fontStyle: 'bold'
     }).setOrigin(0.5);
 
     // Render cards in a grid
@@ -211,6 +211,6 @@ class MapScene extends Phaser.Scene {
     // Close button
     Game.UI.createButton(this, W / 2, H - 40, 'CLOSE', () => {
       this.scene.restart();
-    }, { width: 100, height: 30, color: 0x21262d, textColor: '#e6edf3', fontSize: '11px' });
+    }, { width: 130, height: 38, color: 0x21262d, textColor: '#e6edf3', fontSize: '14px' });
   }
 }

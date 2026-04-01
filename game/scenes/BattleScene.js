@@ -41,11 +41,11 @@ class BattleScene extends Phaser.Scene {
 
     // Title
     this.add.text(W / 2, 18, this.encounter.name, {
-      fontSize: '16px', fontFamily: 'monospace', color: '#d29922', fontStyle: 'bold'
+      fontSize: '20px', fontFamily: 'monospace', color: '#d29922', fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    // Slot grid
-    this.slots = Game.UI.createSlotGrid(this, W / 2, 190, 120);
+    // Slot grid — wider spacing for larger cards
+    this.slots = Game.UI.createSlotGrid(this, W / 2, 175, 140);
 
     // Scale display
     this.scaleDisplay = Game.UI.createScale(this, W / 2, 80);
@@ -59,11 +59,11 @@ class BattleScene extends Phaser.Scene {
     this.deckCounter = Game.UI.createDeckCounter(this, W - 60, H - 40);
 
     // End turn button
-    this.endTurnBtn = Game.UI.createButton(this, W - 100, 400, 'END TURN', () => {
+    this.endTurnBtn = Game.UI.createButton(this, W - 110, 390, 'END TURN', () => {
       if (this.phase === 'PLAYER_PLAY' && !this.animating) {
         this.endPlayerTurn();
       }
-    }, { width: 130, height: 36 });
+    }, { width: 150, height: 44 });
 
     // Detect touch device
     this.isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);

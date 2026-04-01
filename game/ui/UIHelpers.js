@@ -31,19 +31,19 @@ Game.UI = (() => {
     container.add(indicator);
 
     // Labels
-    const leftLabel = scene.add.text(-width / 2 - 30, 0, 'YOU', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#f85149'
+    const leftLabel = scene.add.text(-width / 2 - 35, 0, 'YOU', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#f85149'
     }).setOrigin(1, 0.5);
     container.add(leftLabel);
 
-    const rightLabel = scene.add.text(width / 2 + 30, 0, 'FOE', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#3fb950'
+    const rightLabel = scene.add.text(width / 2 + 35, 0, 'FOE', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#3fb950'
     }).setOrigin(0, 0.5);
     container.add(rightLabel);
 
     // Value text
     const valueText = scene.add.text(0, 0, '0', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#e6edf3', fontStyle: 'bold'
+      fontSize: '18px', fontFamily: 'monospace', color: '#e6edf3', fontStyle: 'bold'
     }).setOrigin(0.5);
     container.add(valueText);
 
@@ -92,8 +92,8 @@ Game.UI = (() => {
   }
 
   function createSlot(scene, x, y, laneIndex, side) {
-    const w = 105;
-    const h = 135;
+    const w = 120;
+    const h = 150;
     const graphics = scene.add.graphics();
     graphics.lineStyle(1, C.border, 0.5);
     graphics.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 4);
@@ -113,7 +113,7 @@ Game.UI = (() => {
   function layoutHand(scene, handContainers, centerX, y) {
     const count = handContainers.length;
     if (count === 0) return;
-    const spacing = Math.min(120, 600 / count);
+    const spacing = Math.min(140, 700 / count);
     const totalW = (count - 1) * spacing;
     const startX = centerX - totalW / 2;
 
@@ -131,8 +131,8 @@ Game.UI = (() => {
 
   function createDataPointsDisplay(scene, x, y) {
     const container = scene.add.container(x, y);
-    const label = scene.add.text(0, -12, 'DATA POINTS', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#8b949e'
+    const label = scene.add.text(0, -14, 'DATA POINTS', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#8b949e'
     }).setOrigin(0.5);
     container.add(label);
 
@@ -169,11 +169,11 @@ Game.UI = (() => {
     bg.strokeRoundedRect(-25, -20, 50, 40, 4);
     container.add(bg);
 
-    const icon = scene.add.text(0, -6, '🃏', { fontSize: '14px' }).setOrigin(0.5);
+    const icon = scene.add.text(0, -6, '🃏', { fontSize: '16px' }).setOrigin(0.5);
     container.add(icon);
 
-    const countText = scene.add.text(0, 12, '0', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#e6edf3'
+    const countText = scene.add.text(0, 14, '0', {
+      fontSize: '14px', fontFamily: 'monospace', color: '#e6edf3'
     }).setOrigin(0.5);
     container.add(countText);
 
@@ -187,7 +187,7 @@ Game.UI = (() => {
 
   function showFloatingText(scene, x, y, text, color) {
     const txt = scene.add.text(x, y, text, {
-      fontSize: '16px', fontFamily: 'monospace', color: color || '#e6edf3', fontStyle: 'bold'
+      fontSize: '20px', fontFamily: 'monospace', color: color || '#e6edf3', fontStyle: 'bold'
     }).setOrigin(0.5);
     scene.tweens.add({
       targets: txt,
@@ -209,7 +209,7 @@ Game.UI = (() => {
     container.add(bg);
 
     const label = scene.add.text(0, 0, text, {
-      fontSize: opts.fontSize || '14px', fontFamily: 'monospace',
+      fontSize: opts.fontSize || '16px', fontFamily: 'monospace',
       color: opts.textColor || '#000', fontStyle: 'bold'
     }).setOrigin(0.5);
     container.add(label);

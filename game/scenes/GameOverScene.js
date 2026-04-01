@@ -30,7 +30,7 @@ class GameOverScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       this.add.text(W / 2, 200, 'You defeated The Firewall!', {
-        fontSize: '14px', fontFamily: 'monospace', color: '#d29922'
+        fontSize: '16px', fontFamily: 'monospace', color: '#d29922'
       }).setOrigin(0.5);
     } else {
       // Defeat screen
@@ -45,7 +45,7 @@ class GameOverScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       this.add.text(W / 2, 200, 'Your attack was repelled.', {
-        fontSize: '14px', fontFamily: 'monospace', color: '#8b949e'
+        fontSize: '16px', fontFamily: 'monospace', color: '#8b949e'
       }).setOrigin(0.5);
     }
 
@@ -60,12 +60,12 @@ class GameOverScene extends Phaser.Scene {
       ];
 
       this.add.text(W / 2, 250, 'RUN STATISTICS', {
-        fontSize: '12px', fontFamily: 'monospace', color: '#d29922', fontStyle: 'bold'
+        fontSize: '15px', fontFamily: 'monospace', color: '#d29922', fontStyle: 'bold'
       }).setOrigin(0.5);
 
       stats.forEach((stat, i) => {
-        this.add.text(W / 2, 275 + i * 22, stat, {
-          fontSize: '11px', fontFamily: 'monospace', color: '#8b949e'
+        this.add.text(W / 2, 278 + i * 24, stat, {
+          fontSize: '13px', fontFamily: 'monospace', color: '#8b949e'
         }).setOrigin(0.5);
       });
     }
@@ -73,18 +73,18 @@ class GameOverScene extends Phaser.Scene {
     // Buttons
     Game.UI.createButton(this, W / 2, H - 100, 'PLAY AGAIN', () => {
       this.scene.start('Boot');
-    }, { width: 180, height: 44, fontSize: '14px' });
+    }, { width: 200, height: 50, fontSize: '18px' });
 
-    Game.UI.createButton(this, W / 2, H - 45, '← BACK TO ACADEMY', () => {
+    Game.UI.createButton(this, W / 2, H - 42, '← BACK TO ACADEMY', () => {
       if (window.Game && window.Game.destroy) {
         window.Game.destroy();
       }
       location.hash = '#m1';
-    }, { width: 220, height: 34, color: 0x21262d, textColor: '#8b949e', fontSize: '11px' });
+    }, { width: 250, height: 40, color: 0x21262d, textColor: '#8b949e', fontSize: '14px' });
 
     if (!this.won) {
       this.add.text(W / 2, H - 140, 'Tip: Complete education modules to unlock powerful cards!', {
-        fontSize: '10px', fontFamily: 'monospace', color: '#484f58'
+        fontSize: '12px', fontFamily: 'monospace', color: '#484f58'
       }).setOrigin(0.5);
     }
   }
