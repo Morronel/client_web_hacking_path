@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/labs.css">
+  <link rel="stylesheet" href="game/css/game.css">
 </head>
 <body>
 
@@ -64,6 +65,14 @@
       </a>
     </div>
 
+    <div class="sidebar-section" style="margin-top: 16px;">
+      <div class="sidebar-section-title">Bonus</div>
+      <a class="nav-item" href="#game" data-module="game">
+        <span class="module-num" style="font-size:1rem;">⚔</span> Shadow Terminal
+        <span class="progress-dot"></span>
+      </a>
+    </div>
+
     <div class="sidebar-section" style="margin-top: 24px; padding: 0 24px;">
       <button class="btn btn-secondary btn-sm" style="width:100%" onclick="if(confirm('Reset all progress?')){Storage.resetProgress();Router.updateProgressBadges();}">
         Reset Progress
@@ -97,6 +106,28 @@
   <script src="js/modules/m6-auth.js"></script>
   <script src="js/modules/m7-cookies.js"></script>
   <script src="js/modules/m8-networking.js"></script>
+
+  <!-- Phaser 3 Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+  <!-- Game scripts (state → data → ui → scenes → bootstrap) -->
+  <script src="game/state/RunState.js"></script>
+  <script src="game/state/SaveManager.js"></script>
+  <script src="game/data/cards.js"></script>
+  <script src="game/data/encounters.js"></script>
+  <script src="game/data/ai.js"></script>
+  <script src="game/ui/CardRenderer.js"></script>
+  <script src="game/ui/UIHelpers.js"></script>
+  <script src="game/scenes/BootScene.js"></script>
+  <script src="game/scenes/MapScene.js"></script>
+  <script src="game/scenes/BattleScene.js"></script>
+  <script src="game/scenes/RewardScene.js"></script>
+  <script src="game/scenes/BossScene.js"></script>
+  <script src="game/scenes/GameOverScene.js"></script>
+  <script src="game/game.js"></script>
+
+  <!-- Game container (hidden by default, shown when #game route active) -->
+  <div id="game-container"></div>
 
 </body>
 </html>

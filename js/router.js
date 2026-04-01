@@ -25,6 +25,13 @@ const Router = (() => {
 
   function handleRoute() {
     const hash = location.hash.replace('#', '') || 'm1';
+
+    // Game route
+    if (hash === 'game' || hash.startsWith('game-')) {
+      showGame();
+      return;
+    }
+
     const moduleKey = hash.split('-')[0]; // handle #m2-lab2 etc.
 
     if (modules[moduleKey]) {
@@ -34,9 +41,72 @@ const Router = (() => {
     }
   }
 
+  function showGame() {
+    // Cleanup current module if any
+    if (currentModule && currentModule !== 'game' && modules[currentModule] && window[modules[currentModule].handler]) {
+      const handler = window[modules[currentModule].handler];
+      if (handler.cleanup) handler.cleanup();
+    }
+
+    // Hide normal UI
+    const sidebar = Utils.$('.sidebar');
+    const mainContent = Utils.$('.main-content');
+    const header = Utils.$('.app-header');
+    const overlay = Utils.$('.sidebar-overlay');
+    if (sidebar) sidebar.style.display = 'none';
+    if (mainContent) mainContent.style.display = 'none';
+    if (header) header.style.display = 'none';
+    if (overlay) overlay.classList.remove('visible');
+
+    // Show game container
+    const gc = document.getElementById('game-container');
+    if (gc) {
+      gc.style.display = 'flex';
+      gc.style.alignItems = 'center';
+      gc.style.justifyContent = 'center';
+    }
+    document.body.classList.add('game-active');
+
+    // Boot Phaser if not already running
+    if (window.Game && !Game.instance) {
+      Game.boot('game-container');
+    }
+
+    // Update sidebar active state
+    Utils.$$('.nav-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.module === 'game');
+    });
+
+    currentModule = 'game';
+  }
+
+  function hideGame() {
+    const gc = document.getElementById('game-container');
+    if (gc) gc.style.display = 'none';
+    document.body.classList.remove('game-active');
+
+    // Restore normal UI
+    const sidebar = Utils.$('.sidebar');
+    const mainContent = Utils.$('.main-content');
+    const header = Utils.$('.app-header');
+    if (sidebar) sidebar.style.display = '';
+    if (mainContent) mainContent.style.display = '';
+    if (header) header.style.display = '';
+
+    // Destroy Phaser
+    if (window.Game && Game.instance) {
+      Game.destroy();
+    }
+  }
+
   async function loadModule(key) {
+    // If coming from game, hide it first
+    if (currentModule === 'game') {
+      hideGame();
+    }
+
     // Cleanup current module
-    if (currentModule && window[modules[currentModule].handler]) {
+    if (currentModule && currentModule !== 'game' && modules[currentModule] && window[modules[currentModule].handler]) {
       const handler = window[modules[currentModule].handler];
       if (handler.cleanup) handler.cleanup();
     }

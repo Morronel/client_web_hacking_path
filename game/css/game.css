@@ -1,0 +1,32 @@
+/* ============================================
+   Game Container Styles
+   ============================================ */
+
+#game-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: #0d1117;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-container canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Hide scrollbars when game is active */
+body.game-active {
+  overflow: hidden;
+}
+
+/* Back button overlay (positioned by Phaser, but this ensures canvas fills space) */
+#game-container.active {
+  display: flex;
+}
