@@ -1,0 +1,189 @@
+/* ============================================
+   Mobile Overrides (loaded at max-width: 768px)
+   ============================================ */
+
+/* ---- Touch Targets (44px minimum) ---- */
+
+.btn {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
+.btn-sm {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+
+.input-field,
+.query-input,
+select.input-field {
+  min-height: 44px;
+  /* 16px prevents iOS Safari zoom-on-focus */
+  font-size: 16px;
+}
+
+textarea.input-field,
+textarea.query-input {
+  min-height: 80px;
+  font-size: 16px;
+}
+
+.tab-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
+.nav-item {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+/* ---- Active States (touch feedback) ---- */
+
+.btn:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+  transition: none;
+}
+
+.nav-item:active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.tab-btn:active {
+  color: var(--text-primary);
+}
+
+/* Disable hover effects that cause sticky states on touch */
+@media (hover: none) {
+  .btn-primary:hover {
+    background: var(--accent-green-dim);
+    color: var(--text-primary);
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-default);
+  }
+
+  .nav-item:hover {
+    background: none;
+    color: var(--text-secondary);
+  }
+}
+
+/* ---- Responsive Layouts ---- */
+
+/* SOP comparison: stack to single column */
+.sop-comparison {
+  grid-template-columns: 1fr !important;
+  gap: 8px;
+}
+
+/* SVGs with inline max-width: scale to container */
+.network-diagram svg {
+  max-width: 100% !important;
+  height: auto;
+}
+
+/* Terminal/JSON output: readable font size */
+.terminal-output,
+.json-response {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-height: 250px;
+}
+
+/* HTTP request display: allow wrapping */
+.http-request-display {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.8rem;
+}
+
+/* ---- Tables: Touch-Scrolling ---- */
+
+.table-wrapper {
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Fade hint indicating horizontal scroll */
+.table-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, transparent, var(--bg-secondary));
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+table th,
+table td {
+  white-space: nowrap;
+  padding: 8px 10px;
+}
+
+/* ---- Network / Handshake Diagram ---- */
+
+.handshake-container {
+  min-width: 480px;
+}
+
+.handshake-endpoint {
+  min-width: 70px !important;
+  width: 70px !important;
+  font-size: 0.75rem;
+  padding: 8px;
+}
+
+.handshake-msg-label {
+  font-size: 0.6rem;
+}
+
+.network-diagram {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---- IDOR Inputs (override inline max-width) ---- */
+
+.lab-container .flex .input-field[style*="max-width"] {
+  max-width: none !important;
+  flex: 1;
+  min-width: 60px;
+}
+
+/* ---- Smaller Phones (480px) ---- */
+
+@media (max-width: 480px) {
+  .lab-container {
+    padding: 16px;
+  }
+
+  .lab-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .encoder-grid {
+    gap: 12px;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  pre {
+    padding: 12px;
+    font-size: 0.78rem;
+  }
+
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1.15rem; }
+}

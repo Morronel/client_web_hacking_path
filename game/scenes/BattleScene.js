@@ -28,12 +28,14 @@ class BattleScene extends Phaser.Scene {
     this.turnNumber = 0;
     this.phase = 'PLAYER_PLAY';
     this.animating = false;
+    this.selectedCard = null;
+    this.isTouchDevice = false;
   }
 
   create() {
     this.cameras.main.setBackgroundColor('#0d1117');
-    this.W = this.W;
-    this.H = this.H;
+    this.W = this.scale.width;
+    this.H = this.scale.height;
     const W = this.W;
     const H = this.H;
 
@@ -63,23 +65,40 @@ class BattleScene extends Phaser.Scene {
       }
     }, { width: 130, height: 36 });
 
-    // Setup drag
-    this.input.on('drag', (pointer, obj, dragX, dragY) => {
-      obj.x = dragX;
-      obj.y = dragY;
-    });
+    // Detect touch device
+    this.isTouchDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-    this.input.on('drop', (pointer, obj, zone) => {
-      if (this.phase !== 'PLAYER_PLAY' || this.animating) return;
-      this.handleCardDrop(obj, zone);
-    });
+    // Setup drag (desktop only — touch uses tap-to-select)
+    if (!this.isTouchDevice) {
+      this.input.on('drag', (pointer, obj, dragX, dragY) => {
+        obj.x = dragX;
+        obj.y = dragY;
+      });
 
-    this.input.on('dragend', (pointer, obj, dropped) => {
-      if (!dropped) {
-        // Return to hand position
-        Game.UI.layoutHand(this, this.handContainers, this.W / 2, this.H - 100);
-      }
-    });
+      this.input.on('drop', (pointer, obj, zone) => {
+        if (this.phase !== 'PLAYER_PLAY' || this.animating) return;
+        this.handleCardDrop(obj, zone);
+      });
+
+      this.input.on('dragend', (pointer, obj, dropped) => {
+        if (!dropped) {
+          Game.UI.layoutHand(this, this.handContainers, this.W / 2, this.H - 100);
+        }
+      });
+    }
+
+    // Setup tap-to-place on player slot zones (works on both touch and mouse)
+    for (let i = 0; i < 4; i++) {
+      const slot = this.slots.player[i];
+      slot.zone.setInteractive({ useHandCursor: true });
+      slot.zone.on('pointerdown', () => {
+        if (this.phase !== 'PLAYER_PLAY' || this.animating) return;
+        if (this.selectedCard) {
+          this.handleCardDrop(this.selectedCard, slot.zone);
+          this.clearSelection();
+        }
+      });
+    }
 
     // Initialize draw pile from deck
     const runState = Game.RunState.getState();
@@ -111,13 +130,34 @@ class BattleScene extends Phaser.Scene {
     this.hand.push(instance);
 
     const container = Game.CardRenderer.createCard(this, instance, 0, this.H + 80);
-    container.setInteractive({ useHandCursor: true, draggable: true });
-    this.input.setDraggable(container);
+    container.setInteractive({ useHandCursor: true, draggable: !this.isTouchDevice });
+    if (!this.isTouchDevice) {
+      this.input.setDraggable(container);
+    }
     container.cardInstance = instance;
     this.handContainers.push(container);
 
+    // Tap-to-select handler (works on both touch and mouse)
+    container.on('pointerdown', () => {
+      if (this.phase !== 'PLAYER_PLAY' || this.animating) return;
+      if (this.selectedCard === container) {
+        this.clearSelection();
+      } else {
+        this.clearSelection();
+        this.selectedCard = container;
+        Game.UI.highlightCard(this, container);
+      }
+    });
+
     Game.UI.layoutHand(this, this.handContainers, this.W / 2, this.H - 100);
     this.deckCounter.update(this.drawPile.length);
+  }
+
+  clearSelection() {
+    if (this.selectedCard) {
+      Game.UI.unhighlightCard(this, this.selectedCard);
+      this.selectedCard = null;
+    }
   }
 
   handleCardDrop(cardContainer, zone) {

@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/labs.css">
   <link rel="stylesheet" href="game/css/game.css">
+  <link rel="stylesheet" href="css/mobile.css" media="(max-width: 768px)">
 </head>
 <body>
 
@@ -127,7 +128,13 @@
   <script src="game/game.js"></script>
 
   <!-- Game container (hidden by default, shown when #game route active) -->
-  <div id="game-container"></div>
+  <div id="game-container">
+    <div class="rotate-prompt">
+      <div class="rotate-icon">&#x1F4F1;</div>
+      <div class="rotate-text">Rotate your device to landscape</div>
+      <div class="rotate-sub">Shadow Terminal plays best in landscape mode</div>
+    </div>
+  </div>
 
 </body>
 </html>

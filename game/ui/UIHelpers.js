@@ -223,8 +223,29 @@ Game.UI = (() => {
     return container;
   }
 
+  function highlightCard(scene, container) {
+    if (container._glowRect) return;
+    const w = container.cardW || 110;
+    const h = container.cardH || 150;
+    const glow = scene.add.graphics();
+    glow.lineStyle(3, C.green, 1);
+    glow.strokeRoundedRect(-w / 2 - 3, -h / 2 - 3, w + 6, h + 6, 8);
+    container.addAt(glow, 0);
+    container._glowRect = glow;
+    container.setScale(1.08);
+  }
+
+  function unhighlightCard(scene, container) {
+    if (container._glowRect) {
+      container._glowRect.destroy();
+      container._glowRect = null;
+    }
+    container.setScale(1);
+  }
+
   return {
     createScale, createSlotGrid, createHandArea, layoutHand,
-    createDataPointsDisplay, createDeckCounter, showFloatingText, createButton
+    createDataPointsDisplay, createDeckCounter, showFloatingText, createButton,
+    highlightCard, unhighlightCard
   };
 })();

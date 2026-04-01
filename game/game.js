@@ -28,7 +28,7 @@ Game.boot = function (containerId) {
       noAudio: true
     },
     input: {
-      activePointers: 1
+      activePointers: 2
     }
   };
 
