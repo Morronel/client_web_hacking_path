@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NeonParser{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="brand">// NeonParser</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/parse">Parse</a>
+            <a href="/import">Import</a>
+            <a href="/validate">Validate</a>
+            <a href="/parse-filtered">Filtered</a>
+            <a href="/svg-upload">SVG Upload</a>
+            <a href="/log-view">OOB Logs</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        NeonParser v1.0 &mdash; XML Data Import &amp; Processing Tool &mdash; Port 5012
+    </footer>
+</body>
+</html>

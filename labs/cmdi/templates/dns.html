@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}NeonPing - DNS Check{% endblock %}
+{% block content %}
+<h1>Challenge 2: Blind DNS Check</h1>
+
+<div class="card">
+    <p>This endpoint runs <code>nslookup</code> on your input but only tells you if the lookup succeeded or failed. No command output is displayed.</p>
+    <div class="meta">Hint: Try writing output to <code>/app/static/out.txt</code> and then fetching <code>/static/out.txt</code></div>
+</div>
+
+<div class="card">
+    <form method="POST" action="/dns-check">
+        <label for="domain">Domain</label>
+        <input type="text" id="domain" name="domain" value="{{ domain }}" placeholder="e.g. example.com">
+        <button type="submit">Check DNS</button>
+    </form>
+</div>
+
+{% if status %}
+    {% if status == 'success' %}
+    <div class="alert alert-success">DNS lookup: SUCCESS</div>
+    {% else %}
+    <div class="alert alert-error">DNS lookup: FAILED</div>
+    {% endif %}
+{% endif %}
+
+<div class="card">
+    <h3>Exfiltration Endpoint</h3>
+    <p>If you manage to write data to <code>/app/static/out.txt</code>, you can read it here:</p>
+    <a class="btn" href="/static/out.txt" target="_blank">View /static/out.txt</a>
+</div>
+{% endblock %}

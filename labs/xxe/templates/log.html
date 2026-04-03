@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}NeonParser — OOB Logs{% endblock %}
+{% block content %}
+<h1>OOB Exfiltration Logs</h1>
+<p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+    Data received via the <code>/log?data=...</code> endpoint appears here. Used for blind XXE exfiltration.
+</p>
+
+{% if logs %}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Data Received</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in logs %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ entry }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-error">No log entries yet. Trigger a blind XXE to exfiltrate data here.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}NeonPanel - Dashboard{% endblock %}
+{% block content %}
+<h1>Clickjacking Lab</h1>
+
+{% if user %}
+<div class="user-info">
+    Logged in as: <strong style="color: var(--neon-cyan);">{{ user['username'] }}</strong>
+    | Role: <strong>{{ user['role'] }}</strong>
+    | Credits: <strong>{{ user['credits'] }}</strong>
+    {% if user['deleted'] %} | <span style="color: var(--danger);">DELETED</span>{% endif %}
+</div>
+{% endif %}
+
+<p style="margin-bottom: 1.5rem; color: var(--text-muted);">
+    Each challenge demonstrates a clickjacking vulnerability. Visit the target page, study its behavior,
+    then use the POC page to craft and test your attack. The bot endpoint simulates a victim visiting your malicious page.
+</p>
+
+{% for ch in challenges %}
+<div class="card">
+    <h3>
+        Challenge {{ ch.num }}: {{ ch.title }}
+        {% if solved.get(ch.num) %}
+            <span class="badge badge-solved">Solved</span>
+        {% else %}
+            <span class="badge badge-unsolved">Unsolved</span>
+        {% endif %}
+    </h3>
+    <p>{{ ch.desc }}</p>
+    <div class="challenge-links">
+        <a href="{{ ch.target }}">Target Page</a>
+        <a href="{{ ch.poc }}">POC Page</a>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

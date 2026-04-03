@@ -1,0 +1,110 @@
+<section class="module-header">
+  <h1>Module 16 — Path Traversal</h1>
+  <p>Learn how attackers escape intended directories to read arbitrary files on the server.</p>
+</section>
+
+<section class="theory-section">
+  <h2>What Is Path Traversal?</h2>
+  <p>Path traversal (also called directory traversal) exploits insufficient security validation of user-supplied file paths. By injecting <code>../</code> sequences, attackers navigate outside the intended directory to access sensitive files like <code>/etc/passwd</code>, application configs, or source code.</p>
+
+  <h2>The Core Problem</h2>
+  <h3 class="text-red">Vulnerable Code</h3>
+  <pre><code class="language-python">@app.route('/view')
+def view():
+    filename = request.args.get('file')
+    # DANGEROUS: user controls the entire path
+    with open(f'documents/public/{filename}') as f:
+        return f.read()</code></pre>
+
+  <h3 class="text-green">Safe Code</h3>
+  <pre><code class="language-python">import os
+
+@app.route('/view')
+def view():
+    filename = request.args.get('file')
+    # SAFE: strip path components + validate against whitelist
+    safe_name = os.path.basename(filename)
+    full_path = os.path.join('documents/public', safe_name)
+    real_path = os.path.realpath(full_path)
+    if not real_path.startswith(os.path.realpath('documents/public')):
+        abort(403)
+    with open(real_path) as f:
+        return f.read()</code></pre>
+
+  <h2>Common Traversal Sequences</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Payload</th><th>Purpose</th><th>Bypasses</th></tr></thead>
+      <tbody>
+        <tr><td><code>../</code></td><td>Basic directory up</td><td>No filters</td></tr>
+        <tr><td><code>....//</code></td><td>After single-pass <code>../</code> removal → becomes <code>../</code></td><td>Naive replace</td></tr>
+        <tr><td><code>%2e%2e%2f</code></td><td>URL-encoded <code>../</code></td><td>Pre-decode validation</td></tr>
+        <tr><td><code>..%252f</code></td><td>Double URL-encoding</td><td>Single decode + check</td></tr>
+        <tr><td><code>%00</code></td><td>Null byte (legacy)</td><td>Extension append</td></tr>
+        <tr><td><code>..\/</code></td><td>Mixed separators</td><td>Windows normalization</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>High-Value Targets</h2>
+  <pre><code class="language-bash"># Linux targets
+/etc/passwd          # User accounts
+/etc/shadow          # Password hashes (requires root)
+/proc/self/environ   # Environment variables (secrets, API keys)
+/app/.env            # Application secrets
+
+# Windows targets
+C:\Windows\win.ini
+C:\inetpub\wwwroot\web.config</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Impact:</strong> Path traversal can expose source code, configuration files, credentials, API keys, and in some cases can be chained with file upload or log injection for remote code execution.
+  </div>
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What is the primary sequence used in path traversal attacks?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a"><code>./</code> (current directory)</button>
+        <button class="quiz-opt" data-q="1" data-val="b"><code>../</code> (parent directory)</button>
+        <button class="quiz-opt" data-q="1" data-val="c"><code>~/</code> (home directory)</button>
+        <button class="quiz-opt" data-q="1" data-val="d"><code>*</code> (glob wildcard)</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>How did null byte injection (<code>%00</code>) historically bypass file extension appending?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">It corrupted the file header</button>
+        <button class="quiz-opt" data-q="2" data-val="b">It changed the Content-Type</button>
+        <button class="quiz-opt" data-q="2" data-val="c">C string functions treated it as the end of the string, truncating the appended extension</button>
+        <button class="quiz-opt" data-q="2" data-val="d">It encoded the extension in base64</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Which Python approach best prevents path traversal?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Removing <code>../</code> with <code>str.replace()</code></button>
+        <button class="quiz-opt" data-q="3" data-val="b">Checking if the path contains <code>..</code></button>
+        <button class="quiz-opt" data-q="3" data-val="c">Blocking <code>/</code> characters</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Using <code>os.path.basename()</code> + <code>os.path.realpath()</code> with a directory whitelist check</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonDocs</h2>
+  <p>Practice path traversal in a corporate document viewer with 5 challenges:</p>
+  <div class="code-block">cd labs/traversal && docker compose up --build<br>Visit http://localhost:5009/</div>
+  <p class="text-muted">Challenges cover basic traversal, null byte bypass, double-encoding, filter evasion, and whitelist bypass.</p>
+</section>

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}NeonPing - Traceroute{% endblock %}
+{% block content %}
+<h1>Challenge 4: Traceroute</h1>
+
+<div class="card">
+    <p>Runs <code>traceroute</code> on the target host using <code>subprocess.run(shell=True)</code>. Semicolons and pipes are blocked.</p>
+    <div class="meta">Blocked characters: <code>; |</code> &bull; Hint: <code>$IFS</code> replaces spaces, newlines separate commands</div>
+</div>
+
+<div class="card">
+    <form method="POST" action="/traceroute">
+        <label for="host">Target Host</label>
+        <input type="text" id="host" name="host" value="{{ host }}" placeholder="e.g. 127.0.0.1">
+        <button type="submit">Run Traceroute</button>
+    </form>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if output %}
+<h2>Output</h2>
+<div class="code-block"><pre>{{ output }}</pre></div>
+{% endif %}
+{% endblock %}

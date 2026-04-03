@@ -1,0 +1,127 @@
+<section class="module-header">
+  <h1>Module 20 — Race Conditions</h1>
+  <p>Explore how TOCTOU (Time-of-Check to Time-of-Use) flaws allow attackers to exploit timing gaps in concurrent operations.</p>
+</section>
+
+<section class="theory-section">
+  <h2>What Are Race Conditions?</h2>
+  <p>Race conditions occur when two or more operations on shared state happen concurrently without proper synchronization. In web apps, this typically manifests as a <strong>TOCTOU</strong> vulnerability: the server checks a condition (e.g., "does the user have enough balance?"), then acts on it (e.g., "deduct balance"), but the gap between check and action allows concurrent requests to all pass the check.</p>
+
+  <h2>The TOCTOU Pattern</h2>
+  <h3 class="text-red">Vulnerable Code</h3>
+  <pre><code class="language-python">@app.route('/redeem', methods=['POST'])
+def redeem():
+    code = request.form['code']
+    voucher = db.execute(
+        'SELECT * FROM vouchers WHERE code=? AND redeemed=0', (code,)
+    ).fetchone()
+
+    if not voucher:
+        return 'Invalid or already redeemed'
+
+    # TOCTOU GAP: another request can pass the check above
+    # before this update executes
+    time.sleep(0.1)  # Network latency / DB delay widens the window
+
+    db.execute('UPDATE vouchers SET redeemed=1 WHERE code=?', (code,))
+    db.execute('UPDATE accounts SET balance=balance+? WHERE id=?',
+               (voucher['value'], user_id))
+    db.commit()
+    return 'Voucher redeemed!'</code></pre>
+
+  <h3 class="text-green">Safe Code</h3>
+  <pre><code class="language-python">@app.route('/redeem', methods=['POST'])
+def redeem():
+    code = request.form['code']
+    # SAFE: atomic update — check and modify in single query
+    result = db.execute(
+        'UPDATE vouchers SET redeemed=1 WHERE code=? AND redeemed=0', (code,)
+    )
+    if result.rowcount == 0:
+        return 'Invalid or already redeemed'
+
+    db.execute('UPDATE accounts SET balance=balance+? WHERE id=?',
+               (voucher_value, user_id))
+    db.commit()
+    return 'Voucher redeemed!'</code></pre>
+
+  <h2>Real-World Examples</h2>
+  <ul>
+    <li><strong>Double-spend:</strong> Redeem the same gift card/voucher multiple times</li>
+    <li><strong>Overdraft:</strong> Withdraw more money than account balance by racing withdrawals</li>
+    <li><strong>Duplicate registration:</strong> Create multiple accounts with "unique" username</li>
+    <li><strong>Like/vote inflation:</strong> "Like" a post hundreds of times before the check catches up</li>
+  </ul>
+
+  <h2>Exploitation Technique</h2>
+  <pre><code class="language-bash"># Send 20 concurrent requests using curl + xargs
+seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/redeem \
+  -d "code=GIFT-CARD-123"
+
+# Or with Python threading
+import threading, requests
+def redeem():
+    requests.post('http://localhost:5013/redeem', data={'code': 'GIFT-CARD-123'})
+threads = [threading.Thread(target=redeem) for _ in range(20)]
+for t in threads: t.start()
+for t in threads: t.join()</code></pre>
+
+  <h2>Prevention</h2>
+  <ul>
+    <li><strong>Atomic operations:</strong> Use <code>UPDATE ... WHERE condition</code> to check and modify in one query</li>
+    <li><strong>Database transactions:</strong> Use <code>SELECT ... FOR UPDATE</code> to lock rows</li>
+    <li><strong>Optimistic locking:</strong> Use version columns to detect concurrent modifications</li>
+    <li><strong>Idempotency keys:</strong> Assign unique IDs to operations to detect duplicates</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Impact:</strong> Race conditions can cause financial loss (double-spend), data corruption, privilege escalation, and bypass of security checks. They are notoriously difficult to detect with automated scanning.
+  </div>
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What does TOCTOU stand for?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">Time of Check to Time of Use</button>
+        <button class="quiz-opt" data-q="1" data-val="b">Transfer of Control to Other Users</button>
+        <button class="quiz-opt" data-q="1" data-val="c">Thread Orchestration and Concurrent Transactions Under Update</button>
+        <button class="quiz-opt" data-q="1" data-val="d">Token of Credit to Offset Usage</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>What is the most effective database-level prevention for race conditions?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">Adding more indexes</button>
+        <button class="quiz-opt" data-q="2" data-val="b">Using <code>time.sleep()</code> between queries</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Increasing connection pool size</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Atomic <code>UPDATE ... WHERE</code> that combines check and modification in one query</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Which mechanism ensures that concurrent transactions don't read stale data?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Connection pooling</button>
+        <button class="quiz-opt" data-q="3" data-val="b">Database transactions with row-level locking (<code>SELECT FOR UPDATE</code>)</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Rate limiting</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Using a NoSQL database instead</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonVault</h2>
+  <p>Exploit race conditions in a digital wallet system with 5 challenges:</p>
+  <div class="code-block">cd labs/race && docker compose up --build<br>Visit http://localhost:5013/</div>
+  <p class="text-muted">Challenges cover voucher double-spend, duplicate registration, overdraft withdrawal, bonus double-claim, and transfer fraud. Use concurrent requests to exploit TOCTOU gaps.</p>
+</section>

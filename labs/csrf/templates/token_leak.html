@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}NeonBank - Challenge 4: Token Leak{% endblock %}
+{% block content %}
+<h1>Challenge 4: CSRF Token Leak via Referer</h1>
+
+<div class="card">
+    <h3>Change Email (Token Protected)</h3>
+    <p style="margin-bottom:1rem;">Current user: <span style="color:var(--neon-pink);">hacker</span> | Email: <span style="color:var(--neon-green);">{{ email }}</span></p>
+    <form method="POST" action="/change-email?csrf_token={{ csrf_token }}">
+        <label for="new_email">New Email Address</label>
+        <input type="text" id="new_email" name="new_email" placeholder="new@neonbank.net">
+        <button type="submit">Change Email</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p>The <code>/change-email</code> endpoint uses a CSRF token, but it is placed in the URL query parameter:</p>
+    <div class="code-block">/change-email?csrf_token={{ csrf_token }}</div>
+    <p style="margin-top:.5rem;">When the page at <code>/page-with-image</code> loads an external image,
+    the browser sends the full URL (including the token) in the Referer header to the image server.</p>
+    <p style="margin-top:.5rem;">The <code>/token-leak</code> endpoint simulates an attacker's server that captures the leaked Referer.</p>
+    <p style="margin-top:.5rem;">Admin's current email: <span style="color:var(--neon-yellow);">{{ admin_email }}</span></p>
+</div>
+
+<div class="card">
+    <h3>Step 1: View the Leaky Page</h3>
+    <p>Visit <a href="/page-with-image?csrf_token={{ csrf_token }}">/page-with-image?csrf_token={{ csrf_token }}</a> &mdash;
+    this page loads an external image that leaks the token via the Referer header.</p>
+</div>
+
+<div class="card">
+    <h3>Step 2: Retrieve Leaked Token</h3>
+    <p>Check <a href="/token-leak">/token-leak</a> to see the most recently leaked admin CSRF token.</p>
+</div>
+
+<div class="card">
+    <h3>Submit to Admin Bot</h3>
+    <p style="margin-bottom:1rem;">The bot will first visit /page-with-image (leaking the token), then you can use the leaked token to change the admin's email.</p>
+    <form method="POST" action="/bot4">
+        <label for="html">Malicious HTML / Instructions</label>
+        <textarea id="html" name="html" rows="8" placeholder="The bot will visit /page-with-image to leak the token, then submit your email change."></textarea>
+        <label for="new_email_bot">New Email for Admin</label>
+        <input type="text" id="new_email_bot" name="new_email" placeholder="hacked@evil.com">
+        <button type="submit">Send to Bot</button>
+    </form>
+</div>
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if bot_result %}
+<div class="card">
+    <h3>Bot Result</h3>
+    <p>{{ bot_result }}</p>
+</div>
+{% endif %}
+{% endblock %}

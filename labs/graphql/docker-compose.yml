@@ -1,0 +1,5 @@
+services:
+  graphql-lab:
+    build: .
+    ports:
+      - "5015:5015"

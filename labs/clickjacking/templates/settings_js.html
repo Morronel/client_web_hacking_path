@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}NeonPanel - Settings (JS Protected){% endblock %}
+{% block content %}
+<h1>Settings (JS Framebuster)</h1>
+
+<script>
+    // Framebuster defense - attempts to prevent framing
+    if (top !== self) {
+        top.location = self.location;
+    }
+</script>
+
+{% if user %}
+<div class="user-info">
+    Current role: <strong style="color: var(--neon-pink);">{{ user['role'] }}</strong>
+</div>
+{% endif %}
+
+{% if message %}
+<div class="alert alert-success">{{ message }}</div>
+{% endif %}
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <h3>Change Role</h3>
+    <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        Change your account role. This page is "protected" by JavaScript framebusting.
+    </p>
+    <form method="POST" action="/settings-js/action">
+        <label for="role">New Role</label>
+        <input type="text" id="role" name="role" value="superuser" placeholder="e.g. superuser">
+        <button type="submit">Change Role</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Framebuster Code</h3>
+    <div class="code-block">
+        <pre>if (top !== self) {
+    top.location = self.location;
+}</pre>
+    </div>
+    <p style="color: var(--text-muted);">
+        This JavaScript tries to break out of iframes. However, if the iframe uses
+        <code>sandbox="allow-forms allow-scripts"</code>, the <code>top.location</code> assignment
+        will throw a security error, effectively neutralizing the defense while still allowing form submission.
+    </p>
+</div>
+{% endblock %}

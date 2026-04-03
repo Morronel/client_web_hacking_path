@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}NeonCache — Pickle Tamper{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2>05 // Pickle Tamper</h2>
+
+    {% if b64data %}
+    <p>Your profile has been exported as a pickled object (base64-encoded):</p>
+
+    <div class="output-box">
+        <h3>&gt; Exported Profile</h3>
+        <pre class="result-pre">{{ b64data }}</pre>
+    </div>
+
+    <div class="hint-box" style="margin-top: 1rem;">
+        The pickle contains: <code>{{ user_obj }}</code><br>
+        Modify the serialized data so that <code>role == 'admin'</code> and <code>credits &gt; 9000</code>,
+        then reimport below.
+    </div>
+
+    <form method="POST" action="/import-pickle" style="margin-top: 1.5rem;">
+        <div class="form-group">
+            <label>Base64 Pickle (modify and reimport)</label>
+            <textarea name="data" rows="5">{{ b64data }}</textarea>
+        </div>
+        <button type="submit" class="btn">Import Pickle</button>
+    </form>
+    {% endif %}
+
+    {% if imported %}
+    <p>Profile imported from pickle:</p>
+    <div class="session-info" style="margin: 1rem 0;">
+        <span class="label">USERNAME:</span>
+        <span class="value">{{ username }}</span>
+        <span class="label">ROLE:</span>
+        <span class="value">{{ role }}</span>
+        <span class="label">CREDITS:</span>
+        <span class="value">{{ credits }}</span>
+    </div>
+
+    {% if flag %}
+    <div class="flag-box">
+        <div class="flag-label">Privilege Escalation Successful</div>
+        <div class="flag-value">{{ flag }}</div>
+    </div>
+    {% else %}
+    <div class="hint-box">
+        <strong>Insufficient privileges.</strong> You need <code>role='admin'</code> and <code>credits &gt; 9000</code>.
+    </div>
+    {% endif %}
+
+    <a href="/export?format=pickle" class="btn" style="margin-top: 1rem;">Export Again</a>
+    {% endif %}
+
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    <a href="/export?format=pickle" class="btn" style="margin-top: 1rem;">Export Again</a>
+    {% endif %}
+</div>
+{% endblock %}

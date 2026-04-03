@@ -1,0 +1,436 @@
+/* NeonGallery — Cyberpunk Theme */
+
+:root {
+    --bg-dark: #0a0a0f;
+    --bg-card: #111118;
+    --bg-card-hover: #16161f;
+    --neon-cyan: #00f0ff;
+    --neon-magenta: #ff00aa;
+    --neon-green: #39ff14;
+    --neon-yellow: #ffe600;
+    --text-primary: #e0e0e8;
+    --text-dim: #7a7a8e;
+    --border-color: #222233;
+    --danger: #ff3355;
+    --success: #39ff14;
+    --font-mono: 'Courier New', 'Fira Code', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(90deg, #0d0d14 0%, #111120 100%);
+    border-bottom: 2px solid var(--neon-cyan);
+    box-shadow: 0 2px 20px rgba(0, 240, 255, 0.15);
+}
+
+.brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-decoration: none;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    letter-spacing: 2px;
+}
+
+.tagline {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+/* Container */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    flex: 1;
+    width: 100%;
+}
+
+/* Page Title */
+.page-title {
+    font-size: 2rem;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    margin-bottom: 0.5rem;
+    letter-spacing: 2px;
+}
+
+.intro {
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+    font-size: 0.85rem;
+}
+
+.intro code {
+    color: var(--neon-green);
+    background: rgba(57, 255, 20, 0.08);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+}
+
+/* Challenge Cards */
+.challenge-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-magenta);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s;
+}
+
+.challenge-card:hover {
+    background: var(--bg-card-hover);
+    border-left-color: var(--neon-cyan);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.07);
+}
+
+.ch-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.ch-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--neon-magenta);
+    text-shadow: 0 0 10px rgba(255, 0, 170, 0.4);
+    min-width: 50px;
+}
+
+.ch-header h2 {
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+}
+
+.ch-desc {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+}
+
+.ch-desc code {
+    color: var(--neon-green);
+    background: rgba(57, 255, 20, 0.08);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    font-size: 0.8rem;
+}
+
+.ch-hint {
+    color: var(--neon-yellow);
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 230, 0, 0.05);
+    border-left: 2px solid var(--neon-yellow);
+    border-radius: 3px;
+}
+
+.ch-hint code {
+    color: var(--neon-green);
+}
+
+/* Upload Forms */
+.upload-form {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.file-label {
+    position: relative;
+    cursor: pointer;
+}
+
+.file-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.file-btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.file-btn:hover {
+    background: rgba(0, 240, 255, 0.1);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+}
+
+.btn-upload {
+    background: var(--neon-magenta);
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.btn-upload:hover {
+    background: #e6009a;
+    box-shadow: 0 0 15px rgba(255, 0, 170, 0.4);
+}
+
+.btn-run {
+    background: transparent;
+    border: 1px solid var(--neon-green);
+    color: var(--neon-green);
+    font-size: 0.7rem;
+    padding: 0.3rem 0.8rem;
+}
+
+.btn-run:hover {
+    background: rgba(57, 255, 20, 0.1);
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+}
+
+.btn-back {
+    background: transparent;
+    border: 1px solid var(--text-dim);
+    color: var(--text-dim);
+    margin-top: 1.5rem;
+}
+
+.btn-back:hover {
+    color: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+}
+
+/* File List */
+.file-list {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.file-list h3 {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.file-list ul {
+    list-style: none;
+}
+
+.file-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-size: 0.8rem;
+}
+
+.file-list li:hover {
+    background: rgba(0, 240, 255, 0.03);
+}
+
+.fname {
+    color: var(--neon-cyan);
+}
+
+.empty {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+/* Result Page */
+.result-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+}
+
+.result-success {
+    border-left: 3px solid var(--success);
+}
+
+.result-fail {
+    border-left: 3px solid var(--danger);
+}
+
+.result-status {
+    margin-bottom: 1rem;
+}
+
+.status-icon {
+    font-size: 2rem;
+}
+
+.result-success .status-icon {
+    color: var(--success);
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+}
+
+.result-fail .status-icon {
+    color: var(--danger);
+    text-shadow: 0 0 10px rgba(255, 51, 85, 0.5);
+}
+
+.result-message {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.result-actions {
+    margin-top: 1rem;
+}
+
+/* Output Block */
+.output-block {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.output-block h3 {
+    font-size: 0.8rem;
+    color: var(--neon-green);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.75rem;
+}
+
+.output-pre {
+    background: #050508;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--neon-green);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-shadow: 0 0 5px rgba(57, 255, 20, 0.3);
+}
+
+/* Glitch effect */
+.glitch {
+    position: relative;
+}
+
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+}
+
+.glitch::before {
+    color: var(--neon-magenta);
+    z-index: -1;
+    animation: glitch-1 3s infinite;
+}
+
+.glitch::after {
+    color: var(--neon-green);
+    z-index: -2;
+    animation: glitch-2 3s infinite;
+}
+
+@keyframes glitch-1 {
+    0%, 95%, 100% { transform: translate(0); }
+    96% { transform: translate(-2px, 1px); }
+    97% { transform: translate(2px, -1px); }
+}
+
+@keyframes glitch-2 {
+    0%, 95%, 100% { transform: translate(0); }
+    96% { transform: translate(2px, -1px); }
+    97% { transform: translate(-2px, 1px); }
+}
+
+/* Footer */
+footer {
+    border-top: 1px solid var(--border-color);
+    padding: 1.25rem 2rem;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    background: var(--bg-card);
+}
+
+.neon-accent {
+    color: var(--neon-cyan);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-cyan);
+}

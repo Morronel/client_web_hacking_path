@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}NeonPing - Command Injection Lab{% endblock %}
+{% block content %}
+<h1>NeonPing Network Diagnostics</h1>
+<p class="mb-1" style="color: var(--text-muted);">Welcome to NeonPing, a network diagnostic suite. Each tool below has a command injection vulnerability for you to discover and exploit.</p>
+
+<div class="card">
+    <span class="category">Challenge 1 &mdash; Basic Injection</span>
+    <h3>Ping</h3>
+    <p>Run a basic ping against any host. The input is passed directly to <code>os.popen()</code> with no sanitization.</p>
+    <div class="meta">Difficulty: Easy &bull; Hint: Try appending a second command with <code>;</code> or <code>|</code></div>
+    <div class="mt-2"><a class="btn" href="/ping?host=">Launch Ping</a></div>
+</div>
+
+<div class="card">
+    <span class="category">Challenge 2 &mdash; Blind Injection</span>
+    <h3>DNS Check</h3>
+    <p>Checks whether a domain resolves, but only returns "success" or "failed" &mdash; no command output is shown. You must exfiltrate data out-of-band.</p>
+    <div class="meta">Difficulty: Medium &bull; Hint: Redirect output to a file you can read via the web server</div>
+    <div class="mt-2"><a class="btn" href="/dns-check">Launch DNS Check</a></div>
+</div>
+
+<div class="card">
+    <span class="category">Challenge 3 &mdash; Filter Bypass</span>
+    <h3>Filtered Ping</h3>
+    <p>Like the basic ping, but <code>;</code>, <code>|</code>, <code>&amp;</code>, and backticks are blocked. Can you find another way to inject?</p>
+    <div class="meta">Difficulty: Medium &bull; Hint: Not all command substitution syntax is blocked</div>
+    <div class="mt-2"><a class="btn" href="/ping-safe?host=">Launch Filtered Ping</a></div>
+</div>
+
+<div class="card">
+    <span class="category">Challenge 4 &mdash; IFS Bypass</span>
+    <h3>Traceroute</h3>
+    <p>Runs traceroute with <code>subprocess.run(shell=True)</code>. Semicolons and pipes are blocked, but there are other ways to chain commands.</p>
+    <div class="meta">Difficulty: Medium &bull; Hint: <code>$IFS</code> can substitute for spaces; newlines can separate commands</div>
+    <div class="mt-2"><a class="btn" href="/traceroute">Launch Traceroute</a></div>
+</div>
+
+<div class="card">
+    <span class="category">Challenge 5 &mdash; Space Bypass</span>
+    <h3>Whois</h3>
+    <p>Looks up WHOIS records for a domain. Spaces are strictly blocked by a regex filter. Find a way to run commands without spaces.</p>
+    <div class="meta">Difficulty: Hard &bull; Hint: Brace expansion <code>{cmd,arg}</code> or <code>$IFS</code> can replace spaces</div>
+    <div class="mt-2"><a class="btn" href="/whois?domain=">Launch Whois</a></div>
+</div>
+{% endblock %}

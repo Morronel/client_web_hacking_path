@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}NeonParser — Filter Bypass XXE{% endblock %}
+{% block content %}
+<h1>Challenge 4 &mdash; Filter Bypass XXE</h1>
+<p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+    This endpoint blocks XML containing <code>SYSTEM</code> or <code>ENTITY</code> (case-sensitive). Find a way to bypass the filter and read <code>/app/flag4.txt</code>.
+</p>
+
+<div class="card">
+    <h3>Hint</h3>
+    <p style="color: var(--text-muted); font-size: .85rem;">
+        The filter blocks <code>SYSTEM</code> and <code>ENTITY</code> but not <code>PUBLIC</code>. You can use a PUBLIC DOCTYPE pointing to an external DTD hosted at <code>/evil-dtd</code>.
+    </p>
+    <div class="code-block">&lt;!DOCTYPE foo PUBLIC "-//test" "http://127.0.0.1:5012/evil-dtd"&gt;
+&lt;data&gt;&amp;xxe;&lt;/data&gt;</div>
+</div>
+
+<div class="card">
+    <form id="xml-form">
+        <label for="xml-input">XML Payload</label>
+        <textarea id="xml-input" name="xml" placeholder="Enter your XML here...">&lt;?xml version="1.0"?&gt;
+&lt;data&gt;Test filtered&lt;/data&gt;</textarea>
+        <button type="submit">Parse (Filtered)</button>
+    </form>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if result %}
+<div class="flag-box">{{ result }}</div>
+{% endif %}
+
+<div id="output"></div>
+
+<script>
+document.getElementById('xml-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const xml = document.getElementById('xml-input').value;
+    const resp = await fetch('/parse-filtered', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/xml'},
+        body: xml
+    });
+    const html = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const flagBox = doc.querySelector('.flag-box');
+    const alertError = doc.querySelector('.alert-error');
+    const output = document.getElementById('output');
+    output.innerHTML = '';
+    if (flagBox) output.innerHTML = flagBox.outerHTML;
+    if (alertError) output.innerHTML = alertError.outerHTML;
+});
+</script>
+{% endblock %}

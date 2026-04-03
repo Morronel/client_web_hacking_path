@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}NeonBank - Page With Image{% endblock %}
+{% block content %}
+<h1>NeonBank Profile Page</h1>
+
+<div class="card">
+    <h3>Your Profile</h3>
+    <p>Welcome back, operative. Here is your profile badge:</p>
+    <p style="margin-top:1rem;">
+        <img src="/token-leak?capture=1" alt="Profile Badge" style="width:200px;height:60px;border:1px solid var(--neon-cyan);">
+    </p>
+    <p style="margin-top:1rem;color:var(--text-muted);">
+        Notice: the image above is loaded from an external endpoint.
+        The browser sends the full page URL (including the csrf_token parameter) as the Referer header.
+    </p>
+</div>
+
+<div class="card">
+    <h3>Current URL</h3>
+    <div class="code-block" id="current-url"></div>
+    <script>document.getElementById('current-url').textContent = window.location.href;</script>
+    <p style="color:var(--neon-yellow);">The csrf_token in the URL above is leaked via the Referer header when the image loads.</p>
+</div>
+{% endblock %}

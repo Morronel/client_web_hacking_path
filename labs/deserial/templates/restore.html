@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}NeonCache — YAML Restore{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2>03 // YAML Object Injection</h2>
+    <p>Restore cached objects from YAML format. The service uses an unsafe YAML loader to reconstruct Python objects.</p>
+
+    <div class="hint-box">
+        YAML supports Python-specific tags like <code>!!python/object/apply:module.func [args]</code>.
+        The loader is <code>yaml.UnsafeLoader</code> &mdash; all tags are honored.
+    </div>
+
+    <form method="POST" action="/api/restore">
+        <div class="form-group">
+            <label>YAML Data</label>
+            <textarea name="data" rows="6" placeholder="Enter YAML data to restore...">name: test_object
+type: cache_entry
+value: 42</textarea>
+        </div>
+        <button type="submit" class="btn">Restore Object</button>
+    </form>
+
+    {% if result %}
+    <div class="output-box">
+        <h3>&gt; Restored Object</h3>
+        <pre class="result-pre">{{ result }}</pre>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,5 @@
+services:
+  xxe-lab:
+    build: .
+    ports:
+      - "5012:5012"

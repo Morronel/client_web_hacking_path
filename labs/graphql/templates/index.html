@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}NeonGraph - Challenges{% endblock %}
+
+{% block content %}
+<h1>NeonGraph - Social Network GraphQL API</h1>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">
+    A cyberpunk social network with a GraphQL API. Probe the schema, exploit the resolvers, own the grid.
+</p>
+
+<h2>Challenges</h2>
+
+<div class="card">
+    <h3><span class="challenge-num">1</span> Introspection Recon</h3>
+    <p>The GraphQL API has introspection enabled. Use it to discover hidden types and fields that expose sensitive data.</p>
+    <p class="hint-text">Hint: Query __schema to map out every type. Some types are not meant to be public.</p>
+    <div class="code-block">{__schema{types{name fields{name}}}}</div>
+</div>
+
+<div class="card">
+    <h3><span class="challenge-num">2</span> Depth Attack</h3>
+    <p>GraphQL queries can be nested deeply through relational fields. There is no depth limit on this API. Overload the server with a deeply nested query (depth &gt; 10).</p>
+    <p class="hint-text">Hint: Users have posts, posts have authors, authors have posts... After triggering the overload, check the health endpoint.</p>
+    <div class="code-block">{users{posts{author{posts{author{posts{author{posts{author{posts{author{username}}}}}}}}}}}</div>
+</div>
+
+<div class="card">
+    <h3><span class="challenge-num">3</span> Authorization Bypass</h3>
+    <p>The posts query is supposed to filter out private posts. Does it?</p>
+    <p class="hint-text">Hint: Query all posts and check the isPrivate field. Some content should be restricted.</p>
+    <div class="code-block">{posts{title content isPrivate}}</div>
+</div>
+
+<div class="card">
+    <h3><span class="challenge-num">4</span> GraphQL Injection</h3>
+    <p>The searchUsers query takes a name parameter. The resolver might not sanitize input properly before building its database query.</p>
+    <p class="hint-text">Hint: Think SQL injection through a GraphQL argument. There's a flags table with interesting columns.</p>
+    <div class="code-block">{searchUsers(name:"' UNION SELECT 1,flag_name,flag_value,'x','y' FROM flags--"){username role}}</div>
+</div>
+
+<div class="card">
+    <h3><span class="challenge-num">5</span> Batch Attack</h3>
+    <p>The API accepts batched queries (JSON array of queries in a single request). There is no rate limiting. Send a batch of more than 5 queries.</p>
+    <p class="hint-text">Hint: POST a JSON array of query objects to /graphql. Check the extensions field in the response.</p>
+    <div class="code-block">[{"query":"{health}"},{"query":"{health}"},{"query":"{health}"},{"query":"{health}"},{"query":"{health}"},{"query":"{health}"}]</div>
+</div>
+
+<div class="card">
+    <h3><span class="challenge-num">6</span> Field Suggestion Leak</h3>
+    <p>GraphQL error messages are verbose. Misspelling a field name may reveal hidden fields you shouldn't know about.</p>
+    <p class="hint-text">Hint: Try querying a misspelled field like "secretNot" or "apiKe" and read the error message carefully.</p>
+    <div class="code-block">{users{secretNot}}</div>
+</div>
+
+<hr style="border-color: rgba(0,255,242,.15); margin: 2rem 0;">
+
+<h2>GraphQL Interface</h2>
+
+<div class="card">
+    <label for="query-editor">Query</label>
+    <textarea id="query-editor">{
+  users {
+    id
+    username
+    role
+  }
+}</textarea>
+
+    <div class="toolbar">
+        <button onclick="runQuery()">Execute Query</button>
+        <button class="btn-secondary" onclick="document.getElementById('query-editor').value = '{__schema{types{name fields{name}}}}'">Introspection</button>
+        <button class="btn-secondary" onclick="document.getElementById('query-editor').value = '{posts{title content isPrivate}}'">All Posts</button>
+        <button class="btn-secondary" onclick="document.getElementById('query-editor').value = '{health}'">Health</button>
+    </div>
+
+    <label>Response</label>
+    <div id="result-output">// execute a query to see results</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runQuery() {
+    const query = document.getElementById('query-editor').value.trim();
+    const output = document.getElementById('result-output');
+    output.textContent = '// executing...';
+
+    let body;
+    try {
+        // Support raw JSON array for batch testing
+        const parsed = JSON.parse(query);
+        if (Array.isArray(parsed)) {
+            body = query;
+        } else {
+            body = JSON.stringify({query: query});
+        }
+    } catch (e) {
+        body = JSON.stringify({query: query});
+    }
+
+    try {
+        const resp = await fetch('/graphql', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: body
+        });
+        const data = await resp.json();
+        output.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+        output.textContent = '// ERROR: ' + e.message;
+    }
+}
+
+document.getElementById('query-editor').addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+        runQuery();
+    }
+});
+</script>
+{% endblock %}

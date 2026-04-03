@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}NeonPing - {% if challenge == 3 %}Filtered Ping{% else %}Ping{% endif %}{% endblock %}
+{% block content %}
+<h1>{% if challenge == 3 %}Challenge 3: Filtered Ping{% else %}Challenge 1: Ping{% endif %}</h1>
+
+{% if challenge == 3 %}
+<div class="card">
+    <p>This ping endpoint filters out <code>;</code>, <code>|</code>, <code>&amp;</code>, and backticks. Can you find another way to inject commands?</p>
+    <div class="meta">Blocked characters: <code>; | &amp; `</code></div>
+</div>
+{% else %}
+<div class="card">
+    <p>Enter a hostname or IP to ping. The input is passed directly into a system command with no filtering.</p>
+    <div class="meta">Vulnerable call: <code>os.popen(f"ping -c 1 {host}")</code></div>
+</div>
+{% endif %}
+
+<div class="card">
+    <form method="GET" action="{% if challenge == 3 %}/ping-safe{% else %}/ping{% endif %}">
+        <label for="host">Target Host</label>
+        <input type="text" id="host" name="host" value="{{ host }}" placeholder="e.g. 127.0.0.1">
+        <button type="submit">Run Ping</button>
+    </form>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if output %}
+<h2>Output</h2>
+<div class="code-block"><pre>{{ output }}</pre></div>
+{% endif %}
+{% endblock %}

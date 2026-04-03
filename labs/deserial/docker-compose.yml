@@ -1,0 +1,5 @@
+services:
+  deserial-lab:
+    build: .
+    ports:
+      - "5014:5014"

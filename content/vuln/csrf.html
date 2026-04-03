@@ -1,0 +1,163 @@
+<!-- Module 13: Cross-Site Request Forgery -->
+<section class="module-header">
+  <h1>Module 13 — Cross-Site Request Forgery (CSRF)</h1>
+  <p>Understand how attackers trick authenticated users into performing unintended actions by exploiting the browser's automatic cookie attachment behavior.</p>
+</section>
+
+<section class="theory-section">
+  <h2>How CSRF Works</h2>
+  <p>
+    When a browser makes a request to a site, it automatically attaches all cookies for that domain,
+    including session cookies. CSRF exploits this by tricking an authenticated user into submitting a
+    request to the target application from a malicious page. The server cannot distinguish the forged
+    request from a legitimate one because the session cookie is present.
+  </p>
+
+  <h3>The Attack Flow</h3>
+  <ol>
+    <li>Victim logs into <code>bank.com</code> and receives a session cookie.</li>
+    <li>Victim visits <code>evil.com</code> while still logged in.</li>
+    <li><code>evil.com</code> contains a hidden form that auto-submits a POST to <code>bank.com/transfer</code>.</li>
+    <li>The browser attaches the session cookie, and the bank processes the transfer.</li>
+  </ol>
+
+  <h3>Same-Origin Policy Gaps</h3>
+  <p>
+    The same-origin policy prevents JavaScript on <code>evil.com</code> from reading responses from
+    <code>bank.com</code>, but it does <strong>not</strong> prevent cross-origin form submissions or
+    image/script requests. The attacker does not need to read the response; the side effect (transfer,
+    password change) is the goal.
+  </p>
+
+  <h2>Vulnerable Code: No CSRF Protection</h2>
+  <pre><code class="language-python"># Flask — VULNERABLE: no CSRF token validation
+@app.route('/transfer', methods=['POST'])
+@login_required
+def transfer():
+    to_account = request.form['to']
+    amount = request.form['amount']
+    db.execute("UPDATE accounts SET balance = balance - ? WHERE user_id = ?",
+               (amount, current_user.id))
+    db.execute("UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
+               (amount, to_account))
+    db.commit()
+    return redirect('/dashboard')</code></pre>
+
+  <h2>Safe Code: Flask-WTF CSRF Protection</h2>
+  <pre><code class="language-python"># Flask — SAFE: CSRF token required
+from flask_wtf import FlaskForm, CSRFProtect
+from wtforms import StringField, DecimalField
+
+csrf = CSRFProtect(app)
+
+class TransferForm(FlaskForm):
+    to = StringField('Recipient')
+    amount = DecimalField('Amount')
+
+@app.route('/transfer', methods=['POST'])
+@login_required
+def transfer():
+    form = TransferForm()
+    if form.validate_on_submit():  # validates CSRF token automatically
+        # process transfer
+        pass
+    return redirect('/dashboard')</code></pre>
+
+  <pre><code class="language-html">&lt;!-- Template includes hidden CSRF token --&gt;
+&lt;form method="POST" action="/transfer"&gt;
+  {{ form.hidden_tag() }}
+  &lt;input name="to" placeholder="Recipient"&gt;
+  &lt;input name="amount" placeholder="Amount"&gt;
+  &lt;button type="submit"&gt;Transfer&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+  <h2>Defense Mechanisms</h2>
+
+  <h3>CSRF Tokens</h3>
+  <p>
+    A unique, unpredictable token is embedded in each form and validated on the server. Because the
+    attacker cannot read the target page (same-origin policy), they cannot obtain the token.
+  </p>
+
+  <h3>SameSite Cookies</h3>
+  <p>
+    The <code>SameSite</code> cookie attribute controls whether cookies are sent with cross-site requests:
+  </p>
+  <ul>
+    <li><strong>Strict:</strong> Cookie is never sent on cross-site requests. Strongest protection but can break legitimate flows.</li>
+    <li><strong>Lax:</strong> Cookie is sent on top-level GET navigations but not on POST or embedded requests. Default in modern browsers.</li>
+    <li><strong>None:</strong> Cookie is always sent (requires <code>Secure</code> flag). No CSRF protection.</li>
+  </ul>
+
+  <h3>Referer / Origin Header Validation</h3>
+  <p>
+    The server can check the <code>Origin</code> or <code>Referer</code> header to verify the request
+    originates from the same site. However, these headers can be stripped by privacy extensions, proxies,
+    or meta-refresh redirects, so this should not be the sole defense.
+  </p>
+
+  <h3>JSON CSRF</h3>
+  <p>
+    APIs accepting JSON bodies are sometimes assumed safe from CSRF because forms cannot natively send
+    JSON. However, if the server does not validate the <code>Content-Type</code> header, an attacker
+    can use <code>navigator.sendBeacon()</code> or <code>fetch()</code> with <code>no-cors</code> mode
+    to send form-encoded data that the server parses as JSON.
+  </p>
+
+  <div class="callout callout-danger">
+    <strong>CSRF Impact:</strong> Account takeover (password/email change), unauthorized fund transfers,
+    privilege escalation (adding admin accounts), data modification, and social engineering amplification.
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Detection Tip:</strong> Look for state-changing endpoints that accept POST/PUT/DELETE without
+    a CSRF token parameter or custom header. Check if <code>SameSite=None</code> is set on session cookies.
+  </div>
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What is the primary purpose of a CSRF token?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">Encrypt form data in transit</button>
+        <button class="quiz-opt" data-q="1" data-val="b">Prove the request originated from the application's own form</button>
+        <button class="quiz-opt" data-q="1" data-val="c">Prevent SQL injection in form fields</button>
+        <button class="quiz-opt" data-q="1" data-val="d">Authenticate the user's identity</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>Which SameSite cookie value provides the strongest CSRF protection?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">None</button>
+        <button class="quiz-opt" data-q="2" data-val="b">Lax</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Strict</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Secure</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Which HTTP methods are most commonly targeted in CSRF attacks?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">GET and HEAD because they are idempotent</button>
+        <button class="quiz-opt" data-q="3" data-val="b">POST, PUT, and DELETE because they cause state changes</button>
+        <button class="quiz-opt" data-q="3" data-val="c">OPTIONS and TRACE because they bypass CORS</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Only PATCH because it allows partial updates</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab</h2>
+  <p>Practice CSRF vulnerabilities in a real Flask application:</p>
+  <div class="code-block">cd labs/csrf && docker compose up --build<br>Visit http://localhost:5006/</div>
+  <p class="text-muted">The lab contains 5 challenges covering token bypass, SameSite cookie abuse, JSON CSRF, Referer validation flaws, and login CSRF.</p>
+</section>

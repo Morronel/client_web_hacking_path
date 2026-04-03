@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}NeonBank - Challenge 3: Referer Bypass{% endblock %}
+{% block content %}
+<h1>Challenge 3: Referer Check Bypass</h1>
+
+<div class="card">
+    <h3>Protected Transfer</h3>
+    <p style="margin-bottom:1rem;">Current user: <span style="color:var(--neon-pink);">hacker</span> | Balance: <span style="color:var(--neon-green);">{{ balance }} credits</span></p>
+    <form method="POST" action="/transfer-protected">
+        <label for="to_user">Recipient Username</label>
+        <input type="text" id="to_user" name="to_user" placeholder="e.g. admin">
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" name="amount" placeholder="100">
+        <button type="submit">Transfer</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p>The <code>/transfer-protected</code> endpoint checks the Referer header, but uses a flawed regex:</p>
+    <div class="code-block">if "localhost:5006" in referer:  # substring match!</div>
+    <p style="margin-top:.5rem;">This means any domain containing "localhost:5006" as a substring will pass.
+    For example: <code>http://evil.com/localhost:5006/page</code> or <code>http://localhost:5006.evil.com/</code></p>
+    <p style="margin-top:.5rem;">Admin balance: <span style="color:var(--neon-yellow);">{{ admin_balance }} credits</span></p>
+</div>
+
+<div class="card">
+    <h3>Submit to Admin Bot</h3>
+    <p style="margin-bottom:1rem;">Paste your malicious HTML. The bot simulates a request from a spoofed Referer.</p>
+    <form method="POST" action="/bot3">
+        <label for="html">Malicious HTML Page</label>
+        <textarea id="html" name="html" rows="8" placeholder='Include a Referer hint in your HTML...'></textarea>
+        <label for="referer">Spoofed Referer URL</label>
+        <input type="text" id="referer" name="referer" placeholder="http://evil.localhost:5006.attacker.com/">
+        <button type="submit">Send to Bot</button>
+    </form>
+</div>
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if bot_result %}
+<div class="card">
+    <h3>Bot Result</h3>
+    <p>{{ bot_result }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Recent Transfers</h3>
+    <table>
+        <tr><th>From</th><th>To</th><th>Amount</th><th>Time</th></tr>
+        {% for t in transfers %}
+        <tr>
+            <td>{{ t.from_user }}</td>
+            <td>{{ t.to_user }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

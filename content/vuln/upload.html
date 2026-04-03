@@ -1,0 +1,107 @@
+<section class="module-header">
+  <h1>Module 17 — File Upload Vulnerabilities</h1>
+  <p>Understand how insecure file upload handling leads to remote code execution and system compromise.</p>
+</section>
+
+<section class="theory-section">
+  <h2>Why File Uploads Are Dangerous</h2>
+  <p>File upload features allow users to submit arbitrary data to the server. Without proper validation, attackers can upload executable code (webshells, scripts) that the server then runs, granting full control.</p>
+
+  <h2>Common Validation Techniques &amp; Bypasses</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Validation</th><th>How It Works</th><th>Bypass</th></tr></thead>
+      <tbody>
+        <tr><td>Extension blocklist</td><td>Blocks <code>.php</code>, <code>.py</code>, etc.</td><td>Use <code>.pHp</code>, <code>.py3</code>, <code>.phtml</code>, double ext <code>.jpg.php</code></td></tr>
+        <tr><td>Content-Type check</td><td>Checks <code>Content-Type</code> header</td><td>Client controls this header — set to <code>image/png</code></td></tr>
+        <tr><td>Magic bytes</td><td>Checks first N bytes for file signatures</td><td>Prepend <code>\x89PNG\r\n\x1a\n</code> before malicious code</td></tr>
+        <tr><td>File size limit</td><td>Rejects files over N bytes</td><td>Craft minimal payload (e.g., one-liner webshell)</td></tr>
+        <tr><td>Extension allowlist</td><td>Only allows <code>.jpg</code>, <code>.png</code>, etc.</td><td>Harder to bypass — look for execution vectors like SVG or polyglots</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="text-red">Vulnerable Code</h3>
+  <pre><code class="language-python">@app.route('/upload', methods=['POST'])
+def upload():
+    f = request.files['file']
+    # DANGEROUS: no validation at all
+    f.save(os.path.join('uploads', f.filename))
+    return 'Uploaded!'</code></pre>
+
+  <h3 class="text-green">Safe Code</h3>
+  <pre><code class="language-python">import uuid, magic
+
+ALLOWED_TYPES = {'image/jpeg', 'image/png', 'image/gif'}
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    f = request.files['file']
+    # Validate MIME type from file content (not header)
+    mime = magic.from_buffer(f.read(2048), mime=True)
+    f.seek(0)
+    if mime not in ALLOWED_TYPES:
+        abort(400, 'Invalid file type')
+    # Generate safe filename
+    ext = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif'}[mime]
+    safe_name = f'{uuid.uuid4()}{ext}'
+    f.save(os.path.join('/var/uploads', safe_name))
+    return 'Uploaded!'</code></pre>
+
+  <h2>Common Magic Bytes</h2>
+  <pre><code class="language-text">PNG:  \x89\x50\x4E\x47\x0D\x0A\x1A\x0A
+JPEG: \xFF\xD8\xFF\xE0
+GIF:  GIF87a or GIF89a
+PDF:  %PDF-</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>Impact:</strong> Unrestricted file upload can lead to remote code execution (RCE), webshell deployment, server takeover, defacement, and data exfiltration. It's consistently ranked in the OWASP Top 10.
+  </div>
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What are magic bytes used for in file upload validation?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">Identifying the actual file type by its binary signature, regardless of extension</button>
+        <button class="quiz-opt" data-q="1" data-val="b">Encrypting the uploaded file</button>
+        <button class="quiz-opt" data-q="1" data-val="c">Compressing the file for storage</button>
+        <button class="quiz-opt" data-q="1" data-val="d">Setting file permissions on disk</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>How can an extension blocklist be bypassed?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">By changing the file's Content-Type header</button>
+        <button class="quiz-opt" data-q="2" data-val="b">By encrypting the file</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Using alternate extensions (<code>.py3</code>), case variations (<code>.Py</code>), or double extensions (<code>.jpg.py</code>)</button>
+        <button class="quiz-opt" data-q="2" data-val="d">By sending the file in chunks</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>What is the safest approach to handle file uploads?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Only check the file extension</button>
+        <button class="quiz-opt" data-q="3" data-val="b">Validate content type from file bytes, generate a random filename, and store outside the webroot</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Rely on the Content-Type header from the browser</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Block all uploads over 1MB</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonGallery</h2>
+  <p>Practice file upload exploits in an image gallery with 5 challenges:</p>
+  <div class="code-block">cd labs/upload && docker compose up --build<br>Visit http://localhost:5010/</div>
+  <p class="text-muted">Challenges cover unrestricted upload, extension bypass, Content-Type spoofing, magic byte prepending, and size limit evasion.</p>
+</section>

@@ -1,0 +1,5 @@
+services:
+  csrf-lab:
+    build: .
+    ports:
+      - "5006:5006"

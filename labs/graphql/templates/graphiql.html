@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}NeonGraph - GraphQL IDE{% endblock %}
+
+{% block content %}
+<h1>GraphQL IDE</h1>
+
+<div class="card">
+    <label for="query-editor">Query</label>
+    <textarea id="query-editor">{
+  __schema {
+    types {
+      name
+      fields {
+        name
+      }
+    }
+  }
+}</textarea>
+
+    <div class="toolbar">
+        <button onclick="runQuery()">Execute Query</button>
+        <button class="btn-secondary" onclick="prettifyResult()">Prettify</button>
+    </div>
+
+    <label>Response</label>
+    <div id="result-output">// results appear here</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runQuery() {
+    const query = document.getElementById('query-editor').value;
+    const output = document.getElementById('result-output');
+    output.textContent = '// executing...';
+    try {
+        const resp = await fetch('/graphql', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: query})
+        });
+        const data = await resp.json();
+        output.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+        output.textContent = '// ERROR: ' + e.message;
+    }
+}
+
+function prettifyResult() {
+    const output = document.getElementById('result-output');
+    try {
+        const parsed = JSON.parse(output.textContent);
+        output.textContent = JSON.stringify(parsed, null, 2);
+    } catch (e) {}
+}
+
+document.getElementById('query-editor').addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+        runQuery();
+    }
+});
+</script>
+{% endblock %}

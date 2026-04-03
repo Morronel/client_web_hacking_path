@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}NeonPanel - Export Data{% endblock %}
+{% block content %}
+<h1>Export All Data</h1>
+
+{% if user %}
+<div class="user-info">
+    Logged in as: <strong style="color: var(--neon-cyan);">{{ user['username'] }}</strong>
+</div>
+{% endif %}
+
+{% if message %}
+<div class="alert alert-success">{{ message }}</div>
+{% endif %}
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if export_data %}
+<div class="card">
+    <h3>Exported Data</h3>
+    <div class="code-block">
+        <pre>{% for row in export_data %}
+ID: {{ row.id }} | User: {{ row.username }} | Role: {{ row.role }} | Credits: {{ row.credits }} | Deleted: {{ row.deleted }}
+{% endfor %}</pre>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Export Control</h3>
+    <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        Export all user data from the system. This includes sensitive information such as roles and credit balances.
+    </p>
+    <form method="POST" action="/export-data">
+        <button type="submit">Export All Data</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p style="color: var(--text-muted);">
+        This page is frameable. An attacker can overlay the export button with a transparent iframe,
+        causing the victim to unknowingly trigger a data export. The exported data can then be
+        exfiltrated from the page.
+    </p>
+</div>
+{% endblock %}

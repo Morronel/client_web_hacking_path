@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}NeonBank - Challenge 2: JSON CSRF{% endblock %}
+{% block content %}
+<h1>Challenge 2: JSON API CSRF</h1>
+
+<div class="card">
+    <h3>Account Settings</h3>
+    <p style="margin-bottom:1rem;">Current user: <span style="color:var(--neon-pink);">hacker</span> | Email: <span style="color:var(--neon-green);">{{ email }}</span></p>
+    <form id="settings-form">
+        <label for="email">New Email Address</label>
+        <input type="text" id="email" name="email" placeholder="hacker@neonbank.net">
+        <button type="submit">Update Email</button>
+    </form>
+    <script>
+    document.getElementById('settings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email: document.getElementById('email').value})
+        }).then(r => r.json()).then(d => {
+            alert(d.message || d.error);
+            location.reload();
+        });
+    });
+    </script>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p>The <code>/api/settings</code> endpoint accepts JSON but also <code>Content-Type: text/plain</code>,
+    which means a cross-origin form can send JSON-like bodies without triggering a CORS preflight.</p>
+    <div class="code-block">
+POST /api/settings HTTP/1.1
+Content-Type: text/plain
+
+{"email": "hacker@evil.com"}
+    </div>
+    <p style="margin-top:.5rem;">Admin's current email: <span style="color:var(--neon-yellow);">{{ admin_email }}</span></p>
+</div>
+
+<div class="card">
+    <h3>Submit to Admin Bot</h3>
+    <p style="margin-bottom:1rem;">Paste your malicious HTML below. The bot will visit it as the admin user.</p>
+    <form method="POST" action="/bot2">
+        <label for="html">Malicious HTML Page</label>
+        <textarea id="html" name="html" rows="8" placeholder='<form action="http://localhost:5006/api/settings" method="POST" enctype="text/plain">...'></textarea>
+        <button type="submit">Send to Bot</button>
+    </form>
+</div>
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if bot_result %}
+<div class="card">
+    <h3>Bot Result</h3>
+    <p>{{ bot_result }}</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}NeonPanel - Credit Transfer{% endblock %}
+{% block content %}
+<h1>Credit Transfer</h1>
+
+{% if user %}
+<div class="user-info">
+    Your balance: <strong style="color: var(--neon-green);">{{ user['credits'] }} credits</strong>
+</div>
+{% endif %}
+
+{% if message %}
+<div class="alert alert-success">{{ message }}</div>
+{% endif %}
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <h3>Send Credits</h3>
+    <form method="POST" action="/transfer">
+        <label for="to">Recipient Username</label>
+        <input type="text" id="to" name="to" placeholder="e.g. admin" required>
+
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" name="amount" min="1" placeholder="100" required>
+
+        <button type="submit">Transfer Credits</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p style="color: var(--text-muted);">
+        This form page is frameable. An attacker can overlay a transparent iframe with pre-filled form values,
+        tricking the victim into submitting a transfer to the attacker's account.
+    </p>
+</div>
+{% endblock %}

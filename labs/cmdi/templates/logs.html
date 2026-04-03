@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}NeonPing - Command Logs{% endblock %}
+{% block content %}
+<h1>Command Log</h1>
+
+<div class="card">
+    <p>Recent commands executed through NeonPing. This log is for educational purposes to help you understand what commands are being run.</p>
+</div>
+
+{% if logs %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Timestamp</th>
+            <th>Endpoint</th>
+            <th>Input</th>
+            <th>Command</th>
+            <th>Output</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in logs %}
+        <tr>
+            <td>{{ row['id'] }}</td>
+            <td>{{ row['timestamp'][:19] }}</td>
+            <td>{{ row['endpoint'] }}</td>
+            <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">{{ row['user_input'][:80] }}</td>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{ row['command'][:100] }}</td>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{ (row['output'] or '')[:100] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-error">No commands logged yet.</div>
+{% endif %}
+{% endblock %}

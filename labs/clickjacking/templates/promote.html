@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}NeonPanel - Promote User{% endblock %}
+{% block content %}
+<h1>Privilege Escalation</h1>
+
+{% if user %}
+<div class="user-info">
+    Current role: <strong style="color: var(--neon-pink);">{{ user['role'] }}</strong>
+</div>
+{% endif %}
+
+{% if message %}
+<div class="alert alert-success">{{ message }}</div>
+{% endif %}
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if step == '1' %}
+<div class="card">
+    <h3>Step 1: Request Promotion</h3>
+    <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        Request promotion to admin role. This requires a two-step confirmation process.
+    </p>
+    <form method="POST" action="/admin/promote">
+        <input type="hidden" name="step" value="1">
+        <button type="submit">Confirm &mdash; Request Promotion</button>
+    </form>
+</div>
+{% elif step == '2' %}
+<div class="card">
+    <h3>Step 2: Final Confirmation</h3>
+    <p style="color: var(--danger); margin-bottom: 1rem;">
+        Are you absolutely sure? This will grant admin privileges to the operator account.
+    </p>
+    <form method="POST" action="/admin/promote">
+        <input type="hidden" name="step" value="2">
+        <button type="submit" class="btn btn-danger">Final Confirm &mdash; Promote to Admin</button>
+    </form>
+</div>
+{% elif step == 'done' %}
+<div class="card">
+    <h3>Promotion Complete</h3>
+    <p style="color: var(--neon-green);">The operator account has been promoted to admin.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p style="color: var(--text-muted);">
+        Both confirmation steps are frameable. An attacker can guide the victim through both steps
+        using two sequential clickjacking overlays, achieving multi-step clickjacking.
+    </p>
+</div>
+{% endblock %}

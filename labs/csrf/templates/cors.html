@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}NeonBank - Challenge 5: CORS Misconfiguration{% endblock %}
+{% block content %}
+<h1>Challenge 5: CORS Misconfiguration</h1>
+
+<div class="card">
+    <h3>API Transfer</h3>
+    <p style="margin-bottom:1rem;">Current user: <span style="color:var(--neon-pink);">hacker</span> | Balance: <span style="color:var(--neon-green);">{{ balance }} credits</span></p>
+    <form id="api-transfer-form">
+        <label for="to_user">Recipient Username</label>
+        <input type="text" id="to_user" name="to_user" placeholder="e.g. admin">
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" name="amount" placeholder="100">
+        <button type="submit">Transfer via API</button>
+    </form>
+    <script>
+    document.getElementById('api-transfer-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        fetch('/api/transfer', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                to_user: document.getElementById('to_user').value,
+                amount: parseInt(document.getElementById('amount').value)
+            })
+        }).then(r => r.json()).then(d => {
+            alert(d.message || d.error);
+            location.reload();
+        });
+    });
+    </script>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p>The <code>/api/transfer</code> endpoint has misconfigured CORS headers:</p>
+    <div class="code-block">
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+    </div>
+    <p style="margin-top:.5rem;">Browsers ignore credentials when origin is *, BUT the endpoint also accepts
+    <code>Content-Type: text/plain</code> which doesn't trigger a CORS preflight.
+    This means a simple cross-origin form POST can transfer funds without any CSRF token.</p>
+    <p style="margin-top:.5rem;">Admin balance: <span style="color:var(--neon-yellow);">{{ admin_balance }} credits</span></p>
+</div>
+
+<div class="card">
+    <h3>Submit to Admin Bot</h3>
+    <p style="margin-bottom:1rem;">Paste your malicious HTML. The bot will execute it as admin.</p>
+    <form method="POST" action="/bot5">
+        <label for="html">Malicious HTML Page</label>
+        <textarea id="html" name="html" rows="8" placeholder='<form action="http://localhost:5006/api/transfer" method="POST" enctype="text/plain">...'></textarea>
+        <button type="submit">Send to Bot</button>
+    </form>
+</div>
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if bot_result %}
+<div class="card">
+    <h3>Bot Result</h3>
+    <p>{{ bot_result }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Recent Transfers</h3>
+    <table>
+        <tr><th>From</th><th>To</th><th>Amount</th><th>Time</th></tr>
+        {% for t in transfers %}
+        <tr>
+            <td>{{ t.from_user }}</td>
+            <td>{{ t.to_user }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

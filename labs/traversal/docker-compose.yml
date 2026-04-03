@@ -1,0 +1,5 @@
+services:
+  traversal-lab:
+    build: .
+    ports:
+      - "5009:5009"

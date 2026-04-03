@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}NeonDocs - Path Traversal Lab{% endblock %}
+{% block content %}
+<h1>Path Traversal Lab</h1>
+<p class="mb-1" style="color: var(--text-muted);">
+    MegaCorp's document viewer has several endpoints for accessing files.
+    Each one has a different "security" mechanism. Your mission: break them all
+    and recover the hidden flags from the restricted sectors.
+</p>
+
+<h2 class="mt-2">Challenge 1 &mdash; Basic Traversal</h2>
+<div class="card">
+    <h3>File Viewer</h3>
+    <p>The <code>/view</code> endpoint reads files from the public documents folder.
+       No filtering is applied to user input.</p>
+    <div class="code-block">GET /view?file=readme.txt</div>
+    <p>Target: <code>/app/secret/flag.txt</code></p>
+    <a href="/view?file=readme.txt" class="btn">Open Viewer</a>
+</div>
+
+<h2>Challenge 2 &mdash; Null Byte Bypass</h2>
+<div class="card">
+    <h3>Safe Viewer</h3>
+    <p>The <code>/view-safe</code> endpoint forces a <code>.txt</code> extension on all
+       requests. But legacy null-byte handling might let you truncate the path.</p>
+    <div class="code-block">GET /view-safe?file=readme</div>
+    <p>Target: <code>/app/secret/flag2.txt</code></p>
+    <a href="/view-safe?file=readme" class="btn">Open Safe Viewer</a>
+</div>
+
+<h2>Challenge 3 &mdash; Filter Bypass</h2>
+<div class="card">
+    <h3>Filtered Viewer</h3>
+    <p>The <code>/view-filtered</code> endpoint strips <code>../</code> from the input.
+       But the filter only runs once&mdash;can you sneak past it?</p>
+    <div class="code-block">GET /view-filtered?file=readme.txt</div>
+    <p>Target: <code>/app/secret/flag3.txt</code></p>
+    <a href="/view-filtered?file=readme.txt" class="btn">Open Filtered Viewer</a>
+</div>
+
+<h2>Challenge 4 &mdash; Encoding Evasion</h2>
+<div class="card">
+    <h3>Download Endpoint</h3>
+    <p>The <code>/download</code> endpoint blocks <code>..</code> and <code>/etc</code>
+       in the raw request. But it URL-decodes the path <em>after</em> the security check.</p>
+    <div class="code-block">GET /download?path=readme.txt</div>
+    <p>Target: <code>/app/secret/flag4.txt</code></p>
+    <a href="/download?path=readme.txt" class="btn">Open Download</a>
+</div>
+
+<h2>Challenge 5 &mdash; Whitelist Bypass</h2>
+<div class="card">
+    <h3>Document API</h3>
+    <p>The <code>/api/doc</code> endpoint uses a whitelist: only <code>readme.txt</code>,
+       <code>report.txt</code>, and <code>manual.txt</code> are allowed. But the check
+       only verifies the filename <em>ends with</em> an approved name.</p>
+    <div class="code-block">GET /api/doc?name=readme.txt</div>
+    <p>Target: <code>/app/secret/flag5/readme.txt</code></p>
+    <a href="/api/doc?name=readme.txt" class="btn">Open API</a>
+</div>
+
+<div class="text-center mt-2">
+    <a href="/hints" class="btn">View Hints</a>
+</div>
+{% endblock %}

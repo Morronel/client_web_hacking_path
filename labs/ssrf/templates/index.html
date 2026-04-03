@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}NeonFetch &mdash; SSRF Lab{% endblock %}
+{% block content %}
+<h1>// NeonFetch</h1>
+<p>Server-Side Request Forgery (SSRF) training lab. Exploit the URL fetcher to reach internal services.</p>
+
+<div class="card">
+    <h3>Ch1: Basic Fetch</h3>
+    <span class="category">No Filter</span>
+    <p>Unrestricted URL fetcher. Make the server request internal endpoints.</p>
+    <p class="meta">Target: <code>/internal/metadata</code></p>
+    <a class="btn mt-2" href="/fetch?url=">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Ch2: Blind Webhook</h3>
+    <span class="category">Blind SSRF</span>
+    <p>The server fetches your URL but does not return the response. Check the logs for evidence.</p>
+    <p class="meta">Target: <code>/internal/admin-api</code> &bull; Check <a href="/check-log">fetch log</a></p>
+    <a class="btn mt-2" href="/webhook">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Ch3: Filtered Fetch</h3>
+    <span class="category">Filter Bypass</span>
+    <p>Blocks <code>127.0.0.1</code> and <code>localhost</code>. Find alternative representations.</p>
+    <p class="meta">Target: <code>/internal/flag</code></p>
+    <a class="btn mt-2" href="/fetch-safe?url=">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Ch4: Proxy</h3>
+    <span class="category">Protocol Smuggling</span>
+    <p>Claims to allow only HTTP/HTTPS. Can you sneak in another protocol?</p>
+    <p class="meta">Target: <code>/app/flag.txt</code> on disk</p>
+    <a class="btn mt-2" href="/proxy?url=">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Ch5: Redirect Fetch</h3>
+    <span class="category">Redirect Bypass</span>
+    <p>Blocks localhost in the initial URL but follows HTTP redirects blindly.</p>
+    <p class="meta">Target: <code>/internal/db-backup</code></p>
+    <a class="btn mt-2" href="/fetch-redirect">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Ch6: DNS-Checked Fetch</h3>
+    <span class="category">DNS Rebinding / TOCTOU</span>
+    <p>Resolves the hostname and blocks 127.0.0.0/8 &mdash; but the check and fetch are separate steps.</p>
+    <p class="meta">Target: <code>/internal/metadata</code></p>
+    <a class="btn mt-2" href="/fetch-dns?url=">Launch</a>
+</div>
+{% endblock %}

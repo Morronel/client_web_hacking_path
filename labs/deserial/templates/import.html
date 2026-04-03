@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}NeonCache — Object Import{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2>04 // Custom Deserializer</h2>
+    <p>Import objects from JSON. The deserializer supports a special <code>__class__</code> field for reconstructing Python objects.</p>
+
+    <div class="hint-box">
+        When <code>__class__</code> is present, the server calls <code>eval(cls)(*args)</code> and optionally
+        invokes a <code>method</code> on the result. Think about what built-in callables could be useful...
+    </div>
+
+    <form method="POST" action="/import-data">
+        <div class="form-group">
+            <label>JSON Object</label>
+            <textarea name="data" rows="6" placeholder='{"key": "value"}'>{
+  "name": "cache_node",
+  "status": "active"
+}</textarea>
+        </div>
+        <button type="submit" class="btn">Import Object</button>
+    </form>
+
+    {% if result %}
+    <div class="output-box">
+        <h3>&gt; Import Result</h3>
+        <pre class="result-pre">{{ result }}</pre>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

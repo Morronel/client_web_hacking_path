@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}NeonFetch &mdash; Fetch Log{% endblock %}
+{% block content %}
+<h1>Fetch Log</h1>
+<p>Server-side fetch history (most recent first).</p>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>URL</th>
+                <th>Status</th>
+                <th>Resp Length</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row['id'] }}</td>
+                <td style="word-break:break-all;">{{ row['url'] }}</td>
+                <td>{{ row['status_code'] }}</td>
+                <td>{{ row['response_length'] }}</td>
+                <td>{{ row['timestamp'] }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center" style="color:var(--text-muted);">No entries yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

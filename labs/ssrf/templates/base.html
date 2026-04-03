@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NeonFetch{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="brand">// NeonFetch</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/fetch?url=">Ch1: Fetch</a>
+            <a href="/webhook">Ch2: Webhook</a>
+            <a href="/fetch-safe?url=">Ch3: Filtered</a>
+            <a href="/proxy?url=">Ch4: Proxy</a>
+            <a href="/fetch-redirect">Ch5: Redirect</a>
+            <a href="/fetch-dns?url=">Ch6: DNS</a>
+            <a href="/check-log">Logs</a>
+            <a href="/hints">Hints</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>NeonFetch &mdash; Educational SSRF Lab &mdash; Port 5008</footer>
+</body>
+</html>

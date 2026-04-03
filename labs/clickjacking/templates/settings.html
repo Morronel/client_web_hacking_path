@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}NeonPanel - Account Settings{% endblock %}
+{% block content %}
+<h1>Account Settings</h1>
+
+{% if user %}
+<div class="card">
+    <h3>User Profile</h3>
+    <p><strong>Username:</strong> {{ user['username'] }}</p>
+    <p><strong>Role:</strong> {{ user['role'] }}</p>
+    <p><strong>Credits:</strong> {{ user['credits'] }}</p>
+    <p><strong>Status:</strong> {% if user['deleted'] %}<span style="color: var(--danger);">Deleted</span>{% else %}<span style="color: var(--neon-green);">Active</span>{% endif %}</p>
+</div>
+{% endif %}
+
+{% if message %}
+<div class="alert alert-success">{{ message }}</div>
+{% endif %}
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <h3>Danger Zone</h3>
+    <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        Permanently delete your account. This action cannot be undone.
+    </p>
+    <form method="POST" action="/settings/delete">
+        <button type="submit" class="btn btn-danger">Delete Account</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p style="color: var(--text-muted);">
+        This page does not send <code>X-Frame-Options</code> or <code>Content-Security-Policy: frame-ancestors</code> headers.
+        An attacker can embed this page in a transparent iframe and trick the victim into clicking the delete button.
+    </p>
+</div>
+{% endblock %}

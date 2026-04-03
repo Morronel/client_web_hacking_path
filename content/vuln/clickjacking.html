@@ -1,0 +1,146 @@
+<!-- Module 14: Clickjacking -->
+<section class="module-header">
+  <h1>Module 14 — Clickjacking</h1>
+  <p>Learn how UI redress attacks trick users into clicking hidden elements by layering transparent iframes over decoy pages.</p>
+</section>
+
+<section class="theory-section">
+  <h2>What is Clickjacking?</h2>
+  <p>
+    Clickjacking (UI redress) is an attack where a malicious page embeds a target application in a
+    transparent or obscured <code>&lt;iframe&gt;</code>. The attacker positions the iframe so that when
+    the victim clicks on what appears to be a harmless element (a button, a game), they are actually
+    clicking on a sensitive control in the hidden target page — such as "Delete Account" or "Transfer Funds."
+  </p>
+
+  <h3>Attack Technique</h3>
+  <pre><code class="language-html">&lt;!-- Attacker's page: invisible iframe over a decoy button --&gt;
+&lt;style&gt;
+  iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 500px; height: 300px;
+    opacity: 0.0001;  /* nearly invisible */
+    z-index: 10;
+  }
+  .decoy-btn {
+    position: absolute;
+    top: 120px; left: 50px;
+    z-index: 1;
+  }
+&lt;/style&gt;
+&lt;div class="decoy-btn"&gt;Click here to win a prize!&lt;/div&gt;
+&lt;iframe src="https://bank.com/settings?action=delete"&gt;&lt;/iframe&gt;</code></pre>
+
+  <p>
+    The victim sees only the "win a prize" button but their click lands on the iframe, triggering the
+    delete action on <code>bank.com</code> where they are already authenticated.
+  </p>
+
+  <h2>Vulnerable Code: No Frame Protection</h2>
+  <pre><code class="language-python"># Flask — VULNERABLE: no framing protection headers
+@app.route('/settings')
+@login_required
+def settings():
+    return render_template('settings.html')</code></pre>
+
+  <h2>Safe Code: Frame Protection Headers</h2>
+  <pre><code class="language-python"># Flask — SAFE: X-Frame-Options and CSP frame-ancestors
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Content-Security-Policy'] = "frame-ancestors 'none'"
+    return response</code></pre>
+
+  <h2>Defense Mechanisms</h2>
+
+  <h3>X-Frame-Options Header</h3>
+  <p>This response header controls whether the page can be embedded in frames:</p>
+  <ul>
+    <li><strong>DENY:</strong> Page cannot be displayed in any frame.</li>
+    <li><strong>SAMEORIGIN:</strong> Page can only be framed by pages on the same origin.</li>
+    <li><strong>ALLOW-FROM uri:</strong> Deprecated; only supported by older browsers.</li>
+  </ul>
+
+  <h3>CSP frame-ancestors</h3>
+  <p>
+    The <code>frame-ancestors</code> directive in Content-Security-Policy supersedes X-Frame-Options
+    and provides more granular control:
+  </p>
+  <pre><code class="language-http">Content-Security-Policy: frame-ancestors 'self' https://trusted-partner.com</code></pre>
+  <p>
+    Unlike X-Frame-Options, <code>frame-ancestors</code> supports multiple origins and wildcards.
+  </p>
+
+  <h3>JavaScript Frame-Busting (and Its Limitations)</h3>
+  <pre><code class="language-javascript">// Classic frame-busting script
+if (top !== self) {
+    top.location = self.location;
+}</code></pre>
+  <p>
+    Frame-busting scripts attempt to break out of iframes, but they can be bypassed in several ways:
+  </p>
+  <ul>
+    <li><strong>sandbox attribute:</strong> <code>&lt;iframe sandbox="allow-forms"&gt;</code> blocks scripts from navigating the parent.</li>
+    <li><strong>Double framing:</strong> Nesting frames can confuse <code>top !== self</code> checks.</li>
+    <li><strong>onbeforeunload:</strong> The attacker can cancel the navigation attempt.</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Do not rely on JavaScript alone.</strong> Frame-busting scripts are easily defeated.
+    Always use server-side headers (X-Frame-Options and CSP frame-ancestors) as the primary defense.
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>Clickjacking Impact:</strong> One-click account deletion, unauthorized purchases, enabling
+    webcam/microphone (via permission dialogs), changing security settings, liking/sharing content on
+    social media, and downloading malware.
+  </div>
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>Which X-Frame-Options value completely prevents a page from being embedded in any iframe?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">SAMEORIGIN</button>
+        <button class="quiz-opt" data-q="1" data-val="b">DENY</button>
+        <button class="quiz-opt" data-q="1" data-val="c">ALLOW-FROM *</button>
+        <button class="quiz-opt" data-q="1" data-val="d">NONE</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>What advantage does CSP frame-ancestors have over X-Frame-Options?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">It works in older browsers that do not support CSP</button>
+        <button class="quiz-opt" data-q="2" data-val="b">It supports multiple allowed origins and wildcard patterns</button>
+        <button class="quiz-opt" data-q="2" data-val="c">It automatically adds frame-busting JavaScript</button>
+        <button class="quiz-opt" data-q="2" data-val="d">It encrypts the iframe content</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>How can an attacker bypass JavaScript frame-busting code?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">By setting the iframe's sandbox attribute to restrict script navigation</button>
+        <button class="quiz-opt" data-q="3" data-val="b">By sending a CSRF token with the iframe request</button>
+        <button class="quiz-opt" data-q="3" data-val="c">By using HTTPS instead of HTTP</button>
+        <button class="quiz-opt" data-q="3" data-val="d">By adding X-Frame-Options: ALLOW-FROM to the request</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab</h2>
+  <p>Practice clickjacking techniques against a real Flask application:</p>
+  <div class="code-block">cd labs/clickjacking && docker compose up --build<br>Visit http://localhost:5007/</div>
+  <p class="text-muted">The lab contains 5 challenges covering basic iframe overlay, opacity manipulation, drag-and-drop hijacking, multi-step clickjacking, and frame-busting bypass.</p>
+</section>

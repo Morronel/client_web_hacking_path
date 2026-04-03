@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}NeonCache — Deserialization Lab{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2>// NeonCache &mdash; Session &amp; Object Caching Service</h2>
+    <p>Welcome to NeonCache, a high-performance serialization layer for the neon grid.
+       Objects flow in, objects flow out &mdash; but can you corrupt the stream?</p>
+    <p class="dim-text">5 deserialization challenges. Exploit pickle, YAML, and custom deserializers to capture each flag.</p>
+</div>
+
+<div class="challenge-grid">
+    <a href="/challenge1" class="challenge-card">
+        <h3>01 // Pickle Load</h3>
+        <p>The cache endpoint blindly unpickles user-supplied base64 data. Craft a malicious pickle to execute arbitrary code.</p>
+        <span class="difficulty medium">Medium</span>
+    </a>
+
+    <a href="/login" class="challenge-card">
+        <h3>02 // Cookie Forgery</h3>
+        <p>Session cookies are signed pickled objects. The HMAC key is weak. Forge an admin cookie to access the restricted dashboard.</p>
+        <span class="difficulty medium">Medium</span>
+    </a>
+
+    <a href="/challenge3" class="challenge-card">
+        <h3>03 // YAML Object Injection</h3>
+        <p>The restore endpoint uses unsafe YAML loading. Inject Python objects through YAML tags to read protected files.</p>
+        <span class="difficulty medium">Medium</span>
+    </a>
+
+    <a href="/challenge4" class="challenge-card">
+        <h3>04 // Custom Deserializer</h3>
+        <p>A custom JSON-to-object deserializer uses eval() to instantiate classes. Abuse the __class__ field to read files.</p>
+        <span class="difficulty easy">Easy</span>
+    </a>
+
+    <a href="/export?format=pickle" class="challenge-card">
+        <h3>05 // Pickle Tamper</h3>
+        <p>Export your profile as a pickle, modify the serialized values, and reimport to escalate your privileges.</p>
+        <span class="difficulty easy">Easy</span>
+    </a>
+</div>
+{% endblock %}

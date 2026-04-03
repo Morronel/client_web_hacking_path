@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}NeonCache — Dashboard{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2>02 // Cookie Forgery &mdash; Dashboard</h2>
+
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    <a href="/login" class="btn" style="margin-top: 1rem;">Login</a>
+    {% else %}
+    <p>Session loaded from cookie:</p>
+    <div class="session-info" style="margin: 1rem 0;">
+        <span class="label">USERNAME:</span>
+        <span class="value">{{ username }}</span>
+        <span class="label">ROLE:</span>
+        <span class="value">{{ role }}</span>
+    </div>
+
+    {% if flag %}
+    <div class="flag-box">
+        <div class="flag-label">Admin Access Granted</div>
+        <div class="flag-value">{{ flag }}</div>
+    </div>
+    {% else %}
+    <div class="hint-box">
+        <strong>Access Denied:</strong> Admin role required to view the flag.
+        Your current role is <code>{{ role }}</code>.
+        <br><br>
+        The cookie is <code>base64(pickle).hmac_hex</code> signed with a weak key.
+        Can you forge an admin session?
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

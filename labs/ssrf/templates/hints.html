@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}NeonFetch &mdash; Hints{% endblock %}
+{% block content %}
+<h1>Hints</h1>
+
+<div class="card">
+    <h3>Ch1: Basic Fetch</h3>
+    <span class="category">No Filter</span>
+    <p>The <code>/fetch?url=</code> endpoint passes your URL directly to <code>urllib.request.urlopen()</code> with zero filtering. The server can reach its own internal endpoints on <code>127.0.0.1:5008</code>.</p>
+    <p class="meta">Try: <code>/fetch?url=http://127.0.0.1:5008/internal/metadata</code></p>
+</div>
+
+<div class="card">
+    <h3>Ch2: Blind Webhook</h3>
+    <span class="category">Blind SSRF</span>
+    <p>The <code>/webhook</code> endpoint fetches your URL server-side but never shows the response body. It does, however, log the status code and response length to a database. Use <code>/check-log</code> to see if internal endpoints responded successfully.</p>
+    <p class="meta">A successful fetch to an internal endpoint (status 200, non-zero length) confirms SSRF.</p>
+</div>
+
+<div class="card">
+    <h3>Ch3: Filtered Fetch</h3>
+    <span class="category">Filter Bypass</span>
+    <p>The filter blocks the strings <code>127.0.0.1</code> and <code>localhost</code> (case-insensitive). But there are many ways to represent the loopback address:</p>
+    <ul style="margin:.5rem 0 0 1.5rem; color:var(--neon-green);">
+        <li>Decimal: <code>2130706433</code></li>
+        <li>Hex: <code>0x7f000001</code></li>
+        <li>IPv6: <code>[::1]</code></li>
+        <li>Octal: <code>017700000001</code></li>
+        <li>Zero: <code>0.0.0.0</code></li>
+    </ul>
+</div>
+
+<div class="card">
+    <h3>Ch4: Proxy</h3>
+    <span class="category">Protocol Smuggling</span>
+    <p>The proxy claims to allow only HTTP/HTTPS but only checks the first 4 characters of the URL. Python's <code>urllib</code> supports <code>file://</code> URIs. A flag file lives at <code>/app/flag.txt</code>.</p>
+    <p class="meta">Try: <code>/proxy?url=file:///app/flag.txt</code></p>
+</div>
+
+<div class="card">
+    <h3>Ch5: Redirect Fetch</h3>
+    <span class="category">Redirect Bypass</span>
+    <p>The endpoint blocks localhost in the <em>initial</em> URL but follows HTTP 302 redirects. The app has a <code>/redirect-to?url=</code> helper. Host a redirect or use a service that 302s to the internal target.</p>
+    <p class="meta">Chain: external URL &rarr; 302 &rarr; <code>http://127.0.0.1:5008/internal/db-backup</code></p>
+</div>
+
+<div class="card">
+    <h3>Ch6: DNS-Checked Fetch</h3>
+    <span class="category">DNS Rebinding / TOCTOU</span>
+    <p>The server resolves the hostname and blocks if it falls in <code>127.0.0.0/8</code>. But the check and the actual fetch are two separate DNS lookups (TOCTOU). Also, <code>0.0.0.0</code> does not match <code>127.x.x.x</code> but still reaches the local machine on many systems.</p>
+    <p class="meta">Try <code>http://0.0.0.0:5008/internal/metadata</code> &mdash; it resolves to <code>0.0.0.0</code>, not <code>127.*</code>.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NeonDocs{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="brand">// NeonDocs</div>
+        <div class="nav-links">
+            <a href="/">Challenges</a>
+            <a href="/hints">Hints</a>
+            <a href="/view?file=readme.txt">Viewer</a>
+            <a href="/download?path=readme.txt">Download</a>
+            <a href="/api/doc?name=readme.txt">API</a>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <footer>
+        NeonDocs v3.7 &mdash; MegaCorp Internal Document Portal &mdash; Port 5009
+    </footer>
+</body>
+</html>

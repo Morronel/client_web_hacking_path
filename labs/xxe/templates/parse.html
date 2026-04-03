@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}NeonParser — Basic XXE{% endblock %}
+{% block content %}
+<h1>Challenge 1 &mdash; Basic XXE</h1>
+<p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+    Submit raw XML to the parser. The server resolves entities and returns the text content.
+</p>
+
+<div class="card">
+    <h3>Hint</h3>
+    <div class="code-block">&lt;!DOCTYPE foo [&lt;!ENTITY xxe SYSTEM "file:///etc/hostname"&gt;]&gt;
+&lt;data&gt;&amp;xxe;&lt;/data&gt;</div>
+    <p style="color: var(--text-muted); font-size: .85rem;">Target: <code>/app/flag.txt</code></p>
+</div>
+
+<div class="card">
+    <form id="xml-form">
+        <label for="xml-input">XML Payload</label>
+        <textarea id="xml-input" name="xml" placeholder="Enter your XML here...">&lt;?xml version="1.0"?&gt;
+&lt;data&gt;Hello NeonParser&lt;/data&gt;</textarea>
+        <button type="submit">Parse XML</button>
+    </form>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if result %}
+<div class="flag-box">{{ result }}</div>
+{% endif %}
+
+<div id="output"></div>
+
+<script>
+document.getElementById('xml-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const xml = document.getElementById('xml-input').value;
+    const resp = await fetch('/parse', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/xml'},
+        body: xml
+    });
+    const html = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const flagBox = doc.querySelector('.flag-box');
+    const alertError = doc.querySelector('.alert-error');
+    const output = document.getElementById('output');
+    output.innerHTML = '';
+    if (flagBox) output.innerHTML = flagBox.outerHTML;
+    if (alertError) output.innerHTML = alertError.outerHTML;
+});
+</script>
+{% endblock %}

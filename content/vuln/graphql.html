@@ -1,0 +1,134 @@
+<section class="module-header">
+  <h1>Module 22 — GraphQL Vulnerabilities</h1>
+  <p>Learn how GraphQL APIs introduce unique attack surfaces including introspection leaks, depth attacks, injection, and authorization bypasses.</p>
+</section>
+
+<section class="theory-section">
+  <h2>GraphQL Basics</h2>
+  <p>GraphQL is a query language for APIs that lets clients specify exactly what data they need. Unlike REST, it uses a single endpoint and a typed schema. While powerful, it introduces security challenges not present in traditional REST APIs.</p>
+
+  <pre><code class="language-graphql"># Basic query
+{
+  users {
+    id
+    username
+    email
+  }
+}
+
+# Mutation
+mutation {
+  createPost(title: "Hello", content: "World") {
+    id
+  }
+}</code></pre>
+
+  <h2>Attack Vectors</h2>
+
+  <h3>1. Introspection</h3>
+  <p>GraphQL allows clients to query the full schema, revealing all types, fields, and relationships — including hidden or admin-only types:</p>
+  <pre><code class="language-graphql">{
+  __schema {
+    types {
+      name
+      fields { name type { name } }
+    }
+  }
+}</code></pre>
+
+  <h3>2. Nested Query / Depth Attack</h3>
+  <p>Without depth limiting, recursive relationships allow exponentially expensive queries:</p>
+  <pre><code class="language-graphql">{
+  users {
+    posts {
+      author {
+        posts {
+          author {
+            posts { ... } # infinite nesting
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+
+  <h3>3. Authorization Bypass</h3>
+  <p>GraphQL resolvers must enforce per-field authorization. A common mistake is securing the mutation but not the query, or protecting a resource at one query path but not another:</p>
+  <pre><code class="language-python"># DANGEROUS: no auth check in resolver
+def resolve_posts(root, info):
+    return db.execute('SELECT * FROM posts').fetchall()
+    # Returns ALL posts, including private ones!</code></pre>
+
+  <h3>4. Injection in Resolvers</h3>
+  <pre><code class="language-python"># DANGEROUS: string interpolation in SQL
+def resolve_search_users(root, info, name):
+    return db.execute(f"SELECT * FROM users WHERE name LIKE '%{name}%'").fetchall()
+    # SQL injection via GraphQL argument!</code></pre>
+
+  <h3>5. Batching Attacks</h3>
+  <p>Many GraphQL servers accept arrays of queries in a single request, bypassing rate limiters that count HTTP requests rather than query operations.</p>
+
+  <h3>6. Field Suggestion Information Disclosure</h3>
+  <p>When a field name is misspelled, error messages may suggest valid field names, leaking schema information even when introspection is disabled.</p>
+
+  <h2>Prevention</h2>
+  <ul>
+    <li><strong>Disable introspection</strong> in production</li>
+    <li><strong>Implement query depth limiting</strong> (max depth 5-10)</li>
+    <li><strong>Per-field authorization</strong> in every resolver</li>
+    <li><strong>Parameterized queries</strong> in resolvers (never string interpolation)</li>
+    <li><strong>Query cost analysis</strong> to prevent expensive operations</li>
+    <li><strong>Batch size limits</strong> on array queries</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Impact:</strong> GraphQL vulnerabilities can leak entire database schemas, expose private data, enable DoS through expensive queries, and serve as injection vectors. The single-endpoint nature means traditional WAF rules often miss these attacks.
+  </div>
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What does GraphQL introspection allow?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">Running arbitrary SQL on the database</button>
+        <button class="quiz-opt" data-q="1" data-val="b">Querying the full schema to discover all types, fields, and relationships</button>
+        <button class="quiz-opt" data-q="1" data-val="c">Bypassing authentication entirely</button>
+        <button class="quiz-opt" data-q="1" data-val="d">Executing server-side JavaScript</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>What is the primary defense against nested query DoS attacks?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">Query depth limiting and cost analysis</button>
+        <button class="quiz-opt" data-q="2" data-val="b">Using POST instead of GET</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Requiring API keys</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Adding CORS headers</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Where should authorization be enforced in a GraphQL API?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Only at the HTTP middleware level</button>
+        <button class="quiz-opt" data-q="3" data-val="b">Only on mutations, not queries</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Only at the schema level via type directives</button>
+        <button class="quiz-opt" data-q="3" data-val="d">At the individual resolver level (per-field authorization)</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonGraph</h2>
+  <p>Exploit GraphQL vulnerabilities in a social network API with 6 challenges:</p>
+  <div class="code-block">cd labs/graphql && docker compose up --build<br>Visit http://localhost:5015/</div>
+  <p class="text-muted">Challenges cover introspection, depth attacks, auth bypass, SQL injection in resolvers, batching abuse, and field suggestion leaks.</p>
+</section>

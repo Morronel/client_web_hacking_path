@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}NeonPing - Whois{% endblock %}
+{% block content %}
+<h1>Challenge 5: Whois Lookup</h1>
+
+<div class="card">
+    <p>Looks up WHOIS records for a domain. Whitespace characters are blocked by a regex filter.</p>
+    <div class="meta">Blocked: any whitespace (<code>\s</code>) &bull; Hint: <code>{cat,/app/flag5.txt}</code> or <code>$IFS</code> can bypass the space filter</div>
+</div>
+
+<div class="card">
+    <form method="GET" action="/whois">
+        <label for="domain">Domain</label>
+        <input type="text" id="domain" name="domain" value="{{ domain }}" placeholder="e.g. example.com">
+        <button type="submit">Run Whois</button>
+    </form>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if output %}
+<h2>Output</h2>
+<div class="code-block"><pre>{{ output }}</pre></div>
+{% endif %}
+{% endblock %}

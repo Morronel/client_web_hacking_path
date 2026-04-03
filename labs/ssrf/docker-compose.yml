@@ -1,0 +1,5 @@
+services:
+  ssrf-lab:
+    build: .
+    ports:
+      - "5008:5008"

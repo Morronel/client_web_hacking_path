@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}NeonParser — Home{% endblock %}
+{% block content %}
+<h1>// NeonParser Challenges</h1>
+<p style="color: var(--text-muted); margin-bottom: 2rem;">XML External Entity (XXE) Injection Lab &mdash; 5 challenges to exploit vulnerable XML parsers.</p>
+
+<div class="card">
+    <h3>Challenge 1 &mdash; Basic XXE</h3>
+    <p>The <code>/parse</code> endpoint accepts raw XML and returns parsed text content. Can you read files from the server?</p>
+    <br><a href="/parse" class="btn">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Challenge 2 &mdash; Blind XXE (OOB)</h3>
+    <p>The <code>/import</code> endpoint parses XML but never shows entity values in the response. Exfiltrate data out-of-band using parameter entities and the <code>/log</code> endpoint.</p>
+    <br><a href="/import" class="btn">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Challenge 3 &mdash; XXE to SSRF</h3>
+    <p>The <code>/validate</code> endpoint resolves external entities. Use XXE to reach an internal-only API at <code>/internal/secret</code>.</p>
+    <br><a href="/validate" class="btn">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Challenge 4 &mdash; Filter Bypass XXE</h3>
+    <p>The <code>/parse-filtered</code> endpoint blocks the keywords <code>SYSTEM</code> and <code>ENTITY</code>. Find a way around the filter.</p>
+    <br><a href="/parse-filtered" class="btn">Launch</a>
+</div>
+
+<div class="card">
+    <h3>Challenge 5 &mdash; SVG Upload XXE</h3>
+    <p>The <code>/svg-upload</code> endpoint accepts SVG image uploads and parses them as XML. Embed an XXE payload inside an SVG file.</p>
+    <br><a href="/svg-upload" class="btn">Launch</a>
+</div>
+{% endblock %}

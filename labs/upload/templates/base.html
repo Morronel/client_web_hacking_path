@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}// NeonGallery{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="brand">// NeonGallery</a>
+        <span class="tagline">file upload security lab</span>
+    </nav>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <div class="footer-inner">
+            <span class="neon-accent">// NeonGallery</span> &mdash; Upload Security Training Lab &mdash; Port <span class="neon-accent">5010</span>
+        </div>
+    </footer>
+</body>
+</html>

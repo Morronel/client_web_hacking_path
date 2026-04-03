@@ -1,0 +1,5 @@
+services:
+  cmdi-lab:
+    build: .
+    ports:
+      - "5011:5011"

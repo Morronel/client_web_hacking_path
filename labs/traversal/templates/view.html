@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}NeonDocs - Viewer (Challenge {{ challenge }}){% endblock %}
+{% block content %}
+<h1>Document Viewer &mdash; Challenge {{ challenge }}</h1>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if content %}
+<div class="card">
+    <h3>{{ filename }}</h3>
+    {% if "FLAG{" in content %}
+    <div class="flag-box">{{ content }}</div>
+    {% else %}
+    <div class="code-block">{{ content }}</div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Try a request</h3>
+    {% if challenge == 1 %}
+    <form method="get" action="/view">
+        <label for="file">file parameter</label>
+        <input type="text" id="file" name="file" placeholder="readme.txt" value="{{ request.args.get('file', '') }}">
+        <button type="submit">View File</button>
+    </form>
+    {% elif challenge == 2 %}
+    <form method="get" action="/view-safe">
+        <label for="file">file parameter</label>
+        <input type="text" id="file" name="file" placeholder="readme" value="{{ request.args.get('file', '') }}">
+        <button type="submit">View File</button>
+    </form>
+    {% elif challenge == 3 %}
+    <form method="get" action="/view-filtered">
+        <label for="file">file parameter</label>
+        <input type="text" id="file" name="file" placeholder="readme.txt" value="{{ request.args.get('file', '') }}">
+        <button type="submit">View File</button>
+    </form>
+    {% elif challenge == 4 %}
+    <form method="get" action="/download">
+        <label for="path">path parameter</label>
+        <input type="text" id="path" name="path" placeholder="readme.txt" value="{{ request.args.get('path', '') }}">
+        <button type="submit">Download</button>
+    </form>
+    {% elif challenge == 5 %}
+    <form method="get" action="/api/doc">
+        <label for="name">name parameter</label>
+        <input type="text" id="name" name="name" placeholder="readme.txt" value="{{ request.args.get('name', '') }}">
+        <button type="submit">Fetch Document</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="text-center mt-2">
+    <a href="/">Back to Challenges</a>
+</div>
+{% endblock %}

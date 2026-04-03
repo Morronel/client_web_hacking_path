@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}NeonCache — Login{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2>02 // Cookie Forgery &mdash; Login</h2>
+
+    {% if logged_in %}
+    <div class="flash-success">
+        Session cookie set. You are logged in as <strong>guest</strong> with role <strong>user</strong>.
+    </div>
+    <p>Your session is stored in a cookie named <code>session_data</code>.</p>
+    <p class="dim-text">The cookie format is: <code>base64(pickle_bytes).hmac_sha256_hex</code></p>
+    <p class="dim-text">The HMAC signing key might be weaker than you think...</p>
+    <a href="/dashboard" class="btn">Go to Dashboard</a>
+    {% else %}
+    <p>Click below to log in and receive a session cookie.</p>
+    <a href="/login" class="btn">Login as Guest</a>
+    {% endif %}
+</div>
+{% endblock %}

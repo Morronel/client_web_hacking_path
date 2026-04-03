@@ -1,0 +1,119 @@
+<section class="module-header">
+  <h1>Module 21 — Insecure Deserialization</h1>
+  <p>Understand how untrusted serialized data can lead to remote code execution through Python pickle, YAML, and custom object injection.</p>
+</section>
+
+<section class="theory-section">
+  <h2>What Is Deserialization?</h2>
+  <p>Serialization converts objects to a transportable format (bytes, strings). Deserialization reverses this. When an application deserializes untrusted data using unsafe formats like Python's <code>pickle</code> or <code>yaml.unsafe_load()</code>, attackers can inject malicious objects that execute arbitrary code during the deserialization process.</p>
+
+  <h2>Python Pickle — The Classic RCE</h2>
+  <p>Python's <code>pickle</code> module can serialize/deserialize arbitrary objects. The <code>__reduce__</code> method controls how an object is reconstructed — and it can call any function:</p>
+
+  <h3 class="text-red">Vulnerable Code</h3>
+  <pre><code class="language-python">import pickle, base64
+
+@app.route('/load', methods=['POST'])
+def load_data():
+    data = request.form.get('data')
+    # DANGEROUS: deserializes untrusted data
+    obj = pickle.loads(base64.b64decode(data))
+    return str(obj)</code></pre>
+
+  <h3>Exploit Payload</h3>
+  <pre><code class="language-python">import pickle, base64, os
+
+class Exploit:
+    def __reduce__(self):
+        return (os.popen, ('cat /etc/passwd',))
+
+payload = base64.b64encode(pickle.dumps(Exploit())).decode()
+print(payload)  # Send this to the vulnerable endpoint</code></pre>
+
+  <h3 class="text-green">Safe Alternative</h3>
+  <pre><code class="language-python">import json
+
+@app.route('/load', methods=['POST'])
+def load_data():
+    data = request.form.get('data')
+    # SAFE: JSON cannot execute code during parsing
+    obj = json.loads(data)
+    return str(obj)</code></pre>
+
+  <h2>YAML Deserialization</h2>
+  <pre><code class="language-python"># DANGEROUS: yaml.unsafe_load() / yaml.load(data, Loader=yaml.UnsafeLoader)
+import yaml
+data = yaml.unsafe_load(user_input)
+# Payload: !!python/object/apply:os.popen ['cat /etc/passwd']
+
+# SAFE: yaml.safe_load() only allows basic types
+data = yaml.safe_load(user_input)</code></pre>
+
+  <h2>Cookie Forgery</h2>
+  <p>Applications that store serialized data in cookies with weak HMAC keys are vulnerable. If the signing key is guessable (e.g., <code>"secret"</code>), attackers can forge cookies with modified data.</p>
+
+  <h2>Dangerous Serialization Formats</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Format</th><th>Language</th><th>Risk Level</th><th>Safe Alternative</th></tr></thead>
+      <tbody>
+        <tr><td>pickle</td><td>Python</td><td class="text-red">Critical (RCE)</td><td>JSON, MessagePack</td></tr>
+        <tr><td>yaml.unsafe_load</td><td>Python</td><td class="text-red">Critical (RCE)</td><td>yaml.safe_load()</td></tr>
+        <tr><td>Java ObjectInputStream</td><td>Java</td><td class="text-red">Critical (RCE)</td><td>JSON with Jackson</td></tr>
+        <tr><td>PHP unserialize</td><td>PHP</td><td class="text-red">High (Object Injection)</td><td>json_decode()</td></tr>
+        <tr><td>JSON</td><td>Any</td><td class="text-green">Safe</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>Impact:</strong> Insecure deserialization consistently appears in the OWASP Top 10. It can lead to remote code execution, authentication bypass, privilege escalation, and complete server compromise.
+  </div>
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>Why is Python's <code>pickle.loads()</code> dangerous with untrusted input?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">It uses too much memory</button>
+        <button class="quiz-opt" data-q="1" data-val="b">It doesn't support complex data types</button>
+        <button class="quiz-opt" data-q="1" data-val="c">The <code>__reduce__</code> method can execute arbitrary code during deserialization</button>
+        <button class="quiz-opt" data-q="1" data-val="d">It only works with Python 2</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>What is the safe way to load YAML in Python?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a"><code>yaml.safe_load()</code></button>
+        <button class="quiz-opt" data-q="2" data-val="b"><code>yaml.load(data, Loader=yaml.UnsafeLoader)</code></button>
+        <button class="quiz-opt" data-q="2" data-val="c"><code>yaml.unsafe_load()</code></button>
+        <button class="quiz-opt" data-q="2" data-val="d"><code>yaml.load(data)</code> with no Loader argument</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Which serialization format is safe to use with untrusted data?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Python pickle</button>
+        <button class="quiz-opt" data-q="3" data-val="b">JSON (cannot execute code during parsing)</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Java serialized objects</button>
+        <button class="quiz-opt" data-q="3" data-val="d">PHP serialized objects</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonCache</h2>
+  <p>Practice deserialization exploits in a caching service with 5 challenges:</p>
+  <div class="code-block">cd labs/deserial && docker compose up --build<br>Visit http://localhost:5014/</div>
+  <p class="text-muted">Challenges cover pickle RCE, signed cookie forgery, YAML object injection, custom deserializer abuse, and pickle data tampering.</p>
+</section>

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}NeonBank - Challenge 1: Basic CSRF{% endblock %}
+{% block content %}
+<h1>Challenge 1: Basic CSRF &mdash; No Token</h1>
+
+<div class="card">
+    <h3>Transfer Funds</h3>
+    <p style="margin-bottom:1rem;">Current user: <span style="color:var(--neon-pink);">hacker</span> | Balance: <span style="color:var(--neon-green);">{{ balance }} credits</span></p>
+    <form method="POST" action="/transfer">
+        <label for="to_user">Recipient Username</label>
+        <input type="text" id="to_user" name="to_user" placeholder="e.g. admin">
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" name="amount" placeholder="100">
+        <button type="submit">Transfer</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Vulnerability Info</h3>
+    <p>The <code>/transfer</code> endpoint accepts POST requests with no CSRF token validation.
+    Craft a malicious HTML page and submit it to the admin bot.</p>
+    <div class="code-block">
+POST /transfer HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+to_user=hacker&amp;amount=1000
+    </div>
+</div>
+
+<div class="card">
+    <h3>Submit to Admin Bot</h3>
+    <p style="margin-bottom:1rem;">Paste your malicious HTML below. The bot will visit it as the admin user.</p>
+    <form method="POST" action="/bot">
+        <label for="html">Malicious HTML Page</label>
+        <textarea id="html" name="html" rows="8" placeholder='<form action="http://localhost:5006/transfer" method="POST">...'></textarea>
+        <button type="submit">Send to Bot</button>
+    </form>
+</div>
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+{% if bot_result %}
+<div class="card">
+    <h3>Bot Result</h3>
+    <p>{{ bot_result }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Recent Transfers</h3>
+    <table>
+        <tr><th>From</th><th>To</th><th>Amount</th><th>Time</th></tr>
+        {% for t in transfers %}
+        <tr>
+            <td>{{ t.from_user }}</td>
+            <td>{{ t.to_user }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

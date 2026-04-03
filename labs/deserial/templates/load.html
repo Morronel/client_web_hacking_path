@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}NeonCache — Pickle Load{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2>01 // Pickle Load</h2>
+    <p>Submit base64-encoded pickle data to the cache loader. The service will deserialize and display the resulting object.</p>
+
+    {% if hint %}
+    <div class="hint-box">
+        <strong>Hint:</strong> The endpoint calls <code>pickle.loads(base64.b64decode(data))</code> directly on your input.
+        Python's pickle format supports a <code>__reduce__</code> method that can execute arbitrary callables during deserialization.
+        <br><br>
+        <strong>Sample safe pickle (base64):</strong><br>
+        <code>{{ sample }}</code>
+        <br><br>
+        Try decoding it, then craft your own pickle class with <code>__reduce__</code> returning
+        <code>(os.popen, ('cat /app/flag.txt',))</code> — the deserialized object's <code>.read()</code> output
+        will appear as the string representation.
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/load">
+        <div class="form-group">
+            <label>Base64-Encoded Pickle Data</label>
+            <textarea name="data" rows="5" placeholder="Paste base64 pickle here..."></textarea>
+        </div>
+        <button type="submit" class="btn">Deserialize</button>
+        <a href="/hint1" class="btn btn-purple" style="margin-left: 0.5rem;">Show Hint</a>
+    </form>
+
+    {% if result %}
+    <div class="output-box">
+        <h3>&gt; Deserialized Object</h3>
+        <pre class="result-pre">{{ result }}</pre>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error-box">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

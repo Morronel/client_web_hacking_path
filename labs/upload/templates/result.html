@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}// NeonGallery &mdash; {{ title }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ title }}</h1>
+
+<div class="result-card {% if success %}result-success{% else %}result-fail{% endif %}">
+    <div class="result-status">
+        {% if success %}
+        <span class="status-icon">&#x2713;</span>
+        {% else %}
+        <span class="status-icon">&#x2717;</span>
+        {% endif %}
+    </div>
+    <p class="result-message">{{ message }}</p>
+
+    {% if output is defined and output %}
+    <div class="output-block">
+        <h3>Execution Output</h3>
+        <pre class="output-pre">{{ output }}</pre>
+    </div>
+    {% endif %}
+
+    {% if success and filename is defined and challenge is defined %}
+    <div class="result-actions">
+        <a href="/run?file={{ filename }}&amp;ch={{ challenge }}" class="btn btn-run">Run this file</a>
+    </div>
+    {% endif %}
+</div>
+
+<a href="/" class="btn btn-back">&larr; Back to Challenges</a>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}// NeonGallery &mdash; Challenges{% endblock %}
+{% block content %}
+<h1 class="page-title glitch" data-text="Upload Challenges">Upload Challenges</h1>
+<p class="intro">Exploit file upload vulnerabilities to capture flags. Upload a Python script that reads the flag file, then execute it via <code>/run</code>.</p>
+
+<!-- Challenge 1 -->
+<section class="challenge-card" id="ch1">
+    <div class="ch-header">
+        <span class="ch-number">01</span>
+        <h2>Unrestricted Upload</h2>
+    </div>
+    <p class="ch-desc">No validation at all. Upload anything. Execute Python files via <code>/run?file=FILENAME&amp;ch=1</code>. The flag is in <code>/app/flag.txt</code>.</p>
+    <form action="/upload" method="POST" enctype="multipart/form-data" class="upload-form">
+        <label class="file-label">
+            <input type="file" name="file" class="file-input">
+            <span class="file-btn">Choose File</span>
+        </label>
+        <button type="submit" class="btn btn-upload">Upload &rarr; CH1</button>
+    </form>
+    <div class="file-list">
+        <h3>Uploaded Files</h3>
+        {% if files[1] %}
+        <ul>
+            {% for f in files[1] %}
+            <li>
+                <span class="fname">{{ f }}</span>
+                <a href="/run?file={{ f }}&amp;ch=1" class="btn btn-run">Run</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No files uploaded yet.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Challenge 2 -->
+<section class="challenge-card" id="ch2">
+    <div class="ch-header">
+        <span class="ch-number">02</span>
+        <h2>Extension Blacklist</h2>
+    </div>
+    <p class="ch-desc">Blocks <code>.py, .sh, .php, .jsp, .exe, .bat</code>. Can you bypass the filter? The flag is in <code>/app/flag2.txt</code>. The <code>/run</code> endpoint accepts <code>.py3</code> files too.</p>
+    <form action="/upload-filtered" method="POST" enctype="multipart/form-data" class="upload-form">
+        <label class="file-label">
+            <input type="file" name="file" class="file-input">
+            <span class="file-btn">Choose File</span>
+        </label>
+        <button type="submit" class="btn btn-upload">Upload &rarr; CH2</button>
+    </form>
+    <div class="file-list">
+        <h3>Uploaded Files</h3>
+        {% if files[2] %}
+        <ul>
+            {% for f in files[2] %}
+            <li>
+                <span class="fname">{{ f }}</span>
+                <a href="/run?file={{ f }}&amp;ch=2" class="btn btn-run">Run</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No files uploaded yet.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Challenge 3 -->
+<section class="challenge-card" id="ch3">
+    <div class="ch-header">
+        <span class="ch-number">03</span>
+        <h2>Content-Type Check</h2>
+    </div>
+    <p class="ch-desc">Only allows <code>Content-Type: image/*</code>. But Content-Type is client-controlled... The flag is in <code>/app/flag3.txt</code>.</p>
+    <form action="/upload-ct" method="POST" enctype="multipart/form-data" class="upload-form">
+        <label class="file-label">
+            <input type="file" name="file" class="file-input">
+            <span class="file-btn">Choose File</span>
+        </label>
+        <button type="submit" class="btn btn-upload">Upload &rarr; CH3</button>
+    </form>
+    <p class="ch-hint">Hint: Use <code>curl</code> or Burp to set <code>Content-Type: image/png</code> on a <code>.py</code> file.</p>
+    <div class="file-list">
+        <h3>Uploaded Files</h3>
+        {% if files[3] %}
+        <ul>
+            {% for f in files[3] %}
+            <li>
+                <span class="fname">{{ f }}</span>
+                <a href="/run?file={{ f }}&amp;ch=3" class="btn btn-run">Run</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No files uploaded yet.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Challenge 4 -->
+<section class="challenge-card" id="ch4">
+    <div class="ch-header">
+        <span class="ch-number">04</span>
+        <h2>Magic Bytes Validation</h2>
+    </div>
+    <p class="ch-desc">Checks first 4 bytes for image magic numbers (<code>\x89PNG</code>, JPEG, GIF). Prepend magic bytes to a Python script. The <code>/run</code> endpoint strips leading non-ASCII. Flag: <code>/app/flag4.txt</code>.</p>
+    <form action="/upload-magic" method="POST" enctype="multipart/form-data" class="upload-form">
+        <label class="file-label">
+            <input type="file" name="file" class="file-input">
+            <span class="file-btn">Choose File</span>
+        </label>
+        <button type="submit" class="btn btn-upload">Upload &rarr; CH4</button>
+    </form>
+    <div class="file-list">
+        <h3>Uploaded Files</h3>
+        {% if files[4] %}
+        <ul>
+            {% for f in files[4] %}
+            <li>
+                <span class="fname">{{ f }}</span>
+                <a href="/run?file={{ f }}&amp;ch=4" class="btn btn-run">Run</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No files uploaded yet.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Challenge 5 -->
+<section class="challenge-card" id="ch5">
+    <div class="ch-header">
+        <span class="ch-number">05</span>
+        <h2>Size Limit (100 bytes)</h2>
+    </div>
+    <p class="ch-desc">Max 100 bytes. No content check. Write a tiny Python one-liner to read <code>/app/flag5.txt</code>.</p>
+    <form action="/upload-size" method="POST" enctype="multipart/form-data" class="upload-form">
+        <label class="file-label">
+            <input type="file" name="file" class="file-input">
+            <span class="file-btn">Choose File</span>
+        </label>
+        <button type="submit" class="btn btn-upload">Upload &rarr; CH5</button>
+    </form>
+    <div class="file-list">
+        <h3>Uploaded Files</h3>
+        {% if files[5] %}
+        <ul>
+            {% for f in files[5] %}
+            <li>
+                <span class="fname">{{ f }}</span>
+                <a href="/run?file={{ f }}&amp;ch=5" class="btn btn-run">Run</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No files uploaded yet.</p>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}
