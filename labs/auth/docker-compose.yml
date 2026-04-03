@@ -1,0 +1,5 @@
+services:
+  auth-lab:
+    build: .
+    ports:
+      - "5005:5005"
