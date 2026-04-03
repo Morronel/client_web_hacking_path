@@ -28,7 +28,8 @@ Flag: FLAG{upl04d_3xt_byp4ss}
 
   curl "http://localhost:5010/run?file=exploit.py3&ch=2"
 
-  Alternative: Use .Py or .PY extension (case variation bypass).
+  NOTE: .PY and .Py do NOT work — the code uses ext.lower() before
+  checking the blocklist. Only .py3 bypasses the filter.
 
 -------------------------------------------------------------------------------
 
