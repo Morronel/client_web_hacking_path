@@ -103,6 +103,13 @@ def internal_flag():
     return 'FLAG{ssrf_f1lt3r_byp4ss}'
 
 
+@app.route('/internal/dns-secret')
+def internal_dns_secret():
+    if not _is_localhost(request.remote_addr):
+        return 'Forbidden — internal access only', 403
+    return 'FLAG{ssrf_dns_r3b1nd}'
+
+
 @app.route('/internal/db-backup')
 def internal_db_backup():
     if not _is_localhost(request.remote_addr):

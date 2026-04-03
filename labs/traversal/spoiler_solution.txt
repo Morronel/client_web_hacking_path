@@ -18,13 +18,15 @@ Flag: FLAG{tr4v3rs4l_null_byt3}
   input contains %00 (null byte), the code strips everything after
   the null byte before appending .txt (simulating legacy C behavior).
 
-  curl "http://localhost:5009/view-safe?file=../../secret/flag2%00"
+  curl "http://localhost:5009/view-safe?file=../../secret/flag2.txt%2500"
 
-  The %00 causes truncation. The server reads ../../secret/flag2.txt
-  (the .txt comes from the file itself, not the appended extension).
+  The %25 is double-encoded so Flask decodes it to %00 (literal string),
+  which the code then splits on. Everything after %00 is discarded.
+  Result: reads ../../secret/flag2.txt (the .txt is NOT appended since
+  the null byte was detected).
 
-  Alternative: Try ../../secret/flag2.txt directly since .txt gets
-  double-appended to become flag2.txt.txt — check exact behavior.
+  Note: Using %00 directly may cause binary output issues. Use %2500
+  (double-encoded) for clean results.
 
 -------------------------------------------------------------------------------
 
@@ -49,13 +51,15 @@ Flag: FLAG{tr4v3rs4l_3v4s10n}
   The /download endpoint checks the raw parameter for ".." and "/etc"
   BEFORE URL-decoding it. URL-encode the dots to bypass the check.
 
-  curl "http://localhost:5009/download?path=%2e%2e/%2e%2e/secret/flag4.txt"
+  curl "http://localhost:5009/download?path=%252e%252e/%252e%252e/secret/flag4.txt"
 
-  Or fully encoded:
-  curl "http://localhost:5009/download?path=%2e%2e%2f%2e%2e%2fsecret%2fflag4.txt"
+  NOTE: Flask automatically URL-decodes query parameters before the code
+  sees them, so single %2e%2e would be decoded to ".." and caught by the
+  filter. You need DOUBLE encoding (%252e = %2e after Flask decodes, then
+  urllib.parse.unquote() decodes %2e to ".").
 
-  The check sees "%2e%2e" (no literal ".."), then URL-decodes to "../"
-  before opening the file.
+  The flow: %252e%252e → Flask decodes to %2e%2e → check passes (no "..")
+  → urllib.parse.unquote() decodes to ../../secret/flag4.txt
 
 -------------------------------------------------------------------------------
 

@@ -88,6 +88,7 @@ def reset_db():
         DELETE FROM users;
         DELETE FROM actions_log;
         DELETE FROM flags;
+        DELETE FROM sqlite_sequence;
     ''')
     db.execute("INSERT INTO users (username, role, credits, deleted) VALUES ('admin', 'admin', 5000, 0)")
     db.execute("INSERT INTO users (username, role, credits, deleted) VALUES ('operator', 'user', 1000, 0)")

@@ -84,7 +84,7 @@ def parse_xml():
 
 
 # ---------------------------------------------------------------------------
-# Challenge 2: Blind XXE — /import
+# Challenge 2: Blind XXE — /import (error-based exfiltration)
 # ---------------------------------------------------------------------------
 @app.route('/import', methods=['GET', 'POST'])
 def import_xml():
@@ -94,18 +94,23 @@ def import_xml():
         try:
             xml_data = request.data
             parser = etree.XMLParser(resolve_entities=True, load_dtd=True, no_network=False)
-            etree.fromstring(xml_data, parser)
-            status = 'Import successful — data processed.'
+            doc = etree.fromstring(xml_data, parser)
+            # Only show the tag name, NOT the text content (blind)
+            status = f'Import successful — processed root element &lt;{doc.tag}&gt; with {len(doc)} children.'
         except Exception as e:
+            # Error messages may leak entity content! (error-based XXE)
             error = str(e)
     return render_template('import.html', status=status, error=error)
 
 
 # ---------------------------------------------------------------------------
-# Challenge 3: XXE → SSRF — /validate
+# Challenge 3: XXE File Read — /validate (different file path)
 # ---------------------------------------------------------------------------
 @app.route('/validate', methods=['GET', 'POST'])
 def validate_xml():
+    """Validates XML structure and displays content. Entity resolution enabled.
+    The flag is in /app/flag3.txt — a file simulating internal service data.
+    Unlike ch1 which reads /app/flag.txt, this requires finding the right file."""
     result = None
     error = None
     if request.method == 'POST':
@@ -130,9 +135,10 @@ def parse_filtered():
         try:
             xml_data = request.data
             raw_text = xml_data.decode('utf-8', errors='ignore')
-            # Naive filter: block SYSTEM and ENTITY (case-sensitive)
-            if 'SYSTEM' in raw_text or 'ENTITY' in raw_text:
-                error = 'Blocked: forbidden keywords detected (SYSTEM / ENTITY).'
+            # "Security" filter: block direct /app/ path access and traversal
+            # Bypass: use /proc/self/cwd/ symlink to reach /app/ indirectly
+            if '/app/' in raw_text or '../' in raw_text:
+                error = 'Blocked: direct /app/ paths and traversal sequences not allowed.'
             else:
                 parser = etree.XMLParser(resolve_entities=True, load_dtd=True, no_network=False)
                 doc = etree.fromstring(xml_data, parser)

