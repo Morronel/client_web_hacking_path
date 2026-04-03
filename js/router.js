@@ -1,10 +1,11 @@
 /* ============================================
-   Hash-Based SPA Router — 26 Module Registry
+   Hash-Based SPA Router — 27 Module Registry
    ============================================ */
 
 const Router = (() => {
   const modules = {
-    // ── Introduction (7) ──
+    // ── Introduction (8) ──
+    'intro-welcome':    { file: 'content/intro/welcome.html',    handler: 'introWelcome',    title: 'Welcome',              labs: 0 },
     'intro-legal':      { file: 'content/intro/legal.html',      handler: 'introLegal',      title: 'Legal & Ethics',       labs: 1 },
     'intro-networking': { file: 'content/intro/networking.html',  handler: 'introNetworking', title: 'Networking',           labs: 3 },
     'intro-encoding':   { file: 'content/intro/encoding.html',   handler: 'introEncoding',   title: 'Encoding & Crypto',    labs: 4 },
@@ -39,7 +40,7 @@ const Router = (() => {
 
   // Category groupings for sidebar and game unlocks
   const CATEGORIES = {
-    intro:  ['intro-legal', 'intro-networking', 'intro-encoding', 'intro-cookies', 'intro-sop', 'intro-history', 'intro-killchain'],
+    intro:  ['intro-welcome', 'intro-legal', 'intro-networking', 'intro-encoding', 'intro-cookies', 'intro-sop', 'intro-history', 'intro-killchain'],
     vuln:   ['vuln-sqli', 'vuln-xss', 'vuln-ssti', 'vuln-idor', 'vuln-auth',
              'vuln-csrf', 'vuln-clickjacking', 'vuln-ssrf', 'vuln-traversal', 'vuln-upload',
              'vuln-cmdi', 'vuln-xxe', 'vuln-race', 'vuln-deserial', 'vuln-graphql'],

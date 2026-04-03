@@ -1,0 +1,319 @@
+<!-- Module 0: Welcome to WebHack Academy -->
+<h1>Module 00 — Welcome to WebHack Academy</h1>
+
+<section class="theory-section">
+
+  <h2>So You Want to Hack Websites?</h2>
+  <p>
+    Cool. You're in the right place.
+  </p>
+  <p>
+    But first, let's get something straight: <strong>hacking isn't what Hollywood thinks it is</strong>.
+    There's no green text raining down your screen while you furiously type <code>HACK THE MAINFRAME</code>
+    and a progress bar fills up. Sorry to disappoint.
+  </p>
+  <p>
+    Real hacking is more like... being a really curious detective who speaks computer. You look at a website
+    and wonder: <em>"What happens if I put something weird in this search box? What if I change this number
+    in the URL? What if I send a request the developers never expected?"</em>
+  </p>
+  <p>
+    And sometimes — often, actually — the answer is: <strong>something the developers REALLY didn't want to happen.</strong>
+  </p>
+
+  <div class="callout callout-info">
+    <strong>The Hacker Mindset:</strong> A hacker doesn't look at a login page and think "I should type my
+    username and password." A hacker looks at a login page and thinks "I wonder what this does if I type a
+    single quote character..."
+  </div>
+
+  <h2>What Even IS Web Hacking?</h2>
+  <p>
+    Every time you open a website, your browser is having a conversation with a server somewhere in the world.
+    Your browser says "Hey, give me the homepage!" and the server says "Sure, here's some HTML, CSS, and JavaScript."
+    Then your browser says "The user just clicked Login, here's their username and password" and the server says
+    "Cool, they're legit, here's a cookie to prove it."
+  </p>
+  <p>
+    Web hacking is the art of <strong>messing with that conversation</strong>. What if you change the message
+    before it gets to the server? What if you forge the cookie? What if you trick the server into thinking
+    you're the admin? What if you make the server read files it shouldn't, or run commands you're not supposed
+    to run?
+  </p>
+  <p>
+    That's what this course teaches you. Not so you can go break stuff (that's illegal and also not cool),
+    but so you can understand how things break — and then learn how to <strong>fix them</strong>.
+  </p>
+
+  <h2>Why Should You Care?</h2>
+  <p>
+    Here's a fun fact that will either excite you or terrify you (probably both):
+  </p>
+  <ul>
+    <li><strong>In 2023, the average cost of a data breach was $4.45 million.</strong> That's not a typo. Four and a half million dollars. Every time someone finds a SQL injection in a banking app and decides to be a jerk about it, somebody somewhere is having a VERY bad day.</li>
+    <li><strong>There were over 2,300 publicly disclosed data breaches in 2023.</strong> That's more than 6 per day. And those are just the ones we know about.</li>
+    <li><strong>Bug bounty hunters earned over $45 million in 2023</strong> through platforms like HackerOne and Bugcrowd. That's people getting paid — legally, by companies who asked for help — to find exactly the vulnerabilities you'll learn about here.</li>
+    <li><strong>The cybersecurity industry has over 3.5 million unfilled jobs worldwide.</strong> There literally aren't enough people who know this stuff.</li>
+  </ul>
+  <p>
+    So whether you want to be a security researcher, a penetration tester, a bug bounty hunter, a developer
+    who writes secure code, or just someone who understands how the internet actually works under the hood —
+    you're investing your time wisely.
+  </p>
+
+  <h2>How This Course Works</h2>
+  <p>
+    WebHack Academy is split into three sections, like a really satisfying sandwich:
+  </p>
+
+  <div class="panel">
+    <h3>🍞 Section 1: Introduction (Modules 01-07)</h3>
+    <p>
+      The bread. The foundation. Before you can exploit anything, you need to understand how the web works.
+      We'll cover the legal stuff (so you don't go to jail — kind of important), networking basics (HTTP, DNS,
+      how your browser talks to servers), encoding (Base64, URL encoding, the stuff that makes URLs look weird),
+      cookies and sessions (how websites remember who you are), the Same-Origin Policy (the browser's bouncer),
+      the history of hacking (it's wild), and the Cyber Kill Chain (how real attacks happen, step by step).
+    </p>
+    <p>
+      This section might seem boring compared to the "actual hacking" part, but trust me — <strong>every single
+      exploit you'll ever write relies on understanding these fundamentals</strong>. The best hackers in the world
+      don't memorize payloads. They understand protocols.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>🥩 Section 2: Vulnerabilities (Modules 08-22)</h3>
+    <p>
+      The meat. The good stuff. Fifteen different types of web vulnerabilities, each with:
+    </p>
+    <ul>
+      <li><strong>Theory</strong> — What is this vulnerability? Why does it exist? How does the code go wrong?</li>
+      <li><strong>Examples</strong> — Real-world code (vulnerable AND safe versions) so you can see exactly what's happening</li>
+      <li><strong>Quizzes</strong> — Test yourself before you wreck yourself</li>
+      <li><strong>Flask Labs</strong> — Actual vulnerable web applications running in Docker containers that you can hack for real. Each lab has hidden flags (like <code>FLAG{...}</code>) that you need to find by exploiting the vulnerabilities.</li>
+    </ul>
+    <p>
+      We'll cover the OWASP Top 10 classics — SQL Injection, XSS, CSRF — plus cool stuff like
+      Race Conditions, Deserialization attacks, and GraphQL hacking. By the end, you'll look at websites
+      differently. You'll notice things. You'll see attack surfaces everywhere. (This is both a blessing
+      and a curse. You've been warned.)
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>🍞 Section 3: Aftermath (Modules 23-26)</h3>
+    <p>
+      The other piece of bread. What happens AFTER you find a vulnerability? How do you report it responsibly?
+      How do attackers try to hide their exploits from Web Application Firewalls (WAFs)? How do you do
+      reconnaissance to find targets (legally, through bug bounty programs)? And where do you go from here?
+    </p>
+  </div>
+
+  <div class="callout callout-success">
+    <strong>Plus: Shadow Terminal</strong> — Complete enough modules and you'll unlock a bonus card game
+    built right into the platform. Because learning should be fun, and sometimes you need a break from
+    staring at SQL queries.
+  </div>
+
+  <h2>What You'll Need</h2>
+  <p>
+    Not much, honestly:
+  </p>
+  <ul>
+    <li><strong>A web browser</strong> — Chrome, Firefox, whatever. You'll want to learn the Developer Tools (F12). This is your most important hacking tool, and it's already installed on your computer.</li>
+    <li><strong>Docker</strong> — For running the Flask labs. Each lab is a self-contained Docker container you start with <code>docker compose up --build</code>.</li>
+    <li><strong>curl or a tool like Burp Suite</strong> — For sending custom HTTP requests. curl comes with every Linux and Mac. Burp Suite Community Edition is free and incredible.</li>
+    <li><strong>Curiosity</strong> — The most important tool of all. Every great hacker started by asking "what happens if I..."</li>
+  </ul>
+
+  <h2>The Golden Rules</h2>
+  <p>
+    Before we dive in, three rules you should tattoo on the inside of your eyelids:
+  </p>
+
+  <div class="panel" style="border-left: 4px solid var(--accent-red);">
+    <h3>Rule 1: Never Hack Without Permission</h3>
+    <p>
+      This is not optional. This is not a suggestion. This is the difference between a career and a criminal record.
+      The labs in this course are <strong>designed to be hacked</strong> — that's the whole point. Real websites
+      are not. Unless you have explicit, written permission (through a bug bounty program, a pentest contract,
+      or you own the system), <strong>don't touch it</strong>.
+    </p>
+    <p>
+      "But I was just testing!" is not a legal defense. Ask the many people who've learned this the hard way.
+    </p>
+  </div>
+
+  <div class="panel" style="border-left: 4px solid var(--accent-amber);">
+    <h3>Rule 2: Understand Before You Exploit</h3>
+    <p>
+      Copy-pasting payloads from the internet without understanding them makes you a script kiddie, not a hacker.
+      The goal of this course isn't to memorize <code>' OR 1=1--</code>. It's to understand <em>why</em> that works,
+      <em>when</em> it works, <em>when it won't work</em>, and <em>how to find the right approach</em> when the
+      standard payloads fail.
+    </p>
+    <p>
+      Real-world applications don't have a big "Vulnerable Input Field" sign. You need to think.
+    </p>
+  </div>
+
+  <div class="panel" style="border-left: 4px solid var(--accent-green);">
+    <h3>Rule 3: Always Be Learning</h3>
+    <p>
+      Security is a moving target. New vulnerabilities are discovered every day. New defenses are built.
+      New bypasses are found for those defenses. The best hackers never stop learning. Follow security
+      researchers on Twitter/X, read writeups on HackerOne and Medium, participate in CTF competitions,
+      and keep building things so you understand how they break.
+    </p>
+  </div>
+
+  <h2>A Quick Word About CTF Flags</h2>
+  <p>
+    Throughout the Flask labs, you'll find hidden "flags" — strings that look like
+    <code>FLAG{some_leetspeak_text}</code>. These come from CTF (Capture The Flag) competitions, which are
+    basically hacking competitions where teams race to find vulnerabilities and extract these flag strings.
+  </p>
+  <p>
+    Finding a flag proves you successfully exploited the vulnerability. It's like a receipt that says
+    "yes, I actually did the hack, I didn't just read the walkthrough." (Though there's no shame in reading
+    walkthroughs when you're learning — that's literally how everyone starts.)
+  </p>
+
+  <h2>Your Journey Map</h2>
+  <p>
+    Here's what you're about to learn, in order:
+  </p>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Module</th><th>What You'll Learn</th><th>Fun Level</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>01</td><td>Legal &amp; Ethics</td><td>How not to go to jail</td><td>Important but dry</td></tr>
+        <tr><td>02</td><td>Networking</td><td>HTTP, DNS, how the internet actually works</td><td>Foundational</td></tr>
+        <tr><td>03</td><td>Encoding</td><td>Base64, URL encoding, why URLs look weird</td><td>Surprisingly useful</td></tr>
+        <tr><td>04</td><td>Cookies</td><td>How websites remember you (and how to trick them)</td><td>Getting interesting</td></tr>
+        <tr><td>05</td><td>SOP &amp; CORS</td><td>The browser's security guard (and how to sneak past it)</td><td>Mind-bending</td></tr>
+        <tr><td>06</td><td>History</td><td>The wildest hacks in history</td><td>Story time!</td></tr>
+        <tr><td>07</td><td>Kill Chain</td><td>How real attacks unfold, step by step</td><td>Like a heist movie</td></tr>
+        <tr><td>08</td><td>SQL Injection</td><td>Talking to databases they didn't want you to talk to</td><td>Classic hacking</td></tr>
+        <tr><td>09</td><td>XSS</td><td>Making websites run YOUR code in other people's browsers</td><td>Deviously fun</td></tr>
+        <tr><td>10</td><td>SSTI</td><td>Tricking template engines into executing commands</td><td>Clever</td></tr>
+        <tr><td>11</td><td>IDOR</td><td>Changing a number in a URL to see someone else's data</td><td>Embarrassingly simple</td></tr>
+        <tr><td>12</td><td>Broken Auth</td><td>Passwords, sessions, and why "admin/admin" still works</td><td>Face-palmingly real</td></tr>
+        <tr><td>13</td><td>CSRF</td><td>Making someone else's browser do things for you</td><td>Sneaky</td></tr>
+        <tr><td>14</td><td>Clickjacking</td><td>Invisible buttons and transparent trickery</td><td>Visual hacking</td></tr>
+        <tr><td>15</td><td>SSRF</td><td>Making the server fetch things it shouldn't</td><td>Cloud killer</td></tr>
+        <tr><td>16</td><td>Path Traversal</td><td>Reading files you're not supposed to see</td><td>../../../fun</td></tr>
+        <tr><td>17</td><td>File Upload</td><td>Uploading code instead of cat pictures</td><td>Shell time</td></tr>
+        <tr><td>18</td><td>Command Injection</td><td>Making the server run YOUR terminal commands</td><td>Power trip</td></tr>
+        <tr><td>19</td><td>XXE</td><td>Weaponizing boring XML files</td><td>Unexpectedly dangerous</td></tr>
+        <tr><td>20</td><td>Race Conditions</td><td>Being faster than the server's security checks</td><td>Speed hacking</td></tr>
+        <tr><td>21</td><td>Deserialization</td><td>Poisoning data objects to run arbitrary code</td><td>Brain-melting</td></tr>
+        <tr><td>22</td><td>GraphQL</td><td>The cool new API format that everyone forgets to secure</td><td>Modern hacking</td></tr>
+        <tr><td>23</td><td>Reporting</td><td>How to write a vulnerability report that gets you paid</td><td>Career skills</td></tr>
+        <tr><td>24</td><td>WAF Evasion</td><td>Sneaking past security filters</td><td>Cat and mouse</td></tr>
+        <tr><td>25</td><td>Web Recon</td><td>Finding targets and mapping attack surfaces</td><td>Detective work</td></tr>
+        <tr><td>26</td><td>Next Steps</td><td>Where to go from here</td><td>Your adventure begins</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Before You Start: The Hacker's Toolkit</h2>
+  <p>
+    Here are the tools you'll use throughout this course. Don't worry about mastering them all right now —
+    we'll introduce them as we go.
+  </p>
+
+  <div class="panel">
+    <h3>Browser Developer Tools (F12)</h3>
+    <p>
+      Your #1 tool. Every browser has built-in developer tools that let you inspect HTML, watch network
+      requests, modify cookies, run JavaScript in the console, and much more. If you've never opened DevTools
+      before, do it now: press F12 (or Ctrl+Shift+I on Chrome/Firefox). Click around. Break things. That's
+      the spirit.
+    </p>
+    <p>
+      Key tabs you'll use:
+    </p>
+    <ul>
+      <li><strong>Elements/Inspector</strong> — See and edit the HTML of any page in real-time</li>
+      <li><strong>Console</strong> — Run JavaScript commands (great for XSS testing)</li>
+      <li><strong>Network</strong> — Watch every HTTP request your browser makes (this is where the magic happens)</li>
+      <li><strong>Application/Storage</strong> — View and modify cookies, localStorage, sessionStorage</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h3>curl</h3>
+    <p>
+      A command-line tool for sending HTTP requests. It comes pre-installed on Linux and Mac. Think of it
+      as a browser that you control with typed commands instead of clicking. You can set any header, send
+      any body, use any HTTP method. It's like texting the server directly instead of going through the
+      browser's UI.
+    </p>
+    <pre><code class="language-bash"># GET request
+curl http://localhost:5001/
+
+# POST request with form data
+curl -X POST http://localhost:5001/login -d "username=admin&password=test"
+
+# POST with JSON body
+curl -X POST http://localhost:5001/api -H "Content-Type: application/json" -d '{"key":"value"}'
+
+# See response headers
+curl -I http://localhost:5001/
+
+# Send a cookie
+curl -b "session=abc123" http://localhost:5001/dashboard</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>Burp Suite (Community Edition)</h3>
+    <p>
+      The Swiss Army knife of web hacking. Burp Suite sits between your browser and the server as a
+      <strong>proxy</strong>, letting you intercept, inspect, and modify every HTTP request before it reaches
+      the server. The Community Edition is free and has everything you need for learning.
+    </p>
+    <p>
+      Key features: <strong>Proxy</strong> (intercept requests), <strong>Repeater</strong> (resend modified requests),
+      <strong>Intruder</strong> (automated fuzzing), <strong>Decoder</strong> (encode/decode Base64, URL, etc.).
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Docker</h3>
+    <p>
+      Docker runs the Flask labs. Each lab is a self-contained "container" — like a tiny virtual computer
+      running a vulnerable web application. You start a lab with:
+    </p>
+    <pre><code class="language-bash">cd labs/sqli              # navigate to the lab folder
+docker compose up --build  # build and start the container
+# Visit http://localhost:5001 in your browser
+# Press Ctrl+C to stop when done</code></pre>
+    <p>
+      Containers are isolated, so you can break things without affecting your real system. That's the beauty
+      of Docker — it's a safe playground.
+    </p>
+  </div>
+
+  <h2>One Last Thing...</h2>
+  <p>
+    Learning security is a journey, not a destination. You're going to feel confused sometimes. You're going
+    to stare at a payload and wonder why it doesn't work. You're going to read about a vulnerability and think
+    "there's NO way real websites are this broken" (they are). And then one day, something will click, and
+    you'll see the Matrix.
+  </p>
+  <p>
+    Okay, maybe not the Matrix. But you'll understand something fundamental about how software works — and
+    how it fails. And that understanding is genuinely valuable, whether you're building, breaking, or defending.
+  </p>
+  <p>
+    Ready? Click <strong>Module 01: Legal &amp; Ethics</strong> in the sidebar to begin.
+  </p>
+  <p>
+    Let's hack. (Legally.)
+  </p>
+
+</section>
