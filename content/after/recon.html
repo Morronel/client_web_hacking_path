@@ -1,0 +1,211 @@
+<!-- Module: Web Reconnaissance & Bug Bounty -->
+<h1>Web Reconnaissance &amp; Bug Bounty</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Passive Reconnaissance</h2>
+  <p>
+    Passive recon gathers information about a target <strong>without directly interacting</strong> with
+    their systems. This makes it undetectable and is always the first phase of any security assessment.
+  </p>
+
+  <h3>WHOIS Lookups</h3>
+  <p>
+    WHOIS records reveal domain registration details including the registrant organization, registration date,
+    name servers, and sometimes contact information. Use <code>whois example.com</code> or online tools.
+  </p>
+
+  <h3>DNS Records</h3>
+  <p>
+    DNS records map the target's infrastructure. Key record types:
+  </p>
+  <div class="panel">
+    <table>
+      <thead>
+        <tr><th>Record</th><th>Purpose</th><th>Security Relevance</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>A / AAAA</strong></td><td>Maps domain to IP</td><td>Reveals hosting provider, co-hosted sites</td></tr>
+        <tr><td><strong>MX</strong></td><td>Mail server</td><td>Email infrastructure, potential phishing targets</td></tr>
+        <tr><td><strong>TXT</strong></td><td>Verification, SPF, DKIM</td><td>May reveal third-party services</td></tr>
+        <tr><td><strong>CNAME</strong></td><td>Alias to another domain</td><td>Subdomain takeover opportunities</td></tr>
+        <tr><td><strong>NS</strong></td><td>Name servers</td><td>DNS provider, zone transfer potential</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Wayback Machine</h3>
+  <p>
+    The Internet Archive's Wayback Machine (<code>web.archive.org</code>) stores historical snapshots of websites.
+    Old versions may expose endpoints, credentials in JavaScript files, or deprecated functionality that is still
+    accessible on the live site.
+  </p>
+
+  <h3>Google Dorks</h3>
+  <p>
+    Google dorking uses advanced search operators to find sensitive information indexed by Google:
+  </p>
+  <pre><code class="language-plaintext">site:example.com filetype:pdf          — PDF files on the target
+site:example.com inurl:admin            — Admin pages
+site:example.com intitle:"index of"     — Directory listings
+site:example.com ext:sql | ext:env      — Database dumps or env files
+inurl:"/wp-content/debug.log"           — WordPress debug logs</code></pre>
+
+  <h3>Certificate Transparency</h3>
+  <p>
+    Certificate Transparency (CT) logs record every SSL/TLS certificate issued. Tools like
+    <code>crt.sh</code> let you search CT logs to discover subdomains that have had certificates issued,
+    even if they are not publicly linked anywhere.
+  </p>
+
+  <h2>Active Reconnaissance</h2>
+  <p>
+    Active recon involves directly interacting with the target. This is detectable and should only be
+    performed within authorized scope.
+  </p>
+
+  <h3>Subdomain Enumeration</h3>
+  <p>
+    Discovering subdomains reveals the target's attack surface. Techniques include DNS brute-forcing
+    (trying common subdomain names), scraping search engine results, and querying CT logs. Tools:
+    <code>subfinder</code>, <code>amass</code>, <code>knockpy</code>.
+  </p>
+
+  <h3>Directory Brute-Forcing</h3>
+  <p>
+    Discovering hidden paths and files on a web server by testing common file and directory names.
+    Tools: <code>gobuster</code>, <code>feroxbuster</code>, <code>dirsearch</code>.
+  </p>
+
+  <h3>Technology Fingerprinting</h3>
+  <p>
+    Identifying the technologies running on a target (web server, framework, CMS, JavaScript libraries)
+    helps narrow down potential vulnerabilities. Tools: <code>Wappalyzer</code>, <code>WhatWeb</code>,
+    <code>BuiltWith</code>.
+  </p>
+
+  <h2>Bug Bounty Methodology</h2>
+
+  <h3>Scope Analysis</h3>
+  <p>
+    Always start by carefully reading the program's scope. Understand which domains, subdomains, and
+    vulnerability types are in scope. Out-of-scope testing can result in legal consequences and program bans.
+  </p>
+
+  <h3>Target Prioritization</h3>
+  <p>
+    Focus your efforts on the highest-value targets:
+  </p>
+  <ul>
+    <li><strong>Newly added scope</strong> — less likely to have been tested by others</li>
+    <li><strong>Older/legacy applications</strong> — may have weaker security controls</li>
+    <li><strong>User input-heavy features</strong> — search, forms, file uploads, APIs</li>
+    <li><strong>Authentication and authorization flows</strong> — login, password reset, role-based access</li>
+    <li><strong>Third-party integrations</strong> — often overlooked in security reviews</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <strong>Bug bounty tip:</strong> The best bug bounty hunters do not just run automated scanners.
+    They understand the application's business logic and look for flaws in how features interact.
+    Manual testing with a deep understanding of the application almost always yields higher-impact findings.
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Legal reminder:</strong> Only perform reconnaissance against targets where you have explicit
+    authorization. Bug bounty programs define what is in scope — respect those boundaries.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Google Dork Builder
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Google Dork Builder
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Build 3 valid Google dork queries by selecting operators and filling in values.
+    Each dork must use at least one operator with a non-empty value.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you built 3 Google dork queries!</div>
+
+  <div class="input-group">
+    <label>Select Operator</label>
+    <div class="encoder-toggle" id="dork-toggles">
+      <button class="btn btn-secondary active" data-op="site:">site:</button>
+      <button class="btn btn-secondary" data-op="inurl:">inurl:</button>
+      <button class="btn btn-secondary" data-op="filetype:">filetype:</button>
+      <button class="btn btn-secondary" data-op="intitle:">intitle:</button>
+      <button class="btn btn-secondary" data-op="intext:">intext:</button>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label>Value</label>
+    <input class="input-field" type="text" id="dork-value" placeholder='e.g. example.com, admin, pdf, "login page"' />
+  </div>
+
+  <div class="flex gap-sm">
+    <button class="btn btn-secondary" id="dork-add">Add to Query</button>
+    <button class="btn btn-primary" id="dork-save">Save Dork</button>
+    <button class="btn btn-secondary" id="dork-clear">Clear</button>
+  </div>
+
+  <div class="input-group" style="margin-top:1rem;">
+    <label>Current Query</label>
+    <input class="input-field" type="text" id="dork-query" readonly placeholder="Your dork query will build here..." />
+  </div>
+
+  <div style="margin-top:1rem;">
+    <label><strong>Saved Dorks</strong></label>
+    <div id="dork-list" class="panel" style="min-height:60px;">
+      <p class="text-muted">No dorks saved yet.</p>
+    </div>
+  </div>
+
+  <div id="dork-progress" class="text-muted" style="margin-top:0.5rem;">Dorks saved: 0 / 3</div>
+</div>
+
+<!-- ============================================
+     LAB 2: Subdomain Enumeration Simulator
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> Subdomain Enumeration Simulator
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Enumerate subdomains of <code>example.com</code>. Type subdomain guesses
+    and the simulated server will respond with whether each one exists. Find at least 4 out of
+    8 hidden valid subdomains to complete.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Lab complete — you discovered enough subdomains!</div>
+
+  <div class="input-group">
+    <label>Enter subdomain (without .example.com)</label>
+    <div class="flex gap-sm">
+      <input class="input-field" type="text" id="subdomain-input" placeholder="e.g. admin, dev, staging..." />
+      <button class="btn btn-primary" id="subdomain-check">Check</button>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;">
+    <label><strong>Enumeration Results</strong></label>
+    <div id="subdomain-results" class="panel" style="min-height:80px; max-height:300px; overflow-y:auto;">
+      <p class="text-muted">No subdomains checked yet.</p>
+    </div>
+  </div>
+
+  <div id="subdomain-progress" class="text-muted" style="margin-top:0.5rem;">Valid subdomains found: 0 / 4</div>
+</div>

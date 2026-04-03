@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Debug{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="panel">
+        <h2 class="glitch-text">&gt; 05 // DEBUG CONSOLE</h2>
+        <p>This page triggered an internal template error. Debug information is displayed below.</p>
+        <p class="dim-text">In production, this information should never be exposed to users.</p>
+
+        <div class="hint-box">
+            Challenge: Debug and error pages often leak sensitive information like configuration values, secret keys, and environment variables. Examine the data below carefully.
+        </div>
+    </div>
+
+    {% if error_info %}
+    <div class="panel">
+        <div class="debug-section">
+            <h3>&gt; ERROR DETAILS</h3>
+            <table class="debug-table">
+                <tr>
+                    <td>Exception Type</td>
+                    <td>{{ error_info.type }}</td>
+                </tr>
+                <tr>
+                    <td>Message</td>
+                    <td>{{ error_info.message }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="debug-section">
+            <h3>&gt; TRACEBACK</h3>
+            <pre class="result-pre">{{ error_info.traceback }}</pre>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="debug-section">
+            <h3>&gt; APPLICATION CONFIG (LEAKED)</h3>
+            <table class="debug-table">
+                {% for key, value in config_dump.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="debug-section">
+            <h3>&gt; ENVIRONMENT VARIABLES (LEAKED)</h3>
+            <table class="debug-table">
+                {% for key, value in env_dump.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

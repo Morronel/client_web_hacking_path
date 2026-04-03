@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Neural Authentication</h1>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if success %}
+<div class="alert alert-success">{{ success }}</div>
+{% endif %}
+
+{% if flag %}
+<div class="flag-box">{{ flag }}</div>
+{% endif %}
+
+<div class="card">
+    <form method="post" action="/login">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter username">
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter password">
+
+        <button type="submit">Jack In</button>
+    </form>
+</div>
+{% endblock %}

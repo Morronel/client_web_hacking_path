@@ -1,0 +1,186 @@
+<!-- Module: History of Hacking -->
+<h1>History of Hacking</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>The Evolution of Hacking</h2>
+  <p>
+    Hacking did not begin with computers. The hacker ethos — curiosity, exploration, and pushing systems
+    beyond their intended limits — traces back to early telephone networks. Understanding this history
+    provides context for modern security practices and helps you appreciate how attack techniques evolved.
+  </p>
+
+  <h2>Timeline of Key Events</h2>
+
+  <div class="panel">
+    <h3>1970s — Phone Phreaking</h3>
+    <p>
+      Before computer hacking, there was "phreaking" — exploiting telephone systems. John Draper
+      ("Captain Crunch") discovered that a toy whistle from a cereal box produced a 2600 Hz tone that
+      could manipulate AT&amp;T's switching systems, allowing free long-distance calls. Steve Wozniak and
+      Steve Jobs famously built and sold "blue boxes" that replicated this technique before founding Apple.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>1988 — The Morris Worm</h3>
+    <p>
+      Robert Tappan Morris, a Cornell graduate student, released the first major Internet worm. It exploited
+      vulnerabilities in Unix <code>sendmail</code>, <code>fingerd</code>, and weak passwords via <code>rsh/rexec</code>.
+      The worm infected approximately 6,000 machines — about 10% of the Internet at the time — and caused an
+      estimated $10-100 million in damages. Morris was the first person convicted under the CFAA. The incident
+      led to the creation of CERT/CC (Computer Emergency Response Team).
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>1990s — Kevin Mitnick</h3>
+    <p>
+      Kevin Mitnick became the most famous hacker of the 1990s, breaking into networks of major corporations
+      including Nokia, Motorola, and Sun Microsystems. He used social engineering as much as technical exploits.
+      After a highly publicized pursuit by the FBI (with assistance from security researcher Tsutomu Shimomura),
+      Mitnick was arrested in 1995 and served five years in prison. He later became a security consultant and
+      author, demonstrating that the line between attacker and defender is often about choices, not skill.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2003 — SQL Slammer Worm</h3>
+    <p>
+      The SQL Slammer worm exploited a buffer overflow in Microsoft SQL Server 2000. In just 10 minutes,
+      it infected 75,000 servers and caused widespread Internet slowdowns. The entire worm payload was only
+      376 bytes — small enough to fit in a single UDP packet. It demonstrated how a simple vulnerability
+      could cascade into a global incident.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2010 — Stuxnet</h3>
+    <p>
+      Stuxnet was a sophisticated worm widely attributed to the United States and Israel, designed to sabotage
+      Iran's nuclear enrichment program. It targeted Siemens SCADA systems controlling centrifuges at the
+      Natanz facility, causing them to spin at destructive speeds while reporting normal readings to operators.
+      Stuxnet used four zero-day exploits and stolen digital certificates. It was the first known cyberweapon
+      used to cause physical damage and marked the beginning of nation-state cyber warfare.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2011 — Anonymous &amp; LulzSec</h3>
+    <p>
+      The hacktivist collective Anonymous and its offshoot LulzSec conducted high-profile attacks against
+      governments, corporations, and organizations. LulzSec compromised Sony Pictures (leaking 1 million
+      accounts), PBS, the CIA website, and more — often using basic techniques like SQL injection. Their
+      motto "doing it for the lulz" highlighted how even unsophisticated attacks could cause massive damage
+      when basic security hygiene was ignored.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2010s-Present — Bug Bounty Era</h3>
+    <p>
+      The launch of platforms like HackerOne (2012) and Bugcrowd (2012) transformed vulnerability research
+      into a legitimate career. Companies began paying researchers for finding bugs instead of prosecuting
+      them. Google's Vulnerability Reward Program has paid out over $40 million. The U.S. Department of
+      Defense launched "Hack the Pentagon" in 2016. Today, thousands of organizations run bug bounty programs,
+      and top researchers earn six-figure incomes from bounties alone.
+    </p>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Lesson from history:</strong> The most devastating attacks often exploit well-known, preventable
+    vulnerabilities. SQL injection — discovered in the late 1990s — is still in the OWASP Top 10 today.
+    Understanding the past helps you recognize patterns that repeat in modern systems.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: History Quiz
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> History of Hacking Quiz
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 4 out of 5 questions correctly to demonstrate your
+    knowledge of hacking history.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you know your hacking history!</div>
+
+  <div class="lab-body">
+    <!-- Question 1 -->
+    <div class="panel" id="q1-panel">
+      <h3>Question 1</h3>
+      <p>What technique did early "phone phreakers" use to make free long-distance calls?</p>
+      <div class="quiz-options" id="q1-options">
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="a">SQL injection on telephone switching software</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="b">A 2600 Hz tone to manipulate AT&amp;T's switching systems</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="c">Buffer overflow exploits on landline firmware</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="d">Social engineering telephone operators</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="panel" id="q2-panel">
+      <h3>Question 2</h3>
+      <p>The Morris Worm (1988) led to the creation of which organization?</p>
+      <div class="quiz-options" id="q2-options">
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="a">OWASP</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="b">HackerOne</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="c">CERT/CC (Computer Emergency Response Team)</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="d">NSA Cyber Command</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="panel" id="q3-panel">
+      <h3>Question 3</h3>
+      <p>What was unique about the Stuxnet worm discovered in 2010?</p>
+      <div class="quiz-options" id="q3-options">
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="a">It was the largest DDoS attack in history</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="b">It was the first known cyberweapon to cause physical damage</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="c">It stole more credit cards than any previous breach</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="d">It was written entirely in JavaScript</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="panel" id="q4-panel">
+      <h3>Question 4</h3>
+      <p>Which hacking group compromised Sony Pictures and the CIA website in 2011, often using basic SQL injection?</p>
+      <div class="quiz-options" id="q4-options">
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="a">Equation Group</button>
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="b">Fancy Bear (APT28)</button>
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="c">LulzSec</button>
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="d">Lazarus Group</button>
+      </div>
+      <div class="quiz-feedback" id="q4-feedback"></div>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="panel" id="q5-panel">
+      <h3>Question 5</h3>
+      <p>The SQL Slammer worm (2003) fit its entire payload into how many bytes?</p>
+      <div class="quiz-options" id="q5-options">
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="a">4,096 bytes</button>
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="b">376 bytes</button>
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="c">64,000 bytes</button>
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="d">1,024 bytes</button>
+      </div>
+      <div class="quiz-feedback" id="q5-feedback"></div>
+    </div>
+
+    <button class="btn btn-primary" id="lab1-submit">Submit Answers</button>
+    <div id="lab1-result" class="quiz-result"></div>
+  </div>
+</div>

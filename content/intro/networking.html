@@ -1,0 +1,291 @@
+<section class="module-header">
+  <h1>Module 02 — Networking &amp; Protocols</h1>
+  <p>Understand the protocols that power the web and the security boundaries they create.</p>
+</section>
+
+<!-- ============ 8a: HTTP ============ -->
+<section class="theory-section">
+  <h2>8a. HTTP — HyperText Transfer Protocol</h2>
+  <p>HTTP is a request/response protocol. The client sends a request; the server sends a response.</p>
+
+  <h3>Request Anatomy</h3>
+  <pre><code class="language-http">GET /api/users?page=1 HTTP/1.1
+Host: example.com
+Accept: application/json
+Authorization: Bearer eyJhbGc...
+Cookie: session=abc123</code></pre>
+
+  <h3>Response Anatomy</h3>
+  <pre><code class="language-http">HTTP/1.1 200 OK
+Content-Type: application/json
+Set-Cookie: session=abc123; HttpOnly; Secure
+X-Frame-Options: DENY
+
+{"users": [...]}</code></pre>
+
+  <h3>Common Methods</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Method</th><th>Purpose</th><th>Body?</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET</code></td><td>Retrieve data</td><td>No</td></tr>
+        <tr><td><code>POST</code></td><td>Submit data / create resource</td><td>Yes</td></tr>
+        <tr><td><code>PUT</code></td><td>Update/replace resource</td><td>Yes</td></tr>
+        <tr><td><code>DELETE</code></td><td>Remove resource</td><td>Optional</td></tr>
+        <tr><td><code>PATCH</code></td><td>Partial update</td><td>Yes</td></tr>
+        <tr><td><code>OPTIONS</code></td><td>CORS preflight / capabilities</td><td>No</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Security-Relevant Status Codes</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Code</th><th>Meaning</th><th>Security Note</th></tr></thead>
+      <tbody>
+        <tr><td><code class="text-green">200</code></td><td>OK</td><td>—</td></tr>
+        <tr><td><code class="text-blue">301/302</code></td><td>Redirect</td><td>Open redirect vulnerability potential</td></tr>
+        <tr><td><code class="text-amber">401</code></td><td>Unauthorized</td><td>Missing/invalid credentials</td></tr>
+        <tr><td><code class="text-amber">403</code></td><td>Forbidden</td><td>Authenticated but not authorized</td></tr>
+        <tr><td><code class="text-amber">404</code></td><td>Not Found</td><td>Information disclosure if inconsistent</td></tr>
+        <tr><td><code class="text-red">500</code></td><td>Internal Error</td><td>May leak stack traces</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 8a</span> HTTP Request Builder</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+  <div class="lab-objective"><strong>Objective:</strong> Compose an HTTP request visually and see the raw request text. Build a GET request to <code>/api/users</code> with an <code>Authorization</code> header to complete.</div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label>Method:</label>
+        <select class="input-field" id="http-method">
+          <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Path:</label>
+        <input type="text" class="input-field" id="http-path" placeholder="/api/users" value="/api/users">
+      </div>
+      <div class="input-group">
+        <label>Host:</label>
+        <input type="text" class="input-field" id="http-host" placeholder="example.com" value="example.com">
+      </div>
+      <div class="input-group">
+        <label>Headers (one per line, Name: Value):</label>
+        <textarea class="input-field" id="http-headers" rows="3" placeholder="Accept: application/json&#10;Authorization: Bearer token123"></textarea>
+      </div>
+      <div class="input-group">
+        <label>Body (for POST/PUT/PATCH):</label>
+        <textarea class="input-field" id="http-body" rows="2" placeholder='{"key": "value"}'></textarea>
+      </div>
+      <button class="btn btn-primary" id="http-build-btn">Build Request</button>
+    </div>
+    <div>
+      <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Raw HTTP Request:</label>
+      <div class="http-request-display" id="http-output">Click "Build Request" to generate...</div>
+    </div>
+  </div>
+  <div class="banner banner-success" id="lab1-banner">&#9989; Valid HTTP request built with authorization header!</div>
+</div>
+
+<!-- ============ 8b: TCP & TLS ============ -->
+<section class="theory-section">
+  <h2>8b. TCP &amp; TLS</h2>
+
+  <h3>TCP Three-Way Handshake</h3>
+  <p>Before any HTTP data flows, TCP establishes a connection:</p>
+  <ol>
+    <li><strong>SYN:</strong> Client sends synchronization request with sequence number</li>
+    <li><strong>SYN-ACK:</strong> Server acknowledges and sends its own sequence number</li>
+    <li><strong>ACK:</strong> Client acknowledges — connection established</li>
+  </ol>
+
+  <h3>TLS Handshake</h3>
+  <p>Built on top of TCP, TLS encrypts the connection:</p>
+  <ol>
+    <li><strong>ClientHello:</strong> Supported cipher suites, TLS version, random data</li>
+    <li><strong>ServerHello:</strong> Chosen cipher suite, server certificate</li>
+    <li><strong>Key Exchange:</strong> Both sides derive the symmetric session key</li>
+    <li><strong>Finished:</strong> Both sides verify, encrypted communication begins</li>
+  </ol>
+
+  <div class="callout callout-info">
+    <strong>Why HTTPS matters:</strong> Without TLS, all HTTP data (credentials, cookies, personal info) travels in plaintext, visible to anyone on the network path.
+  </div>
+</section>
+
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 8b</span> TCP &amp; TLS Handshake Visualizer</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+  <div class="lab-objective"><strong>Objective:</strong> Watch the TCP and TLS handshakes animate step by step. Click through each phase to complete.</div>
+
+  <div class="flex gap-sm mb-md">
+    <button class="btn btn-primary" id="tcp-start-btn">Start TCP Handshake</button>
+    <button class="btn btn-secondary" id="tls-start-btn" disabled>Start TLS Handshake</button>
+  </div>
+
+  <div class="network-diagram" id="handshake-diagram">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;min-height:250px;">
+      <div class="network-node" style="min-width:90px;">
+        <svg width="40" height="40"><rect x="5" y="8" width="30" height="22" rx="2" fill="none" stroke="var(--accent-blue)" stroke-width="2"/><line x1="12" y1="30" x2="28" y2="30" stroke="var(--accent-blue)" stroke-width="2"/><rect x="10" y="32" width="20" height="3" rx="1" fill="var(--accent-blue)"/></svg>
+        <span class="network-node-label">Client</span>
+      </div>
+      <div id="handshake-messages" style="flex:1;padding:10px 20px;"></div>
+      <div class="network-node" style="min-width:90px;">
+        <svg width="40" height="40"><rect x="8" y="2" width="24" height="36" rx="3" fill="none" stroke="var(--accent-green)" stroke-width="2"/><line x1="14" y1="6" x2="26" y2="6" stroke="var(--accent-green)" stroke-width="1"/><circle cx="20" cy="32" r="3" fill="var(--accent-green)"/></svg>
+        <span class="network-node-label">Server</span>
+      </div>
+    </div>
+  </div>
+  <div class="banner banner-success" id="lab2-banner">&#9989; You visualized both TCP and TLS handshakes!</div>
+</div>
+
+<!-- ============ 8c: DNS ============ -->
+<section class="theory-section">
+  <h2>8c. DNS — Domain Name System</h2>
+  <p>DNS translates domain names to IP addresses through a hierarchical resolution chain:</p>
+  <ol>
+    <li><strong>Browser cache</strong> → checked first</li>
+    <li><strong>OS cache</strong> → /etc/hosts or OS resolver cache</li>
+    <li><strong>Recursive resolver</strong> → ISP or configured DNS (8.8.8.8)</li>
+    <li><strong>Root nameserver</strong> → directs to TLD server</li>
+    <li><strong>TLD nameserver</strong> → directs to authoritative server</li>
+    <li><strong>Authoritative nameserver</strong> → returns the actual IP</li>
+  </ol>
+
+  <h3>Record Types</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Type</th><th>Purpose</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><code>A</code></td><td>IPv4 address</td><td><code>93.184.216.34</code></td></tr>
+        <tr><td><code>AAAA</code></td><td>IPv6 address</td><td><code>2606:2800:220:1::248</code></td></tr>
+        <tr><td><code>CNAME</code></td><td>Alias to another domain</td><td><code>www → example.com</code></td></tr>
+        <tr><td><code>MX</code></td><td>Mail server</td><td><code>10 mail.example.com</code></td></tr>
+        <tr><td><code>TXT</code></td><td>Arbitrary text (SPF, DKIM)</td><td><code>v=spf1 include:_spf.google.com</code></td></tr>
+        <tr><td><code>NS</code></td><td>Nameserver</td><td><code>ns1.example.com</code></td></tr>
+        <tr><td><code>PTR</code></td><td>Reverse DNS</td><td><code>34.216.184.93 → example.com</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="lab-container" id="lab3">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 8c</span> DNS Resolution Simulator</div>
+    <span class="lab-status" id="lab3-status"></span>
+  </div>
+  <div class="lab-objective"><strong>Objective:</strong> Resolve a domain step-by-step through the DNS hierarchy. Successfully resolve <code>app.example.com</code>.</div>
+
+  <div class="input-group">
+    <label>Domain to resolve:</label>
+    <div class="flex gap-sm">
+      <input type="text" class="input-field" id="dns-domain" value="app.example.com" placeholder="e.g., app.example.com">
+      <button class="btn btn-primary" id="dns-resolve-btn">Resolve</button>
+    </div>
+  </div>
+
+  <div class="terminal-output" id="dns-output" style="min-height:200px;">Enter a domain and click Resolve...</div>
+  <div class="banner banner-success" id="lab3-banner">&#9989; DNS resolution complete! You traced the full resolution chain.</div>
+</div>
+
+<!-- ============ 8d: SOP ============ -->
+<section class="theory-section">
+  <h2>8d. Same-Origin Policy</h2>
+  <p>The <strong>Same-Origin Policy (SOP)</strong> is the browser's core security model. Two URLs have the same origin if and only if they share the same <strong>scheme</strong>, <strong>host</strong>, and <strong>port</strong>.</p>
+  <pre><code>https://example.com:443/path
+  ↑         ↑           ↑
+scheme    host        port</code></pre>
+  <p>SOP blocks cross-origin reads (JavaScript on origin A cannot read responses from origin B). CORS is an opt-in mechanism for servers to relax this restriction.</p>
+</section>
+
+<div class="lab-container" id="lab4">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 8d</span> Same-Origin Policy Checker</div>
+    <span class="lab-status" id="lab4-status"></span>
+  </div>
+  <div class="lab-objective"><strong>Objective:</strong> Enter two URLs to check if they share the same origin. Test at least 3 pairs to complete.</div>
+
+  <div class="encoder-grid">
+    <div class="input-group">
+      <label>URL A:</label>
+      <input type="text" class="input-field" id="sop-url-a" placeholder="https://example.com/page1" value="https://example.com/page1">
+    </div>
+    <div class="input-group">
+      <label>URL B:</label>
+      <input type="text" class="input-field" id="sop-url-b" placeholder="https://example.com:8080/page2" value="https://example.com:8080/page2">
+    </div>
+  </div>
+  <button class="btn btn-primary mb-md" id="sop-check-btn">Check Origin</button>
+
+  <div id="sop-result" style="display:none;" class="panel mb-md">
+    <div id="sop-verdict"></div>
+    <div class="table-wrapper mt-sm">
+      <table>
+        <thead><tr><th>Component</th><th>URL A</th><th>URL B</th><th>Match?</th></tr></thead>
+        <tbody id="sop-breakdown"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h4>Example Pairs to Try:</h4>
+  <div class="table-wrapper">
+    <table id="sop-examples">
+      <thead><tr><th>URL A</th><th>URL B</th><th>Expected</th></tr></thead>
+      <tbody>
+        <tr><td><code>https://example.com/a</code></td><td><code>https://example.com/b</code></td><td class="text-green">Same Origin</td></tr>
+        <tr><td><code>https://example.com</code></td><td><code>http://example.com</code></td><td class="text-red">Cross Origin (scheme)</td></tr>
+        <tr><td><code>https://example.com</code></td><td><code>https://api.example.com</code></td><td class="text-red">Cross Origin (host)</td></tr>
+        <tr><td><code>https://example.com</code></td><td><code>https://example.com:8443</code></td><td class="text-red">Cross Origin (port)</td></tr>
+        <tr><td><code>http://localhost:3000</code></td><td><code>http://localhost:3000/api</code></td><td class="text-green">Same Origin</td></tr>
+        <tr><td><code>http://localhost:3000</code></td><td><code>http://127.0.0.1:3000</code></td><td class="text-red">Cross Origin (host)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="banner banner-success" id="lab4-banner">&#9989; You understand Same-Origin Policy! Tested enough pairs.</div>
+</div>
+
+<!-- ============ 8e: CIDR ============ -->
+<section class="theory-section">
+  <h2>8e. CIDR &amp; Subnetting</h2>
+  <p><strong>CIDR (Classless Inter-Domain Routing)</strong> notation represents an IP address and its network mask: <code>192.168.1.0/24</code> means the first 24 bits are the network portion.</p>
+</section>
+
+<div class="lab-container" id="lab5">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 8e</span> CIDR / Subnet Calculator</div>
+    <span class="lab-status" id="lab5-status"></span>
+  </div>
+  <div class="lab-objective"><strong>Objective:</strong> Enter a CIDR notation to calculate network details. Calculate at least 2 subnets to complete.</div>
+
+  <div class="input-group">
+    <label>CIDR Notation:</label>
+    <div class="flex gap-sm">
+      <input type="text" class="input-field" id="cidr-input" placeholder="192.168.1.0/24" value="192.168.1.0/24">
+      <button class="btn btn-primary" id="cidr-calc-btn">Calculate</button>
+    </div>
+  </div>
+
+  <div id="cidr-result" style="display:none;">
+    <div class="table-wrapper">
+      <table>
+        <tbody id="cidr-details"></tbody>
+      </table>
+    </div>
+
+    <h4 class="mt-md">Binary Breakdown</h4>
+    <div class="panel">
+      <div class="binary-display" id="cidr-binary"></div>
+    </div>
+  </div>
+  <div class="banner banner-success" id="lab5-banner">&#9989; Subnet calculations complete!</div>
+</div>

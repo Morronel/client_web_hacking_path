@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>User Profile</h1>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if user %}
+<div class="card">
+    <table>
+        <tr><th>ID</th><td>{{ user['id'] }}</td></tr>
+        <tr><th>Username</th><td>{{ user['username'] }}</td></tr>
+        <tr><th>Role</th><td>{{ user['role'] }}</td></tr>
+        <tr><th>Secret Note</th><td>{{ user['secret_note'] }}</td></tr>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <p>User not found. The ghost has left the machine.</p>
+</div>
+{% endif %}
+
+<p class="text-center">
+    <a href="/profile?id=1">Admin Profile</a> |
+    <a href="/profile?id=2">Guest Profile</a>
+</p>
+{% endblock %}

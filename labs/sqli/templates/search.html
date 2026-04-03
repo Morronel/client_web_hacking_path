@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Search the Datastream</h1>
+
+<form action="/search" method="get" class="search-bar">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search the datastream...">
+    <button type="submit">Scan</button>
+</form>
+
+{% if error %}
+<div class="alert alert-error">
+    Database error: {{ error }}
+</div>
+{% endif %}
+
+{% if query %}
+<p>Results for: <strong>{{ query }}</strong></p>
+
+{% if results %}
+{% for post in results %}
+<div class="card">
+    <h2><a href="/post/{{ post['id'] }}">{{ post['title'] }}</a></h2>
+    <p>{{ post['content'][:180] }}...</p>
+    <div class="meta">
+        <span class="category">{{ post['category'] }}</span>
+        &nbsp;|&nbsp; by <strong>{{ post['author'] }}</strong>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card">
+    <p>No posts found for: {{ query }}</p>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

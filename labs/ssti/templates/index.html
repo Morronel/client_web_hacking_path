@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="panel">
+        <h2 class="glitch-text">&gt; WELCOME TO NEONGREET //</h2>
+        <p>A cyberpunk greeting card and profile generator with intentional Server-Side Template Injection (SSTI) vulnerabilities.</p>
+        <p>Your mission: exploit each endpoint to extract the hidden flags.</p>
+    </div>
+
+    <div class="challenge-grid">
+        <a href="/greeting" class="challenge-card">
+            <h3>01 // GREETING</h3>
+            <p>A simple greeting generator. Your name is rendered directly into the template. Can you make it say more than hello?</p>
+            <span class="difficulty easy">DIFFICULTY: EASY</span>
+        </a>
+
+        <a href="/profile" class="challenge-card">
+            <h3>02 // PROFILE</h3>
+            <p>Create your cyberpunk profile. The bio field has basic input filtering. Can you bypass the restrictions?</p>
+            <span class="difficulty medium">DIFFICULTY: MEDIUM</span>
+        </a>
+
+        <a href="/feedback" class="challenge-card">
+            <h3>03 // FEEDBACK</h3>
+            <p>Submit feedback to NeonGreet. The output is hidden from view. Can you extract the flag without seeing the response?</p>
+            <span class="difficulty hard">DIFFICULTY: HARD</span>
+        </a>
+
+        <a href="/sandbox" class="challenge-card">
+            <h3>04 // SANDBOX</h3>
+            <p>A "sandboxed" expression evaluator. Certain keywords are blocked. Navigate the object hierarchy to escape.</p>
+            <span class="difficulty expert">DIFFICULTY: EXPERT</span>
+        </a>
+
+        <a href="/debug" class="challenge-card">
+            <h3>05 // DEBUG</h3>
+            <p>The debug page has a template error. Sometimes errors reveal more than they should.</p>
+            <span class="difficulty easy">DIFFICULTY: EASY</span>
+        </a>
+    </div>
+
+    <div class="hint-box" style="margin-top: 1.5rem;">
+        Hint: All challenges use Jinja2 templates via Flask's <code>render_template_string()</code>. Understanding Jinja2 syntax is key.
+    </div>
+</div>
+{% endblock %}

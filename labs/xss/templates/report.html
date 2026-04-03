@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Report to Admin{% endblock %}
+
+{% block content %}
+<h1>&gt; Report URL to Admin Bot</h1>
+
+<div class="alert alert-warning">
+    Submit a URL and our admin bot will visit it. The admin is logged in with a session
+    containing a secret flag cookie. Can you steal it?
+</div>
+
+<form id="report-form">
+    <label for="url">URL</label>
+    <input type="url" id="url" name="url" placeholder="http://localhost:5002/..." required>
+
+    <button type="submit">Send to Admin Bot</button>
+</form>
+
+<div id="report-result"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('report-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var url = document.getElementById('url').value;
+    var resultDiv = document.getElementById('report-result');
+
+    fetch('{{ url_for("report_submit") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url: url})
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+        if (data.status === 'success') {
+            resultDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+        } else {
+            resultDiv.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
+        }
+    })
+    .catch(function(err) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">Error: ' + err + '</div>';
+    });
+});
+</script>
+{% endblock %}

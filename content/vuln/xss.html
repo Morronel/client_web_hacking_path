@@ -1,0 +1,219 @@
+<section class="module-header">
+  <h1>Module 09 — Cross-Site Scripting (XSS)</h1>
+  <p>Master XSS attack vectors across different injection contexts and learn how browsers parse and execute injected code.</p>
+</section>
+
+<section class="theory-section">
+  <h2>Types of XSS</h2>
+
+  <h3>Reflected XSS</h3>
+  <p>The malicious script comes from the current HTTP request. The server includes unvalidated input directly in the response.</p>
+  <pre><code class="language-python"># Server reflects input directly into HTML
+@app.route('/search')
+def search():
+    query = request.args.get('q', '')
+    return f"&lt;h1&gt;Results for: {query}&lt;/h1&gt;"</code></pre>
+
+  <h3>Stored XSS</h3>
+  <p>The malicious script is permanently stored on the server (database, comment field, profile). Every user who views the page is affected.</p>
+
+  <h3>DOM-based XSS</h3>
+  <p>The vulnerability exists in client-side JavaScript that processes data from an untrusted source (like <code>location.hash</code>) and writes it to the DOM unsafely.</p>
+  <pre><code class="language-javascript">// Vulnerable: innerHTML with untrusted data
+document.getElementById('output').innerHTML = location.hash.slice(1);
+
+// Safe: textContent escapes HTML
+document.getElementById('output').textContent = location.hash.slice(1);</code></pre>
+
+  <h2>Injection Contexts</h2>
+  <p>The context where your input lands determines which payloads will work:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Context</th><th>Example</th><th>Escape Strategy</th></tr></thead>
+      <tbody>
+        <tr><td>HTML body</td><td><code>&lt;p&gt;Hello USER_INPUT&lt;/p&gt;</code></td><td>Inject <code>&lt;script&gt;</code> or event handlers</td></tr>
+        <tr><td>HTML attribute</td><td><code>&lt;input value="USER_INPUT"&gt;</code></td><td>Close attribute with <code>"</code>, add event handler</td></tr>
+        <tr><td>JavaScript string</td><td><code>var x = 'USER_INPUT';</code></td><td>Close string with <code>'</code>, inject code</td></tr>
+        <tr><td>URL/href</td><td><code>&lt;a href="USER_INPUT"&gt;</code></td><td>Use <code>javascript:</code> protocol</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Filter Bypass Techniques</h2>
+  <ul>
+    <li><strong>Case variation:</strong> <code>&lt;ScRiPt&gt;</code> — some filters are case-sensitive</li>
+    <li><strong>Alternative tags:</strong> <code>&lt;img&gt;</code>, <code>&lt;svg&gt;</code>, <code>&lt;body&gt;</code>, <code>&lt;details&gt;</code></li>
+    <li><strong>Event handlers:</strong> <code>onerror</code>, <code>onload</code>, <code>onfocus</code>, <code>onmouseover</code></li>
+    <li><strong>SVG:</strong> <code>&lt;svg onload=alert(1)&gt;</code></li>
+    <li><strong>Encoding:</strong> HTML entities, URL encoding, Unicode escapes</li>
+  </ul>
+
+  <h2>Content Security Policy (CSP)</h2>
+  <p>CSP is a browser mechanism that restricts what scripts can execute:</p>
+  <pre><code class="language-http">Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.example.com</code></pre>
+  <p>Common bypasses: <code>unsafe-inline</code>, <code>unsafe-eval</code>, <code>data:</code> URIs, JSONP endpoints on whitelisted domains.</p>
+
+  <div class="callout callout-danger">
+    <strong>XSS Impact:</strong> Session hijacking (stealing cookies), credential harvesting (fake login forms), CSRF token theft, keylogging, cryptocurrency mining, defacement, and worm propagation.
+  </div>
+</section>
+
+<!-- ========== LABS ========== -->
+<h2>Labs</h2>
+<div class="callout callout-info mb-md">
+  <strong>How these labs work:</strong> Each lab runs in a sandboxed iframe. When you successfully execute JavaScript, a green "XSS Triggered!" banner appears. Your goal is to make <code>alert()</code> execute in each context.
+</div>
+
+<!-- Lab 1: Reflected XSS -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Reflected XSS — HTML Body</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+  <div class="lab-objective">
+    <strong>Objective:</strong> Your input is reflected directly into the HTML body without any sanitization. Inject a payload that executes JavaScript.
+  </div>
+  <div class="callout callout-info mb-md" style="font-size:0.85rem;">
+    <strong>Vulnerable code:</strong> <code>&lt;p&gt;Hello, USER_INPUT!&lt;/p&gt;</code>
+  </div>
+  <div class="input-group">
+    <label>Your input:</label>
+    <div class="flex gap-sm">
+      <input type="text" class="input-field" id="xss1-input" placeholder='Try: <script>alert(1)</script>'>
+      <button class="btn btn-primary" id="xss1-btn">Inject</button>
+    </div>
+  </div>
+  <div class="iframe-container">
+    <div class="iframe-label">Rendered Page (sandboxed)</div>
+    <div id="xss1-frame-container"></div>
+  </div>
+  <div class="banner banner-success" id="lab1-banner">&#9989; XSS Triggered! You executed JavaScript in the HTML body context.</div>
+</div>
+
+<!-- Lab 2: Attribute Context -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Attribute Context XSS</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+  <div class="lab-objective">
+    <strong>Objective:</strong> Your input is placed inside an HTML attribute value. Break out of the attribute to execute JavaScript.
+  </div>
+  <div class="callout callout-info mb-md" style="font-size:0.85rem;">
+    <strong>Vulnerable code:</strong> <code>&lt;input type="text" value="USER_INPUT"&gt;</code>
+  </div>
+  <div class="input-group">
+    <label>Your input:</label>
+    <div class="flex gap-sm">
+      <input type="text" class="input-field" id="xss2-input" placeholder='Try: " onfocus=alert(1) autofocus="'>
+      <button class="btn btn-primary" id="xss2-btn">Inject</button>
+    </div>
+  </div>
+  <div class="iframe-container">
+    <div class="iframe-label">Rendered Page (sandboxed)</div>
+    <div id="xss2-frame-container"></div>
+  </div>
+  <div class="banner banner-success" id="lab2-banner">&#9989; XSS Triggered! You escaped the attribute context.</div>
+</div>
+
+<!-- Lab 3: JS String Context -->
+<div class="lab-container" id="lab3">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 3</span> JavaScript String Context</div>
+    <span class="lab-status" id="lab3-status"></span>
+  </div>
+  <div class="lab-objective">
+    <strong>Objective:</strong> Your input is placed inside a JavaScript string variable. Escape the string and execute your own code.
+  </div>
+  <div class="callout callout-info mb-md" style="font-size:0.85rem;">
+    <strong>Vulnerable code:</strong> <code>var name = 'USER_INPUT'; document.write('Hello ' + name);</code>
+  </div>
+  <div class="input-group">
+    <label>Your input:</label>
+    <div class="flex gap-sm">
+      <input type="text" class="input-field" id="xss3-input" placeholder="Try: '; alert(1); var x='">
+      <button class="btn btn-primary" id="xss3-btn">Inject</button>
+    </div>
+  </div>
+  <div class="iframe-container">
+    <div class="iframe-label">Rendered Page (sandboxed)</div>
+    <div id="xss3-frame-container"></div>
+  </div>
+  <div class="banner banner-success" id="lab3-banner">&#9989; XSS Triggered! You escaped the JavaScript string context.</div>
+</div>
+
+<!-- Lab 4: Filter Bypass -->
+<div class="lab-container" id="lab4">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 4</span> Filter Bypass</div>
+    <span class="lab-status" id="lab4-status"></span>
+  </div>
+  <div class="lab-objective">
+    <strong>Objective:</strong> The application strips <code>&lt;script&gt;</code> tags from input. Find an alternative way to execute JavaScript.
+  </div>
+  <div class="callout callout-warning mb-md" style="font-size:0.85rem;">
+    <strong>Filter:</strong> All <code>&lt;script&gt;</code> and <code>&lt;/script&gt;</code> tags are removed (case-insensitive).
+  </div>
+  <div class="input-group">
+    <label>Your input:</label>
+    <div class="flex gap-sm">
+      <input type="text" class="input-field" id="xss4-input" placeholder='Try: <img src=x onerror=alert(1)>'>
+      <button class="btn btn-primary" id="xss4-btn">Inject</button>
+    </div>
+  </div>
+  <div class="iframe-container">
+    <div class="iframe-label">Rendered Page (sandboxed — &lt;script&gt; filtered)</div>
+    <div id="xss4-frame-container"></div>
+  </div>
+  <div class="banner banner-success" id="lab4-banner">&#9989; XSS Triggered! You bypassed the script tag filter.</div>
+</div>
+
+<!-- Lab 5: DOM XSS -->
+<div class="lab-container" id="lab5">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 5</span> DOM-Based XSS</div>
+    <span class="lab-status" id="lab5-status"></span>
+  </div>
+  <div class="lab-objective">
+    <strong>Objective:</strong> The page reads from a URL parameter and writes it to the DOM using <code>innerHTML</code>. Exploit this DOM-based vulnerability.
+  </div>
+  <div class="callout callout-info mb-md" style="font-size:0.85rem;">
+    <strong>Vulnerable JS in page:</strong>
+    <pre style="margin:8px 0 0;"><code class="language-javascript">var params = new URLSearchParams(window.location.search);
+var name = params.get('name') || 'Guest';
+document.getElementById('greeting').innerHTML = 'Welcome, ' + name + '!';</code></pre>
+  </div>
+  <div class="input-group">
+    <label>Simulated <code>?name=</code> parameter:</label>
+    <div class="flex gap-sm">
+      <input type="text" class="input-field" id="xss5-input" placeholder='Try: <img src=x onerror=alert(1)>'>
+      <button class="btn btn-primary" id="xss5-btn">Load Page</button>
+    </div>
+  </div>
+  <div class="iframe-container">
+    <div class="iframe-label">Rendered Page (sandboxed — DOM XSS)</div>
+    <div id="xss5-frame-container"></div>
+  </div>
+  <div class="banner banner-success" id="lab5-banner">&#9989; XSS Triggered! You exploited the DOM-based vulnerability.</div>
+</div>
+
+<!-- ============================================
+     FLASK LAB SECTION
+     ============================================ -->
+<div class="lab-card" style="border-color: var(--accent-blue); background: linear-gradient(135deg, #0d1117 0%, #111827 100%);">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num" style="background: var(--accent-blue);">Flask Lab</span> CyberForum — Real XSS Practice</div>
+  </div>
+  <div class="lab-body">
+    <p>Exploit XSS vulnerabilities in a <strong>real Flask forum application</strong>. Steal cookies, inject scripts, and bypass CSP.</p>
+    <div class="panel" style="margin-top: 12px;">
+      <strong>Setup:</strong>
+      <pre><code class="language-bash">cd labs/xss
+pip install flask
+python app.py
+# Visit http://localhost:5002</code></pre>
+    </div>
+    <p class="text-muted" style="margin-top: 8px;">Challenges: Reflected XSS, Stored XSS, DOM XSS, Attribute Injection, CSP Bypass</p>
+  </div>
+</div>

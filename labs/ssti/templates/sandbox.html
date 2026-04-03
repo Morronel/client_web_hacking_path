@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sandbox{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="panel">
+        <h2 class="glitch-text">&gt; 04 // SANDBOXED EVALUATOR</h2>
+        <p>Evaluate Jinja2 expressions in a "sandboxed" environment. Some keywords are restricted.</p>
+
+        <div class="hint-box">
+            Challenge: The word <code>config</code> is stripped (case-insensitive) from your input before rendering. You need to access the flag through Jinja2 object traversal. Try navigating Python's MRO (Method Resolution Order) chain via <code>__class__</code>, <code>__mro__</code>, <code>__subclasses__()</code>, or use built-in objects like <code>lipsum.__globals__</code> or <code>cycler.__init__.__globals__</code> to reach the application's configuration.
+        </div>
+
+        <div class="flash-error" style="margin-bottom: 1rem;">
+            Blocked keywords: <strong>config</strong> (case-insensitive)
+        </div>
+
+        <form method="GET" action="/sandbox">
+            <div class="form-group">
+                <label>&gt; ENTER EXPRESSION:</label>
+                <input type="text" name="expr" value="{{ expr }}" placeholder="e.g., &#123;&#123;7*7&#125;&#125;" autocomplete="off">
+            </div>
+            <button type="submit" class="btn">Evaluate</button>
+        </form>
+    </div>
+
+    {% if output %}
+    {{ output | safe }}
+    {% endif %}
+</div>
+{% endblock %}

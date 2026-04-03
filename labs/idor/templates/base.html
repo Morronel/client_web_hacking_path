@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NeonShop{% endblock %} - IDOR Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="nav-brand">// NEONSHOP</div>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('profile_page') }}">My Profile</a>
+            <a href="{{ url_for('orders_page') }}">My Orders</a>
+            <a href="{{ url_for('messages_page') }}">Messages</a>
+            <a href="{{ url_for('files_page') }}">Downloads</a>
+            <a href="{{ url_for('settings_page') }}">Settings</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <span>// NEONSHOP</span> &mdash; IDOR Vulnerability Lab &mdash; Port 5004<br>
+        Logged in as: <span>{{ session.get('username', 'not logged in') }}</span>
+        (ID: {{ session.get('user_id', '?') }})
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

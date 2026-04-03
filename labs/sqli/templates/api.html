@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>API Documentation</h1>
+
+<div class="card">
+    <h2>GET /api/posts</h2>
+    <p>Returns all blog posts in JSON format.</p>
+
+    <h3>Parameters</h3>
+    <table>
+        <tr><th>Name</th><th>Type</th><th>Description</th></tr>
+        <tr>
+            <td>category</td>
+            <td>string (optional)</td>
+            <td>Filter posts by category. Available categories: cyberware, hacking, culture, news, hardware</td>
+        </tr>
+    </table>
+
+    <h3>Example Request</h3>
+    <div class="code-block">
+        GET /api/posts?category=hacking
+    </div>
+
+    <h3>Example Response</h3>
+    <div class="code-block">
+{
+  "status": "success",
+  "count": 1,
+  "posts": [
+    {
+      "id": 2,
+      "title": "Decking 101: How to Breach ICE Without Dying",
+      "content": "Every wannabe netrunner thinks...",
+      "author": "gh0stwr1t3r",
+      "category": "hacking",
+      "created_at": "2087-01-01 00:00:00"
+    }
+  ]
+}
+    </div>
+
+    <h3>Error Response</h3>
+    <div class="code-block">
+{
+  "status": "error",
+  "message": "SQL error details...",
+  "query": "SELECT * FROM posts WHERE category = '...'"
+}
+    </div>
+</div>
+
+<div class="card">
+    <h3>Try It</h3>
+    <p>Quick links to test the API:</p>
+    <p>
+        <a href="/api/posts">All posts</a> |
+        <a href="/api/posts?category=hacking">Hacking</a> |
+        <a href="/api/posts?category=cyberware">Cyberware</a> |
+        <a href="/api/posts?category=culture">Culture</a> |
+        <a href="/api/posts?category=news">News</a> |
+        <a href="/api/posts?category=hardware">Hardware</a>
+    </p>
+</div>
+{% endblock %}

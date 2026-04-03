@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}My Orders{% endblock %}
+
+{% block content %}
+<h1>// ORDER HISTORY</h1>
+
+<div class="card">
+    <h3>Your Orders</h3>
+    <p>Fetching your orders from the API:</p>
+
+    <div class="api-url">
+        <span>Fetching from:</span><br>
+        <span id="api-endpoint">/api/order/2</span>
+    </div>
+
+    <h2 style="margin-top:1rem;">Order #2</h2>
+    <div class="data-display" id="order-data-2">Loading...</div>
+
+    <h2 style="margin-top:1rem;">Order #3</h2>
+    <div class="data-display" id="order-data-3">Loading...</div>
+
+    <div class="hint-box">
+        <strong>Hint:</strong> You can see orders #2 and #3 (they belong to you).
+        But order IDs start at 1... What is order #1?
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    [2, 3].forEach(function(orderId) {
+        fetch('/api/order/' + orderId)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('order-data-' + orderId).textContent =
+                    JSON.stringify(data, null, 2);
+            })
+            .catch(err => {
+                document.getElementById('order-data-' + orderId).textContent = 'Error: ' + err;
+            });
+    });
+</script>
+{% endblock %}

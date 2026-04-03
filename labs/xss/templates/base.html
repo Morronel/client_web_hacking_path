@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CyberForum{% endblock %} - XSS Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}" class="brand">&gt;_ CyberForum</a>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('search') }}">Search</a></li>
+            <li><a href="{{ url_for('report_page') }}">Report to Admin</a></li>
+            <li><a href="{{ url_for('csp_demo') }}">CSP Demo</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <span>&gt;_</span> CyberForum - XSS Lab - Port 5002
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

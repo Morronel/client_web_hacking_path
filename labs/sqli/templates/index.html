@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Latest Transmissions</h1>
+
+<form action="/search" method="get" class="search-bar">
+    <input type="text" name="q" placeholder="Search the datastream...">
+    <button type="submit">Scan</button>
+</form>
+
+{% for post in posts %}
+<div class="card">
+    <h2><a href="/post/{{ post['id'] }}">{{ post['title'] }}</a></h2>
+    <p>{{ post['content'][:180] }}...</p>
+    <div class="meta">
+        <span class="category">{{ post['category'] }}</span>
+        &nbsp;|&nbsp; by <strong>{{ post['author'] }}</strong>
+        &nbsp;|&nbsp; {{ post['created_at'] }}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

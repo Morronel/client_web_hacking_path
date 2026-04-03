@@ -1,18 +1,41 @@
 /* ============================================
-   Hash-Based SPA Router
+   Hash-Based SPA Router — 16 Module Registry
    ============================================ */
 
 const Router = (() => {
   const modules = {
-    m1: { file: 'content/m1-encoding.html', handler: 'm1Encoding', title: 'Encoding & Cryptography', labs: 4 },
-    m2: { file: 'content/m2-sqli.html', handler: 'm2Sqli', title: 'SQL Injection', labs: 4 },
-    m3: { file: 'content/m3-ssti.html', handler: 'm3Ssti', title: 'SSTI', labs: 2 },
-    m4: { file: 'content/m4-idor.html', handler: 'm4Idor', title: 'IDOR', labs: 2 },
-    m5: { file: 'content/m5-xss.html', handler: 'm5Xss', title: 'XSS', labs: 5 },
-    m6: { file: 'content/m6-auth.html', handler: 'm6Auth', title: 'Broken Auth', labs: 2 },
-    m7: { file: 'content/m7-cookies.html', handler: 'm7Cookies', title: 'Cookies', labs: 2 },
-    m8: { file: 'content/m8-networking.html', handler: 'm8Networking', title: 'Networking', labs: 5 }
+    // ── Introduction (7) ──
+    'intro-legal':      { file: 'content/intro/legal.html',      handler: 'introLegal',      title: 'Legal & Ethics',       labs: 1 },
+    'intro-networking': { file: 'content/intro/networking.html',  handler: 'introNetworking', title: 'Networking',           labs: 3 },
+    'intro-encoding':   { file: 'content/intro/encoding.html',   handler: 'introEncoding',   title: 'Encoding & Crypto',    labs: 4 },
+    'intro-cookies':    { file: 'content/intro/cookies.html',     handler: 'introCookies',    title: 'Cookies & Sessions',   labs: 2 },
+    'intro-sop':        { file: 'content/intro/sop.html',         handler: 'introSop',        title: 'SOP & CORS',           labs: 2 },
+    'intro-history':    { file: 'content/intro/history.html',     handler: 'introHistory',    title: 'History of Hacking',   labs: 1 },
+    'intro-killchain':  { file: 'content/intro/killchain.html',   handler: 'introKillchain',  title: 'Cyber Kill Chain',     labs: 1 },
+
+    // ── Vulnerabilities (5) ──
+    'vuln-sqli':  { file: 'content/vuln/sqli.html',  handler: 'vulnSqli',  title: 'SQL Injection',  labs: 4 },
+    'vuln-xss':   { file: 'content/vuln/xss.html',   handler: 'vulnXss',   title: 'XSS',            labs: 5 },
+    'vuln-ssti':  { file: 'content/vuln/ssti.html',  handler: 'vulnSsti',  title: 'SSTI',           labs: 2 },
+    'vuln-idor':  { file: 'content/vuln/idor.html',  handler: 'vulnIdor',  title: 'IDOR',           labs: 2 },
+    'vuln-auth':  { file: 'content/vuln/auth.html',  handler: 'vulnAuth',  title: 'Broken Auth',    labs: 2 },
+
+    // ── Aftermath (4) ──
+    'after-reporting':   { file: 'content/after/reporting.html',   handler: 'afterReporting',   title: 'Reporting',    labs: 1 },
+    'after-obfuscation': { file: 'content/after/obfuscation.html', handler: 'afterObfuscation', title: 'WAF Evasion',  labs: 2 },
+    'after-recon':       { file: 'content/after/recon.html',       handler: 'afterRecon',       title: 'Web Recon',    labs: 2 },
+    'after-next':        { file: 'content/after/next.html',        handler: 'afterNext',        title: 'Next Steps',   labs: 1 }
   };
+
+  // Category groupings for sidebar and game unlocks
+  const CATEGORIES = {
+    intro:  ['intro-legal', 'intro-networking', 'intro-encoding', 'intro-cookies', 'intro-sop', 'intro-history', 'intro-killchain'],
+    vuln:   ['vuln-sqli', 'vuln-xss', 'vuln-ssti', 'vuln-idor', 'vuln-auth'],
+    after:  ['after-reporting', 'after-obfuscation', 'after-recon', 'after-next']
+  };
+
+  // Sorted keys longest-first for route matching
+  const sortedKeys = Object.keys(modules).sort((a, b) => b.length - a.length);
 
   let currentModule = null;
   let contentEl = null;
@@ -24,7 +47,7 @@ const Router = (() => {
   }
 
   function handleRoute() {
-    const hash = location.hash.replace('#', '') || 'm1';
+    const hash = location.hash.replace('#', '') || 'intro-legal';
 
     // Game route
     if (hash === 'game' || hash.startsWith('game-')) {
@@ -32,12 +55,13 @@ const Router = (() => {
       return;
     }
 
-    const moduleKey = hash.split('-')[0]; // handle #m2-lab2 etc.
+    // Find the longest matching module key
+    const moduleKey = sortedKeys.find(k => hash === k || hash.startsWith(k + '-'));
 
-    if (modules[moduleKey]) {
+    if (moduleKey) {
       loadModule(moduleKey);
     } else {
-      loadModule('m1');
+      loadModule('intro-legal');
     }
   }
 
@@ -144,10 +168,10 @@ const Router = (() => {
       // Update progress indicators
       updateProgressBadges();
 
-      // Scroll to specific lab if hash contains lab reference
+      // Scroll to specific lab if hash contains sub-target
       const hash = location.hash.replace('#', '');
-      if (hash.includes('-')) {
-        const labTarget = hash.split('-').slice(1).join('-');
+      if (hash.length > key.length && hash.charAt(key.length) === '-') {
+        const labTarget = hash.slice(key.length + 1);
         const targetEl = Utils.$(`#${labTarget}`, contentEl);
         if (targetEl) {
           setTimeout(() => targetEl.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -189,7 +213,17 @@ const Router = (() => {
     updateProgressBadges();
   }
 
-  return { init, loadModule, updateProgressBadges, markLabComplete, modules };
+  // Check if all modules in a category are completed
+  function isCategoryComplete(category) {
+    const mods = CATEGORIES[category];
+    if (!mods) return false;
+    return mods.every(key => {
+      const mod = modules[key];
+      return Storage.getModuleStatus(key, mod.labs) === 'completed';
+    });
+  }
+
+  return { init, loadModule, updateProgressBadges, markLabComplete, modules, CATEGORIES, isCategoryComplete };
 })();
 
 // Initialize on DOM ready

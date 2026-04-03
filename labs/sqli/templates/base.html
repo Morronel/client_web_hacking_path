@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeonPulse Blog</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <div class="brand">// NeonPulse</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/search">Search</a>
+            <a href="/login">Login</a>
+            <a href="/admin/logs">Admin Logs</a>
+            <a href="/api/docs">API Docs</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        NeonPulse Blog &mdash; Educational SQL Injection Lab &mdash; Port 5001
+    </footer>
+</body>
+</html>

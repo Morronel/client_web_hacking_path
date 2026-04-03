@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}NeonAuth - Brute Force{% endblock %}
+{% block content %}
+<h1>// BRUTE FORCE</h1>
+<p class="subtitle">No Rate Limiting - Zero protections against automated attacks.</p>
+
+<div class="hint">
+    Hint: Admin's password is in the top 100 most common passwords list. This endpoint accepts
+    JSON POST requests for easy scripting:<br><br>
+    <code>curl -X POST http://localhost:5005/brute -H "Content-Type: application/json" -d '{"username":"admin","password":"test"}'</code>
+</div>
+
+<div class="card">
+    <h3>Manual Test</h3>
+    <form id="brute-form">
+        <div class="form-group">
+            <label>USERNAME</label>
+            <input type="text" id="bf-username" value="admin" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>PASSWORD</label>
+            <input type="password" id="bf-password" placeholder="Guess the password">
+        </div>
+        <button type="submit" class="btn">Attempt</button>
+    </form>
+
+    <div id="bf-result" style="margin-top: 1rem;"></div>
+</div>
+
+<div class="card">
+    <h3>API Info</h3>
+    <p>Endpoint: <code>POST /brute</code></p>
+    <p>Content-Type: <code>application/json</code></p>
+    <p>Body: <code>{"username": "...", "password": "..."}</code></p>
+    <p>Response: <code>{"success": true/false, "message": "..."}</code></p>
+    <p style="margin-top: 0.5rem; color: var(--text-muted);">No rate limiting. No CAPTCHA. No account lockout. Fire away.</p>
+</div>
+
+<script>
+document.getElementById('brute-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var username = document.getElementById('bf-username').value;
+    var password = document.getElementById('bf-password').value;
+    var resultDiv = document.getElementById('bf-result');
+
+    fetch('/brute', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: username, password: password})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            resultDiv.innerHTML = '<div class="flag-box"><div class="flag-label">FLAG CAPTURED</div><div class="flag-value">' + data.flag + '</div></div>';
+        } else {
+            resultDiv.innerHTML = '<div class="alert alert-error">' + data.message + '</div>';
+        }
+    })
+    .catch(function(err) {
+        resultDiv.innerHTML = '<div class="alert alert-error">Request failed: ' + err + '</div>';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,238 @@
+<!-- Module: Cyber Kill Chain -->
+<h1>Cyber Kill Chain &amp; ATT&amp;CK</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>The Lockheed Martin Cyber Kill Chain</h2>
+  <p>
+    Developed by Lockheed Martin in 2011, the Cyber Kill Chain is a framework that describes the stages
+    of a cyberattack from initial reconnaissance to achieving the attacker's objective. Understanding these
+    phases helps defenders identify and disrupt attacks at each stage — the earlier the disruption, the
+    lower the impact.
+  </p>
+
+  <div class="panel">
+    <h3>The 7 Phases</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Phase</th>
+          <th>Description</th>
+          <th>Web Attack Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Reconnaissance</strong></td>
+          <td>Researching the target — gathering information about systems, people, and infrastructure</td>
+          <td>Subdomain enumeration, directory brute-forcing, Shodan scans, OSINT on employees</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Weaponization</strong></td>
+          <td>Creating a deliverable payload — combining an exploit with a backdoor</td>
+          <td>Crafting a malicious SQL injection payload, building an XSS payload with cookie stealer</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Delivery</strong></td>
+          <td>Transmitting the weapon to the target environment</td>
+          <td>Submitting the payload via a web form, sending a phishing email with a malicious link</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Exploitation</strong></td>
+          <td>Triggering the payload to exploit a vulnerability</td>
+          <td>SQL injection executes on the database, XSS fires in victim's browser, SSTI renders server-side</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Installation</strong></td>
+          <td>Installing persistent access (backdoor, web shell, malware)</td>
+          <td>Uploading a web shell via file upload vulnerability, creating a rogue admin account</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Command &amp; Control (C2)</strong></td>
+          <td>Establishing a communication channel for remote control</td>
+          <td>Web shell provides interactive access, reverse shell phones home, DNS tunneling for covert C2</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Actions on Objectives</strong></td>
+          <td>Achieving the goal — data exfiltration, destruction, or lateral movement</td>
+          <td>Dumping the database, defacing the website, pivoting to internal systems</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Defender's advantage:</strong> An attacker must succeed at every phase. A defender only needs
+    to break the chain at one point. This is why defense-in-depth — multiple layers of security — is so
+    effective.
+  </div>
+
+  <h2>MITRE ATT&amp;CK Framework</h2>
+  <p>
+    While the Kill Chain provides a high-level view, the MITRE ATT&amp;CK (Adversarial Tactics, Techniques,
+    and Common Knowledge) framework provides granular detail. It catalogs real-world adversary behaviors
+    into a matrix of tactics (the "why") and techniques (the "how").
+  </p>
+
+  <div class="panel">
+    <h3>Key ATT&amp;CK Tactics</h3>
+    <ul>
+      <li><strong>Initial Access</strong> — how attackers get in (phishing, exploiting public-facing apps)</li>
+      <li><strong>Execution</strong> — running malicious code (command injection, scripting)</li>
+      <li><strong>Persistence</strong> — maintaining access (web shells, account creation)</li>
+      <li><strong>Privilege Escalation</strong> — gaining higher permissions (IDOR to admin, JWT manipulation)</li>
+      <li><strong>Defense Evasion</strong> — avoiding detection (obfuscation, encoding payloads)</li>
+      <li><strong>Credential Access</strong> — stealing credentials (SQL injection to dump hashes, session hijacking)</li>
+      <li><strong>Collection</strong> — gathering target data</li>
+      <li><strong>Exfiltration</strong> — stealing data out of the environment</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Kill Chain vs ATT&amp;CK:</strong> The Kill Chain is linear — it assumes attacks progress through
+    stages in order. ATT&amp;CK is more flexible, recognizing that attackers may skip phases, repeat them,
+    or operate in multiple phases simultaneously. Both frameworks are valuable; use the Kill Chain for
+    high-level understanding and ATT&amp;CK for detailed threat modeling.
+  </div>
+
+  <h2>Mapping Web Attacks to the Kill Chain</h2>
+  <p>
+    Every web vulnerability you learn in this course maps to one or more Kill Chain phases. Here are some
+    examples:
+  </p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Web Attack</th>
+          <th>Primary Phase</th>
+          <th>Explanation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Directory brute-forcing</td>
+          <td>Reconnaissance</td>
+          <td>Discovering hidden endpoints and admin panels</td>
+        </tr>
+        <tr>
+          <td>SQL Injection</td>
+          <td>Exploitation</td>
+          <td>Exploiting a vulnerability to extract or manipulate data</td>
+        </tr>
+        <tr>
+          <td>XSS (Stored)</td>
+          <td>Delivery + Exploitation</td>
+          <td>Payload is delivered via stored content and exploits the victim's browser</td>
+        </tr>
+        <tr>
+          <td>Web Shell Upload</td>
+          <td>Installation</td>
+          <td>Establishing persistent remote access to the server</td>
+        </tr>
+        <tr>
+          <td>SSTI to RCE</td>
+          <td>Exploitation + Installation</td>
+          <td>Template injection leads to code execution and potential backdoor</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Kill Chain Ordering & Quiz
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Kill Chain Phases &amp; Attack Mapping
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> First, arrange the 7 Kill Chain phases in the correct order by clicking
+    them in sequence. Then answer 3 questions about which phase different attacks belong to.
+    You need the correct order AND at least 2/3 questions right to pass.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you understand the Cyber Kill Chain!</div>
+
+  <div class="lab-body">
+    <!-- Part 1: Ordering -->
+    <div class="panel" id="ordering-panel">
+      <h3>Part 1: Order the Kill Chain Phases</h3>
+      <p>Click the phases in the correct order (1 through 7). Click "Reset Order" to start over.</p>
+
+      <div id="phase-buttons" class="quiz-options">
+        <button class="btn btn-secondary phase-btn" data-phase="Installation">Installation</button>
+        <button class="btn btn-secondary phase-btn" data-phase="Reconnaissance">Reconnaissance</button>
+        <button class="btn btn-secondary phase-btn" data-phase="Actions on Objectives">Actions on Objectives</button>
+        <button class="btn btn-secondary phase-btn" data-phase="Delivery">Delivery</button>
+        <button class="btn btn-secondary phase-btn" data-phase="Command & Control">Command &amp; Control</button>
+        <button class="btn btn-secondary phase-btn" data-phase="Weaponization">Weaponization</button>
+        <button class="btn btn-secondary phase-btn" data-phase="Exploitation">Exploitation</button>
+      </div>
+
+      <div id="selected-order" class="panel" style="min-height:40px;margin-top:12px;">
+        <strong>Your order:</strong> <span id="order-display" class="text-muted">Click phases above...</span>
+      </div>
+
+      <button class="btn btn-secondary" id="reset-order">Reset Order</button>
+      <div id="order-feedback" class="quiz-feedback" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- Part 2: Phase Mapping Quiz -->
+    <div class="panel" id="quiz-panel">
+      <h3>Part 2: Attack Phase Mapping</h3>
+
+      <div id="q1-panel" style="margin-bottom:16px;">
+        <p><strong>Q1:</strong> An attacker uses Shodan to find exposed admin panels. Which Kill Chain phase is this?</p>
+        <div class="quiz-options" id="q1-options">
+          <button class="btn btn-secondary quiz-option" data-q="1" data-val="a">Weaponization</button>
+          <button class="btn btn-secondary quiz-option" data-q="1" data-val="b">Reconnaissance</button>
+          <button class="btn btn-secondary quiz-option" data-q="1" data-val="c">Delivery</button>
+          <button class="btn btn-secondary quiz-option" data-q="1" data-val="d">Exploitation</button>
+        </div>
+        <div class="quiz-feedback" id="q1-feedback"></div>
+      </div>
+
+      <div id="q2-panel" style="margin-bottom:16px;">
+        <p><strong>Q2:</strong> An attacker uploads a web shell after exploiting a file upload vulnerability. Which phase?</p>
+        <div class="quiz-options" id="q2-options">
+          <button class="btn btn-secondary quiz-option" data-q="2" data-val="a">Exploitation</button>
+          <button class="btn btn-secondary quiz-option" data-q="2" data-val="b">Delivery</button>
+          <button class="btn btn-secondary quiz-option" data-q="2" data-val="c">Installation</button>
+          <button class="btn btn-secondary quiz-option" data-q="2" data-val="d">Actions on Objectives</button>
+        </div>
+        <div class="quiz-feedback" id="q2-feedback"></div>
+      </div>
+
+      <div id="q3-panel" style="margin-bottom:16px;">
+        <p><strong>Q3:</strong> An attacker exfiltrates the user database after gaining access. Which phase?</p>
+        <div class="quiz-options" id="q3-options">
+          <button class="btn btn-secondary quiz-option" data-q="3" data-val="a">Command &amp; Control</button>
+          <button class="btn btn-secondary quiz-option" data-q="3" data-val="b">Installation</button>
+          <button class="btn btn-secondary quiz-option" data-q="3" data-val="c">Exploitation</button>
+          <button class="btn btn-secondary quiz-option" data-q="3" data-val="d">Actions on Objectives</button>
+        </div>
+        <div class="quiz-feedback" id="q3-feedback"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="lab1-submit">Submit All</button>
+    <div id="lab1-result" class="quiz-result"></div>
+  </div>
+</div>

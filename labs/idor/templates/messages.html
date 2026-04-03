@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<h1>// MESSAGES</h1>
+
+<div class="card">
+    <h3>Your Inbox</h3>
+    <p>Fetching messages from the API:</p>
+
+    <div class="api-url">
+        <span>Fetching from:</span><br>
+        <span id="api-endpoint">/api/message/3</span>
+    </div>
+
+    <h2 style="margin-top:1rem;">Message #3 (Your message)</h2>
+    <div class="data-display" id="msg-data-3">Loading...</div>
+
+    <h2 style="margin-top:1rem;">Message #2 (Your sent message)</h2>
+    <div class="data-display" id="msg-data-2">Loading...</div>
+
+    <div class="hint-box">
+        <strong>Hint:</strong> You can see messages #2 and #3.
+        Message #1 is marked as private and belongs to admin.
+        But does the API actually enforce that?
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    [3, 2].forEach(function(msgId) {
+        fetch('/api/message/' + msgId)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('msg-data-' + msgId).textContent =
+                    JSON.stringify(data, null, 2);
+            })
+            .catch(err => {
+                document.getElementById('msg-data-' + msgId).textContent = 'Error: ' + err;
+            });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,343 @@
+/* NeonAuth - Synthwave Cyberpunk Theme */
+
+:root {
+    --bg-primary: #0a0a1a;
+    --bg-secondary: #12122a;
+    --bg-card: #1a1a3e;
+    --neon-red: #ff0040;
+    --neon-blue: #00a0ff;
+    --neon-purple: #b000ff;
+    --neon-green: #00ff88;
+    --text-primary: #e0e0f0;
+    --text-muted: #8888aa;
+    --border-color: #2a2a5a;
+    --input-bg: #0e0e24;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Courier New', 'Lucida Console', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.6;
+}
+
+a {
+    color: var(--neon-blue);
+    text-decoration: none;
+    transition: text-shadow 0.2s;
+}
+
+a:hover {
+    text-shadow: 0 0 8px var(--neon-blue), 0 0 16px var(--neon-blue);
+}
+
+/* Navigation */
+nav {
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--neon-red);
+    padding: 0.8rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 20px rgba(255, 0, 64, 0.15);
+}
+
+nav .brand {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--neon-red);
+    text-shadow: 0 0 10px var(--neon-red);
+    letter-spacing: 2px;
+}
+
+nav .nav-links {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
+nav .nav-links a {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+nav .nav-links a:hover {
+    border-color: var(--neon-blue);
+    text-shadow: 0 0 6px var(--neon-blue);
+}
+
+/* Main content */
+main {
+    flex: 1;
+    max-width: 960px;
+    width: 100%;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+h1, h2, h3 {
+    color: var(--neon-red);
+    text-shadow: 0 0 8px rgba(255, 0, 64, 0.4);
+    margin-bottom: 1rem;
+}
+
+h1 { font-size: 2rem; letter-spacing: 3px; }
+h2 { font-size: 1.4rem; letter-spacing: 2px; }
+h3 { font-size: 1.1rem; }
+
+/* Cards */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 15px rgba(0, 160, 255, 0.1);
+}
+
+.card h3 {
+    color: var(--neon-blue);
+    text-shadow: 0 0 6px rgba(0, 160, 255, 0.3);
+}
+
+.card .difficulty {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.difficulty.easy { background: #004400; color: var(--neon-green); border: 1px solid var(--neon-green); }
+.difficulty.medium { background: #443300; color: #ffaa00; border: 1px solid #ffaa00; }
+.difficulty.hard { background: #440000; color: var(--neon-red); border: 1px solid var(--neon-red); }
+
+.card p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.8rem;
+}
+
+.card a.btn {
+    display: inline-block;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--neon-blue);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 8px rgba(0, 160, 255, 0.3);
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: transparent;
+    border: 2px solid var(--neon-red);
+    color: var(--neon-red);
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-transform: uppercase;
+}
+
+.btn:hover {
+    background: var(--neon-red);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255, 0, 64, 0.4);
+    text-shadow: none;
+}
+
+.btn-blue {
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+}
+
+.btn-blue:hover {
+    background: var(--neon-blue);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0, 160, 255, 0.4);
+}
+
+/* Alerts */
+.alert {
+    padding: 0.8rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    border: 1px solid;
+}
+
+.alert-error {
+    background: rgba(255, 0, 64, 0.1);
+    border-color: var(--neon-red);
+    color: #ff6688;
+}
+
+.alert-success {
+    background: rgba(0, 255, 136, 0.08);
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+}
+
+.alert-info {
+    background: rgba(0, 160, 255, 0.08);
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+}
+
+/* Flag display */
+.flag-box {
+    background: rgba(0, 255, 136, 0.05);
+    border: 2px solid var(--neon-green);
+    border-radius: 6px;
+    padding: 1.2rem;
+    margin: 1rem 0;
+    text-align: center;
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.15);
+}
+
+.flag-box .flag-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+}
+
+.flag-box .flag-value {
+    font-size: 1.3rem;
+    color: var(--neon-green);
+    text-shadow: 0 0 10px var(--neon-green);
+    word-break: break-all;
+}
+
+/* Reset link display */
+.reset-link-box {
+    background: var(--input-bg);
+    border: 1px solid var(--neon-purple);
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1rem 0;
+    word-break: break-all;
+    font-size: 0.85rem;
+    color: var(--neon-purple);
+}
+
+/* Users table */
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.users-table th,
+.users-table td {
+    padding: 0.6rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.users-table th {
+    color: var(--neon-blue);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--neon-blue);
+}
+
+.users-table tr:hover td {
+    background: rgba(0, 160, 255, 0.05);
+}
+
+/* Hint box */
+.hint {
+    background: rgba(176, 0, 255, 0.08);
+    border-left: 3px solid var(--neon-purple);
+    padding: 0.8rem 1rem;
+    margin: 1rem 0;
+    font-size: 0.85rem;
+    color: #cc88ff;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+}
+
+/* Session info */
+.session-info {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0.5rem 0;
+    word-break: break-all;
+}
+
+/* Grid for challenge cards */
+.challenges-grid {
+    display: grid;
+    gap: 1.2rem;
+}
+
+/* Subtitle */
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+}

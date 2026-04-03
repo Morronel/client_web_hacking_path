@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<h1>// USER PROFILE</h1>
+
+<div class="card">
+    <h3>Profile Data</h3>
+    <p>Fetching your profile from the API:</p>
+
+    <div class="api-url">
+        <span>Fetching from:</span><br>
+        <span id="api-endpoint">/api/user/{{ session.get('user_id', 2) }}</span>
+    </div>
+
+    <div class="data-display" id="profile-data">Loading...</div>
+
+    <div class="hint-box">
+        <strong>Hint:</strong> The API returns profiles by user ID.
+        Your ID is {{ session.get('user_id', 2) }}. Are there other users?
+        Try <a href="/api/users" style="color:#ff9900;">/api/users</a> to see.
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const userId = {{ session.get('user_id', 2) }};
+    const url = '/api/user/' + userId;
+    document.getElementById('api-endpoint').textContent = url;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('profile-data').textContent =
+                JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+            document.getElementById('profile-data').textContent = 'Error: ' + err;
+        });
+</script>
+{% endblock %}

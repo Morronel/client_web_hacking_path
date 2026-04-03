@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ post['title'] }}{% endblock %}
+
+{% block content %}
+<h1>&gt; {{ post['title'] }}</h1>
+<div class="card-meta" style="margin-bottom: 1rem;">
+    Posted by <a href="{{ url_for('profile', user_id=post['author_id']) }}">{{ post['display_name'] }}</a>
+</div>
+
+<div class="card">
+    <div class="card-body">{{ post['content'] }}</div>
+</div>
+
+<!-- Hidden flag: accessible via DOM when stored XSS executes -->
+<div id="stored-flag" style="display:none">FLAG{st0r3d_xss_p3rs1st}</div>
+
+<hr>
+
+<h2>&gt; Comments</h2>
+
+{% for comment in comments %}
+<div class="comment">
+    <div class="comment-author">&gt; {{ comment['username'] }}</div>
+    {# INTENTIONALLY VULNERABLE: comment content rendered without escaping #}
+    <div class="comment-content">{{ comment['content']|safe }}</div>
+</div>
+{% endfor %}
+
+{% if not comments %}
+<div class="alert alert-info">No comments yet. Be the first netrunner to respond.</div>
+{% endif %}
+
+<hr>
+
+<h3>&gt; Add Comment</h3>
+<form method="POST" action="{{ url_for('add_comment', post_id=post['id']) }}">
+    <label for="username">Handle</label>
+    <input type="text" id="username" name="username" placeholder="Your handle..." required>
+
+    <label for="content">Message</label>
+    <textarea id="content" name="content" placeholder="Write your comment... (HTML is allowed)" required></textarea>
+
+    <button type="submit">Post Comment</button>
+</form>
+{% endblock %}

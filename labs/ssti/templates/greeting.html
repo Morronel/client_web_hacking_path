@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Greeting{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="panel">
+        <h2 class="glitch-text">&gt; 01 // GREETING GENERATOR</h2>
+        <p>Enter your name and receive a personalized cyberpunk greeting card.</p>
+        <p class="dim-text">Your input is rendered directly into the template engine.</p>
+
+        <div class="hint-box">
+            Challenge: The <code>name</code> parameter is inserted directly into a Jinja2 template string. Try injecting template expressions like <code>&#123;&#123;7*7&#125;&#125;</code> to test for SSTI.
+        </div>
+
+        <form method="GET" action="/greeting">
+            <div class="form-group">
+                <label>&gt; ENTER YOUR NAME:</label>
+                <input type="text" name="name" value="{{ name }}" placeholder="e.g., NetRunner_42" autocomplete="off">
+            </div>
+            <button type="submit" class="btn">Generate Greeting</button>
+        </form>
+    </div>
+
+    {% if output %}
+    {{ output | safe }}
+    {% endif %}
+</div>
+{% endblock %}

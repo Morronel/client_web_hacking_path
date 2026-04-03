@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}NeonAuth - Weak Password Challenge{% endblock %}
+{% block content %}
+<h1>// WEAK PASSWORD</h1>
+<p class="subtitle">The "operator" account has a dangerously weak password. Can you crack it?</p>
+
+<div class="hint">
+    Hint: The operator's password is one of the most commonly used passwords. Think simple, think obvious.
+</div>
+
+<div class="card">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    {% if flag %}
+    <div class="flag-box">
+        <div class="flag-label">FLAG CAPTURED</div>
+        <div class="flag-value">{{ flag }}</div>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('weak_password') }}">
+        <div class="form-group">
+            <label>USERNAME</label>
+            <input type="text" name="username" value="operator" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>PASSWORD</label>
+            <input type="password" name="password" placeholder="Guess the weak password">
+        </div>
+        <button type="submit" class="btn">Attempt Login</button>
+    </form>
+</div>
+{% endblock %}

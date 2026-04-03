@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Feedback{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="panel">
+        <h2 class="glitch-text">&gt; 03 // FEEDBACK TERMINAL</h2>
+        <p>Send feedback to NeonGreet. Your message is processed server-side but the rendered output is not displayed.</p>
+        <p class="dim-text">This is a blind SSTI challenge &mdash; you cannot see the template output directly.</p>
+
+        <div class="hint-box">
+            Challenge: The feedback is rendered via <code>render_template_string()</code> but the output is discarded. If the template causes an error, you get a different response. Use the <code>/feedback/check?guess=</code> endpoint to verify flag values character by character, or try conditional/error-based techniques.
+        </div>
+
+        {% if message %}
+            {% if error %}
+            <div class="flash-error">{{ message }}</div>
+            {% else %}
+            <div class="flash-success">{{ message }}</div>
+            {% endif %}
+        {% endif %}
+
+        <form method="POST" action="/feedback">
+            <div class="form-group">
+                <label>&gt; ENTER FEEDBACK:</label>
+                <textarea name="text" placeholder="Your feedback..."></textarea>
+            </div>
+            <button type="submit" class="btn">Submit Feedback</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h2>&gt; FLAG CHECKER</h2>
+        <p class="dim-text">Use this endpoint to verify your guess for the blind flag.</p>
+
+        <form method="GET" action="/feedback/check">
+            <div class="form-group">
+                <label>&gt; GUESS THE FLAG:</label>
+                <input type="text" name="guess" placeholder="FLAG{...}" autocomplete="off">
+            </div>
+            <button type="submit" class="btn btn-purple">Check Flag</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

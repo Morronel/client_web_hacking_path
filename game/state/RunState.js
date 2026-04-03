@@ -6,7 +6,10 @@ window.Game = window.Game || {};
 
 Game.RunState = (() => {
   const MODULE_LAB_COUNTS = {
-    m1: 4, m2: 4, m3: 2, m4: 2, m5: 5, m6: 2, m7: 2, m8: 5
+    'intro-legal': 1, 'intro-networking': 3, 'intro-encoding': 4, 'intro-cookies': 2,
+    'intro-sop': 2, 'intro-history': 1, 'intro-killchain': 1,
+    'vuln-sqli': 4, 'vuln-xss': 5, 'vuln-ssti': 2, 'vuln-idor': 2, 'vuln-auth': 2,
+    'after-reporting': 1, 'after-obfuscation': 2, 'after-recon': 2, 'after-next': 1
   };
 
   let state = null;
@@ -16,6 +19,14 @@ Game.RunState = (() => {
     for (const [moduleId, totalLabs] of Object.entries(MODULE_LAB_COUNTS)) {
       if (Storage.getModuleStatus(moduleId, totalLabs) === 'completed') {
         unlocked.push(moduleId);
+      }
+    }
+    // Check category-based unlocks
+    if (window.Router) {
+      if (Router.isCategoryComplete('intro')) unlocked.push('category-intro');
+      if (Router.isCategoryComplete('after')) unlocked.push('category-after');
+      if (Router.isCategoryComplete('intro') && Router.isCategoryComplete('vuln') && Router.isCategoryComplete('after')) {
+        unlocked.push('category-all');
       }
     }
     return unlocked;

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<h1>// ACCOUNT SETTINGS</h1>
+
+<div class="card">
+    <h3>Your Settings</h3>
+    <p>Fetching your account settings from the API:</p>
+
+    <div class="api-url">
+        <span>Fetching from:</span><br>
+        <span id="api-endpoint">/api/settings?user_id={{ session.get('user_id', 2) }}</span>
+    </div>
+
+    <div class="data-display" id="settings-data">Loading...</div>
+
+    <div class="hint-box">
+        <strong>Hint:</strong> The settings endpoint uses a <code>user_id</code> query parameter.
+        Your user_id is {{ session.get('user_id', 2) }}. The admin's user_id is 1.
+        Does the server check which user you actually are?
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const userId = {{ session.get('user_id', 2) }};
+    const url = '/api/settings?user_id=' + userId;
+    document.getElementById('api-endpoint').textContent = url;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('settings-data').textContent =
+                JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+            document.getElementById('settings-data').textContent = 'Error: ' + err;
+        });
+</script>
+{% endblock %}

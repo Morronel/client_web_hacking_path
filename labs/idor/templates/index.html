@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1>// DASHBOARD</h1>
+
+<div class="card">
+    <h3>Welcome, {{ session.get('username', 'unknown') }}</h3>
+    <p>Your User ID: <span class="user-badge">{{ session.get('user_id', '?') }}</span>
+       &nbsp; Role: <span class="user-badge">{{ session.get('role', '?') }}</span></p>
+    <p style="margin-top: 0.5rem; color: var(--text-muted);">
+        You are logged in as a regular user. Explore the shop and see what you can find...
+    </p>
+</div>
+
+<div class="hint-box">
+    <strong>IDOR Lab Objective:</strong> Find all 5 hidden flags by exploiting
+    Insecure Direct Object Reference vulnerabilities. Each API endpoint fetches
+    data by ID without verifying ownership. Try changing the IDs in the URLs!
+    <br><br>
+    <a href="/hints" style="color: #ff9900;">GET /hints</a> for detailed challenge info.
+</div>
+
+<h2>// FEATURES</h2>
+
+<div class="card-grid">
+    <div class="card">
+        <h3>User Profile</h3>
+        <p>View your profile data via the API.</p>
+        <div class="api-url">
+            <span>API endpoint:</span><br>
+            /api/user/{{ session.get('user_id', 2) }}
+        </div>
+        <a href="{{ url_for('profile_page') }}" class="btn">View Profile</a>
+    </div>
+
+    <div class="card">
+        <h3>Orders</h3>
+        <p>Check your order history.</p>
+        <div class="api-url">
+            <span>API endpoint:</span><br>
+            /api/order/2
+        </div>
+        <a href="{{ url_for('orders_page') }}" class="btn">View Orders</a>
+    </div>
+
+    <div class="card">
+        <h3>Messages</h3>
+        <p>Read your inbox messages.</p>
+        <div class="api-url">
+            <span>API endpoint:</span><br>
+            /api/message/3
+        </div>
+        <a href="{{ url_for('messages_page') }}" class="btn">View Messages</a>
+    </div>
+
+    <div class="card">
+        <h3>Downloads</h3>
+        <p>Download your purchased files.</p>
+        <div class="api-url">
+            <span>API endpoint:</span><br>
+            /download?file=receipt.txt
+        </div>
+        <a href="{{ url_for('files_page') }}" class="btn">View Files</a>
+    </div>
+
+    <div class="card">
+        <h3>Settings</h3>
+        <p>View your account settings and API key.</p>
+        <div class="api-url">
+            <span>API endpoint:</span><br>
+            /api/settings?user_id={{ session.get('user_id', 2) }}
+        </div>
+        <a href="{{ url_for('settings_page') }}" class="btn">View Settings</a>
+    </div>
+
+    <div class="card">
+        <h3>User Directory</h3>
+        <p>See all registered users.</p>
+        <div class="api-url">
+            <span>API endpoint:</span><br>
+            /api/users
+        </div>
+        <a href="/api/users" class="btn btn-cyan" target="_blank">View Users</a>
+    </div>
+</div>
+{% endblock %}

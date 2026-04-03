@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+
+{% block content %}
+<h1>&gt; Search Posts</h1>
+
+<form class="search-form" method="GET" action="{{ url_for('search') }}">
+    <input type="text" name="q" placeholder="Search the forum..." value="{{ q }}">
+    <button type="submit">Search</button>
+</form>
+
+<!-- flag for reflected: FLAG{r3fl3ct3d_xss_p0p} -->
+
+{# INTENTIONALLY VULNERABLE: results_html contains unsanitized user input via Markup() #}
+{% if results_html %}
+{{ results_html }}
+{% endif %}
+
+{% if q %}
+    {% if results %}
+        {% for post in results %}
+        <div class="card">
+            <div class="card-title">
+                <a href="{{ url_for('view_post', post_id=post['id']) }}">{{ post['title'] }}</a>
+            </div>
+            <div class="card-meta">
+                Posted by {{ post['display_name'] }}
+            </div>
+            <div class="card-body">
+                {{ post['content'][:150] }}{% if post['content']|length > 150 %}...{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-warning">No posts matching your query.</div>
+    {% endif %}
+{% endif %}
+{% endblock %}

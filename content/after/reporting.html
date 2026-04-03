@@ -1,0 +1,240 @@
+<!-- Module: Reporting & Responsible Disclosure -->
+<h1>Reporting &amp; Responsible Disclosure</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Writing Vulnerability Reports</h2>
+  <p>
+    A well-written vulnerability report is the difference between a security issue getting fixed quickly
+    and one that languishes in a backlog. Whether you are submitting to a bug bounty program or
+    coordinating with a vendor directly, the quality of your report determines its impact.
+  </p>
+
+  <h3>Essential Components of a Report</h3>
+  <p>Every vulnerability report should include these key sections:</p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Section</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Title</strong></td>
+          <td>A concise, descriptive title that identifies the vulnerability type and affected component (e.g., "Stored XSS in User Profile Bio Field")</td>
+        </tr>
+        <tr>
+          <td><strong>Severity</strong></td>
+          <td>The assessed severity level using CVSS or the program's rating system</td>
+        </tr>
+        <tr>
+          <td><strong>Description</strong></td>
+          <td>A clear explanation of what the vulnerability is, where it exists, and why it matters</td>
+        </tr>
+        <tr>
+          <td><strong>Steps to Reproduce</strong></td>
+          <td>Numbered, precise steps that allow anyone to replicate the issue — this is the most important section</td>
+        </tr>
+        <tr>
+          <td><strong>Impact</strong></td>
+          <td>What an attacker could achieve by exploiting this vulnerability (data theft, account takeover, etc.)</td>
+        </tr>
+        <tr>
+          <td><strong>Remediation</strong></td>
+          <td>Suggested fixes or mitigations (input validation, parameterized queries, CSP headers, etc.)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Pro tip:</strong> Always include screenshots, HTTP request/response pairs, or video recordings
+    when possible. Visual evidence makes your report significantly more convincing and easier to triage.
+  </div>
+
+  <h2>CVSS Scoring Basics</h2>
+  <p>
+    The <strong>Common Vulnerability Scoring System (CVSS)</strong> is the industry-standard framework for
+    rating vulnerability severity. It produces a score from 0.0 to 10.0 based on several metrics:
+  </p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Score Range</th>
+          <th>Rating</th>
+          <th>Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0.0</td>
+          <td>None</td>
+          <td>Informational finding</td>
+        </tr>
+        <tr>
+          <td>0.1 – 3.9</td>
+          <td>Low</td>
+          <td>Information disclosure with limited impact</td>
+        </tr>
+        <tr>
+          <td>4.0 – 6.9</td>
+          <td>Medium</td>
+          <td>Reflected XSS requiring user interaction</td>
+        </tr>
+        <tr>
+          <td>7.0 – 8.9</td>
+          <td>High</td>
+          <td>SQL injection with data exfiltration</td>
+        </tr>
+        <tr>
+          <td>9.0 – 10.0</td>
+          <td>Critical</td>
+          <td>Remote code execution, no authentication required</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    CVSS considers factors like <strong>Attack Vector</strong> (network, adjacent, local, physical),
+    <strong>Attack Complexity</strong> (low, high), <strong>Privileges Required</strong> (none, low, high),
+    <strong>User Interaction</strong> (none, required), and the impact on <strong>Confidentiality</strong>,
+    <strong>Integrity</strong>, and <strong>Availability</strong>.
+  </p>
+
+  <div class="callout callout-warning">
+    <strong>Important:</strong> Do not confuse CVSS with CVE or CWE. <strong>CVE</strong> (Common Vulnerabilities
+    and Exposures) is an identifier system for known vulnerabilities. <strong>CWE</strong> (Common Weakness
+    Enumeration) categorizes types of software weaknesses. <strong>CVSS</strong> is the scoring system for severity.
+  </div>
+
+  <h2>Responsible Disclosure</h2>
+  <p>
+    Responsible disclosure (also called coordinated disclosure) is the practice of privately reporting
+    vulnerabilities to the affected vendor and giving them a reasonable timeframe to develop and release
+    a fix before any public disclosure.
+  </p>
+
+  <h3>The 90-Day Standard</h3>
+  <p>
+    The widely accepted standard, popularized by Google's Project Zero, is a <strong>90-day disclosure
+    deadline</strong>. After reporting a vulnerability to a vendor:
+  </p>
+  <ul>
+    <li>The vendor has 90 days to develop, test, and release a patch</li>
+    <li>If the vendor patches within the deadline, disclosure happens after the patch is released</li>
+    <li>If the vendor fails to patch within 90 days, the researcher may publicly disclose the vulnerability</li>
+    <li>Extensions may be granted (typically 14 days) if a patch is imminent</li>
+  </ul>
+
+  <h3>Coordinated Disclosure Process</h3>
+  <ol>
+    <li><strong>Discovery:</strong> You find a vulnerability during authorized testing</li>
+    <li><strong>Report:</strong> You privately notify the vendor through their security contact or bug bounty program</li>
+    <li><strong>Acknowledgment:</strong> The vendor confirms receipt (ideally within 1–3 business days)</li>
+    <li><strong>Remediation:</strong> The vendor develops and tests a fix</li>
+    <li><strong>Disclosure:</strong> After the fix is deployed (or the deadline passes), details may be published</li>
+  </ol>
+
+  <h2>Bug Bounty Report Best Practices</h2>
+  <p>
+    Bug bounty programs have specific expectations. Following these practices will lead to faster triage,
+    higher payouts, and a better reputation:
+  </p>
+  <ul>
+    <li><strong>Read the scope carefully</strong> — only test assets that are in scope</li>
+    <li><strong>One report per vulnerability</strong> — do not bundle multiple issues</li>
+    <li><strong>Provide a proof of concept</strong> — demonstrate real impact, not theoretical risk</li>
+    <li><strong>Avoid automated scanner dumps</strong> — triagers dismiss reports that are just scanner output</li>
+    <li><strong>Be professional and patient</strong> — triage takes time; follow up politely after 1–2 weeks</li>
+    <li><strong>Include environment details</strong> — browser version, OS, any special configuration needed</li>
+  </ul>
+
+  <h3>Good vs Bad Reports</h3>
+  <div class="panel">
+    <p><strong class="text-green">Good report:</strong> "Stored XSS in the user bio field at /settings/profile.
+    An attacker can inject <code>&lt;img src=x onerror=alert(document.cookie)&gt;</code> which executes
+    when any user views the profile. This allows session hijacking of any visitor. Steps: 1. Log in as any user.
+    2. Navigate to /settings/profile. 3. Enter the payload in the bio field. 4. Save and view the profile."</p>
+  </div>
+  <div class="panel">
+    <p><strong class="text-red">Bad report:</strong> "Found XSS on your site. You should fix it. I can inject
+    scripts. Let me know if you want more details."</p>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Remember:</strong> Never exploit a vulnerability beyond what is necessary to demonstrate the issue.
+    Do not access other users' data, do not exfiltrate real data, and do not cause disruption to services.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Reporting Knowledge Quiz
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Reporting Knowledge Quiz
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 3 out of 4 questions correctly to demonstrate your understanding
+    of vulnerability reporting and responsible disclosure practices.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you understand reporting best practices!</div>
+
+  <div id="quiz1-container">
+    <!-- Question 1 -->
+    <div class="quiz-question" id="q1">
+      <p><strong>1. What should a vulnerability report include first and foremost?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q1" value="a"> Steps to reproduce</label>
+      <label class="quiz-option"><input type="radio" name="q1" value="b"> Your resume</label>
+      <label class="quiz-option"><input type="radio" name="q1" value="c"> The full exploit code</label>
+      <label class="quiz-option"><input type="radio" name="q1" value="d"> A threat to disclose publicly</label>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question" id="q2">
+      <p><strong>2. What is the standard responsible disclosure timeline?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q2" value="a"> 24 hours</label>
+      <label class="quiz-option"><input type="radio" name="q2" value="b"> 90 days</label>
+      <label class="quiz-option"><input type="radio" name="q2" value="c"> 1 year</label>
+      <label class="quiz-option"><input type="radio" name="q2" value="d"> No deadline</label>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question" id="q3">
+      <p><strong>3. What severity rating system is most commonly used for vulnerabilities?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q3" value="a"> CVSS</label>
+      <label class="quiz-option"><input type="radio" name="q3" value="b"> CVE</label>
+      <label class="quiz-option"><input type="radio" name="q3" value="c"> CWE</label>
+      <label class="quiz-option"><input type="radio" name="q3" value="d"> CPE</label>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question" id="q4">
+      <p><strong>4. When should you publicly disclose a vulnerability?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q4" value="a"> Immediately after finding it</label>
+      <label class="quiz-option"><input type="radio" name="q4" value="b"> After the vendor patches or the disclosure deadline passes</label>
+      <label class="quiz-option"><input type="radio" name="q4" value="c"> Never</label>
+      <label class="quiz-option"><input type="radio" name="q4" value="d"> Only if you are paid</label>
+    </div>
+  </div>
+
+  <div id="quiz1-result" class="quiz-result" style="display:none;"></div>
+
+  <div class="flex gap-sm" style="margin-top:1rem;">
+    <button class="btn btn-primary" id="quiz1-submit">Submit Answers</button>
+    <button class="btn btn-secondary" id="quiz1-reset" style="display:none;">Try Again</button>
+  </div>
+</div>

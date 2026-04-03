@@ -1,0 +1,450 @@
+<!-- Module 1: Encoding & Cryptography -->
+<h1>Module 03 — Encoding &amp; Cryptography</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Encoding vs Encryption vs Hashing</h2>
+  <p>
+    These three concepts are often confused, but they serve fundamentally different purposes in web security.
+    Understanding the distinction is critical for recognizing where data can be reversed, where keys are
+    required, and where output is irreversible.
+  </p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Encoding</th>
+          <th>Encryption</th>
+          <th>Hashing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Purpose</td>
+          <td>Data representation / transport</td>
+          <td>Confidentiality</td>
+          <td>Integrity / fingerprinting</td>
+        </tr>
+        <tr>
+          <td>Reversible?</td>
+          <td>Yes, no secret needed</td>
+          <td>Yes, with the correct key</td>
+          <td>No (one-way function)</td>
+        </tr>
+        <tr>
+          <td>Key required?</td>
+          <td>No</td>
+          <td>Yes</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Example</td>
+          <td>Base64, URL encoding</td>
+          <td>AES, XOR cipher</td>
+          <td>SHA-256, MD5</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Security implication:</strong> Encoding is NOT a security measure. Attackers frequently decode
+    Base64 or URL-encoded payloads. Never rely on encoding alone to protect sensitive data.
+  </div>
+
+  <h2>Base64</h2>
+  <p>
+    Base64 encodes binary data into a 64-character ASCII alphabet:
+    <code>A-Z</code>, <code>a-z</code>, <code>0-9</code>, <code>+</code>, <code>/</code>,
+    with <code>=</code> used for padding. Every 3 bytes of input become 4 Base64 characters.
+  </p>
+
+  <pre><code class="language-plaintext">Input:   "Man"
+ASCII:   77 97 110
+Binary:  01001101 01100001 01101110
+6-bit:   010011 010110 000101 101110
+Base64:  T        W       F       u
+Output:  "TWFu"</code></pre>
+
+  <p>
+    <strong>Padding:</strong> When the input length is not a multiple of 3, <code>=</code> characters are
+    appended. One byte of input produces two Base64 characters plus <code>==</code>; two bytes produce
+    three characters plus <code>=</code>.
+  </p>
+
+  <pre><code class="language-plaintext">"M"   -> "TQ=="   (1 byte, pad with ==)
+"Ma"  -> "TWE="   (2 bytes, pad with =)
+"Man" -> "TWFu"   (3 bytes, no padding)</code></pre>
+
+  <p>
+    <strong>URL-safe variant:</strong> Replaces <code>+</code> with <code>-</code> and <code>/</code> with
+    <code>_</code>. Used in JWTs, data URIs, and URL parameters where <code>+</code> and <code>/</code> are
+    reserved characters.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Where you see Base64 in the wild:</strong> HTTP Basic Auth headers
+    (<code>Authorization: Basic dXNlcjpwYXNz</code>), email attachments (MIME), data URIs, JWTs,
+    and cookies storing serialized objects.
+  </div>
+
+  <h2>URL Encoding (Percent-Encoding)</h2>
+  <p>
+    URL encoding replaces unsafe ASCII characters with a <code>%</code> followed by two hexadecimal digits
+    representing the character's byte value. For example, a space becomes <code>%20</code> and
+    <code>&lt;</code> becomes <code>%3C</code>.
+  </p>
+
+  <pre><code class="language-plaintext">Input:    &lt;script&gt;alert(1)&lt;/script&gt;
+Encoded:  %3Cscript%3Ealert(1)%3C%2Fscript%3E</code></pre>
+
+  <p>
+    <strong>Double encoding:</strong> If a WAF or filter URL-decodes once and then the application decodes
+    again, an attacker can double-encode a payload to slip past the filter:
+  </p>
+
+  <pre><code class="language-plaintext">Original:        &lt;
+Single-encoded:  %3C
+Double-encoded:  %253C   (the % itself becomes %25)</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>Bypass technique:</strong> Double URL encoding is a common method for evading input filters
+    and WAFs that only decode one layer. Always normalize input fully before validation.
+  </div>
+
+  <h2>Hex Encoding</h2>
+  <p>
+    Each byte of input is represented as two hexadecimal characters (<code>00</code>-<code>ff</code>).
+    Common in network protocols, binary file analysis, and low-level debugging. The string
+    <code>"ABC"</code> becomes <code>41 42 43</code>.
+  </p>
+
+  <h2>HTML Entity Encoding</h2>
+  <p>
+    HTML entities represent reserved or special characters so that browsers render them as text rather than
+    interpreting them as markup. There are named entities and numeric entities:
+  </p>
+
+  <pre><code class="language-html">&amp;lt;    = &lt;      (named entity)
+&amp;gt;    = &gt;      (named entity)
+&amp;amp;   = &amp;      (named entity)
+&amp;quot;  = "      (named entity)
+&amp;#60;   = &lt;      (decimal numeric entity)
+&amp;#x3C;  = &lt;      (hexadecimal numeric entity)</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>XSS relevance:</strong> If user input is reflected in HTML without entity encoding, an attacker
+    can inject <code>&lt;script&gt;</code> tags. Proper HTML entity encoding is the primary defense against
+    reflected and stored XSS in HTML contexts.
+  </div>
+
+  <h2>Caesar Cipher / ROT13</h2>
+  <p>
+    The Caesar cipher shifts each letter by a fixed number of positions in the alphabet. ROT13 is the
+    specific case where the shift is 13. Since the English alphabet has 26 letters, applying ROT13 twice
+    returns the original text — it is its own inverse.
+  </p>
+
+  <pre><code class="language-plaintext">ROT13("Hello World") = "Uryyb Jbeyq"
+ROT13("Uryyb Jbeyq") = "Hello World"</code></pre>
+
+  <p>
+    ROT13 provides zero security — it is simply an obfuscation technique sometimes used to hide spoilers
+    or trivially obscure strings in CTFs.
+  </p>
+
+  <h2>XOR Cipher</h2>
+  <p>
+    XOR (exclusive or) encryption combines plaintext with a repeating key byte-by-byte. It is symmetric:
+    encrypting and decrypting use the same operation. XOR has important properties:
+  </p>
+  <ul>
+    <li><code>A ^ 0 = A</code> — XOR with zero is identity</li>
+    <li><code>A ^ A = 0</code> — XOR with itself is zero</li>
+    <li><code>A ^ B ^ B = A</code> — applying the key twice recovers plaintext</li>
+  </ul>
+
+  <pre><code class="language-plaintext">Plaintext:  "Hi"   -> 0x48 0x69
+Key:        "K"    -> 0x4B 0x4B  (repeated)
+XOR result:         -> 0x03 0x22
+Hex output: "0322"</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Weakness:</strong> Single-byte or short repeating-key XOR is trivially breakable with
+    frequency analysis. If the key is reused, <code>C1 ^ C2 = P1 ^ P2</code>, leaking information
+    about both plaintexts.
+  </div>
+
+  <h2>Cryptographic Hash Functions: MD5, SHA-1, SHA-256</h2>
+  <p>
+    A cryptographic hash function takes arbitrary-length input and produces a fixed-length digest.
+    Key properties:
+  </p>
+  <ul>
+    <li><strong>One-way:</strong> Given <code>H(m)</code>, it is computationally infeasible to find <code>m</code></li>
+    <li><strong>Deterministic:</strong> Same input always produces the same hash</li>
+    <li><strong>Avalanche effect:</strong> A tiny change in input drastically changes the output</li>
+    <li><strong>Collision resistance:</strong> Hard to find two different inputs with the same hash</li>
+  </ul>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Algorithm</th>
+          <th>Digest Length</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>MD5</td>
+          <td>128 bits (32 hex chars)</td>
+          <td><span class="badge badge-red">Broken</span> — practical collision attacks since 2004</td>
+        </tr>
+        <tr>
+          <td>SHA-1</td>
+          <td>160 bits (40 hex chars)</td>
+          <td><span class="badge badge-amber">Deprecated</span> — collision demonstrated (SHAttered, 2017)</td>
+        </tr>
+        <tr>
+          <td>SHA-256</td>
+          <td>256 bits (64 hex chars)</td>
+          <td><span class="badge badge-green">Secure</span> — no known practical attacks</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <pre><code class="language-plaintext">MD5("hello")    = 5d41402abc4b2a76b9719d911017c592
+SHA-1("hello")  = aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d
+SHA-256("hello")= 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824</code></pre>
+
+  <h2>JSON Web Tokens (JWT)</h2>
+  <p>
+    A JWT consists of three Base64url-encoded parts separated by dots:
+    <code>header.payload.signature</code>. They are widely used for authentication and session management
+    in modern web applications.
+  </p>
+
+  <pre><code class="language-plaintext">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+Header:    {"alg":"HS256","typ":"JWT"}
+Payload:   {"sub":"1234567890","name":"John Doe","iat":1516239022}
+Signature: HMAC-SHA256(base64url(header) + "." + base64url(payload), secret)</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>The <code>alg:none</code> attack:</strong> Some JWT libraries accept <code>"alg":"none"</code>
+    in the header, which means "no signature required." An attacker can forge any payload, set the
+    algorithm to <code>none</code>, strip the signature, and the server accepts the token as valid.
+  </div>
+
+  <pre><code class="language-json">// Malicious JWT header
+{"alg":"none","typ":"JWT"}
+
+// Forged payload — attacker escalates to admin
+{"sub":"1","role":"admin","iat":1516239022}
+
+// Token: base64url(header).base64url(payload).
+// Note the trailing dot with an empty signature</code></pre>
+
+  <div class="callout callout-info">
+    <strong>Mitigation:</strong> Always validate the <code>alg</code> field server-side against an allowlist.
+    Never accept <code>none</code> as a valid algorithm in production. Use libraries that enforce algorithm
+    verification by default.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Encoder / Decoder Workbench
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Encoder / Decoder Workbench
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Encode and decode text using common web encoding schemes. Experiment
+    with Base64, URL encoding, Hex, HTML entities, and ROT13 to understand how data transforms between
+    representations.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you performed your first encode/decode.</div>
+
+  <div class="encoder-toggle" id="lab1-toggles">
+    <button class="btn btn-secondary active" data-enc="base64">Base64</button>
+    <button class="btn btn-secondary" data-enc="url">URL</button>
+    <button class="btn btn-secondary" data-enc="hex">Hex</button>
+    <button class="btn btn-secondary" data-enc="html">HTML Entities</button>
+    <button class="btn btn-secondary" data-enc="rot13">ROT13</button>
+  </div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label>Input</label>
+        <textarea class="query-input" id="lab1-input" rows="5" placeholder="Enter text to encode or decode..."></textarea>
+      </div>
+    </div>
+    <div>
+      <div class="input-group">
+        <label>Output</label>
+        <textarea class="query-input" id="lab1-output" rows="5" readonly placeholder="Result will appear here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap-sm">
+    <button class="btn btn-primary" id="lab1-encode">Encode</button>
+    <button class="btn btn-secondary" id="lab1-decode">Decode</button>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 2: XOR Workbench
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> XOR Workbench
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Encrypt plaintext with a repeating-key XOR cipher and observe the hex
+    output. Then decrypt the hex ciphertext back to plaintext using the same key to confirm the
+    symmetric property.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Lab complete — you performed XOR encrypt/decrypt.</div>
+
+  <div class="encoder-toggle" id="lab2-mode-toggle">
+    <button class="btn btn-secondary active" data-mode="encrypt">Encrypt</button>
+    <button class="btn btn-secondary" data-mode="decrypt">Decrypt</button>
+  </div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label id="lab2-input-label">Plaintext</label>
+        <textarea class="query-input" id="lab2-input" rows="4" placeholder="Enter plaintext..."></textarea>
+      </div>
+      <div class="input-group">
+        <label>Key</label>
+        <input class="input-field" type="text" id="lab2-key" placeholder="Enter XOR key..." />
+      </div>
+    </div>
+    <div>
+      <div class="input-group">
+        <label id="lab2-output-label">Hex Output</label>
+        <textarea class="query-input" id="lab2-output" rows="4" readonly placeholder="Result will appear here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap-sm">
+    <button class="btn btn-primary" id="lab2-run">Run XOR</button>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 3: Hash Explorer
+     ============================================ -->
+<div class="lab-container" id="lab3">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 3</span> Hash Explorer
+    </div>
+    <span class="lab-status" id="lab3-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Type any text and observe the SHA-256, MD5, and SHA-1 hashes update in
+    real time. Notice how even a single character change produces a completely different hash (avalanche effect).
+  </div>
+
+  <div class="banner banner-success" id="lab3-banner">Lab complete — you generated your first set of hashes.</div>
+
+  <div class="input-group">
+    <label>Input Text</label>
+    <input class="input-field" type="text" id="lab3-input" placeholder="Start typing to see live hashes..." />
+  </div>
+
+  <div class="mt-md">
+    <div class="input-group">
+      <label>SHA-256 <span class="badge badge-green">64 hex chars</span></label>
+      <textarea class="query-input" id="lab3-sha256" rows="2" readonly placeholder="SHA-256 hash will appear here..."></textarea>
+    </div>
+    <div class="input-group">
+      <label>MD5 <span class="badge badge-red">32 hex chars</span></label>
+      <textarea class="query-input" id="lab3-md5" rows="1" readonly placeholder="MD5 hash will appear here..."></textarea>
+    </div>
+    <div class="input-group">
+      <label>SHA-1 <span class="badge badge-amber">40 hex chars</span></label>
+      <textarea class="query-input" id="lab3-sha1" rows="1" readonly placeholder="SHA-1 hash will appear here..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 4: JWT Decoder
+     ============================================ -->
+<div class="lab-container" id="lab4">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 4</span> JWT Decoder
+    </div>
+    <span class="lab-status" id="lab4-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Paste a JWT to decode its header and payload. Observe the algorithm field
+    and understand how the <code>alg:none</code> attack works. Try the example token below or bring your own.
+  </div>
+
+  <div class="banner banner-success" id="lab4-banner">Lab complete — you decoded your first JWT.</div>
+
+  <div class="banner banner-warning" id="lab4-alg-warning" style="display:none;">
+    Warning: This token uses <code>alg: none</code> — the signature is not verified. An attacker
+    can forge arbitrary payloads with this algorithm.
+  </div>
+
+  <div class="input-group">
+    <label>Paste JWT</label>
+    <textarea class="query-input" id="lab4-input" rows="4" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"></textarea>
+  </div>
+
+  <div class="flex gap-sm mb-md">
+    <button class="btn btn-primary" id="lab4-decode">Decode JWT</button>
+    <button class="btn btn-secondary" id="lab4-example">Load Example</button>
+    <button class="btn btn-danger" id="lab4-alg-none">Load alg:none Example</button>
+  </div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label>Decoded Header</label>
+        <div class="json-response" id="lab4-header">Decoded header will appear here...</div>
+      </div>
+    </div>
+    <div>
+      <div class="input-group">
+        <label>Decoded Payload</label>
+        <div class="json-response" id="lab4-payload">Decoded payload will appear here...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label>Signature (raw Base64url)</label>
+    <div class="json-response" id="lab4-signature" style="min-height:auto;">Signature will appear here...</div>
+  </div>
+</div>

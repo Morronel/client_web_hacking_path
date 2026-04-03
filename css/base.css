@@ -243,6 +243,20 @@ code, pre, kbd {
   background: var(--accent-amber);
 }
 
+.nav-item .flask-badge {
+  font-size: 0.6rem;
+  background: var(--accent-blue);
+  color: var(--bg-primary);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  margin-right: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
 .main-content {
   margin-left: var(--sidebar-width);
   margin-top: var(--header-height);

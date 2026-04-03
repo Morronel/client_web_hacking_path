@@ -1,0 +1,203 @@
+<!-- Module: Obfuscation & WAF Evasion -->
+<h1>Obfuscation &amp; WAF Evasion</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>What Are WAFs?</h2>
+  <p>
+    A <strong>Web Application Firewall (WAF)</strong> is a security layer that sits between users and a web
+    application, inspecting HTTP traffic and blocking requests that match known attack patterns. WAFs are
+    deployed by organizations to add a layer of defense against common web attacks like SQL injection, XSS,
+    and command injection.
+  </p>
+  <p>
+    Popular WAFs include Cloudflare, AWS WAF, ModSecurity, Imperva, and Akamai. While they are valuable
+    defensive tools, they are not a substitute for writing secure code.
+  </p>
+
+  <h2>Signature-Based Detection</h2>
+  <p>
+    Most WAFs rely heavily on <strong>signature-based detection</strong> — they maintain a database of patterns
+    (regular expressions, string matches) that correspond to known attack payloads. When an incoming request
+    matches a signature, the WAF blocks it.
+  </p>
+
+  <pre><code class="language-plaintext">Example WAF rules (simplified):
+  Block if request contains: &lt;script
+  Block if request contains: ' OR 1=1
+  Block if request contains: UNION SELECT
+  Block if request contains: /etc/passwd</code></pre>
+
+  <p>
+    The fundamental weakness of signature-based detection is that it can only catch what it knows about.
+    By transforming a payload's syntax without changing its semantics, an attacker can evade the signatures.
+  </p>
+
+  <h2>Common Evasion Techniques</h2>
+
+  <h3>1. Case Variation</h3>
+  <p>
+    Many filters match specific cases. Since HTML and SQL are largely case-insensitive, mixing case can
+    bypass naive filters:
+  </p>
+  <pre><code class="language-plaintext">Blocked:  &lt;script&gt;alert(1)&lt;/script&gt;
+Bypass:   &lt;ScRiPt&gt;alert(1)&lt;/ScRiPt&gt;
+
+Blocked:  UNION SELECT
+Bypass:   uNiOn SeLeCt</code></pre>
+
+  <h3>2. URL Encoding</h3>
+  <p>
+    Encode characters as their percent-encoded equivalents. If the WAF checks before the server decodes,
+    the payload slips through:
+  </p>
+  <pre><code class="language-plaintext">Blocked:  &lt;script&gt;
+Encoded:  %3Cscript%3E</code></pre>
+
+  <h3>3. HTML Entity Encoding</h3>
+  <p>
+    Within HTML contexts, entity-encoded characters are decoded by the browser:
+  </p>
+  <pre><code class="language-plaintext">Blocked:  &lt;img src=x onerror=alert(1)&gt;
+Encoded:  &lt;img src=x onerror=&#97;&#108;&#101;&#114;&#116;(1)&gt;</code></pre>
+
+  <h3>4. SQL Comment Insertion</h3>
+  <p>
+    SQL allows inline comments (<code>/*...*/</code>) anywhere whitespace is valid. Inserting comments
+    breaks up keywords that WAFs look for:
+  </p>
+  <pre><code class="language-sql">Blocked:  UNION SELECT * FROM users
+Bypass:   UN/**/ION SEL/**/ECT * FROM users</code></pre>
+
+  <h3>5. Double Encoding</h3>
+  <p>
+    If a WAF decodes once and then passes the request to an application that decodes again,
+    double encoding can bypass the filter:
+  </p>
+  <pre><code class="language-plaintext">Original:        &lt;
+Single encoded:  %3C
+Double encoded:  %253C  (the % is encoded as %25)</code></pre>
+
+  <h3>6. Unicode Normalization</h3>
+  <p>
+    Some applications normalize Unicode characters to their ASCII equivalents after the WAF inspects them.
+    Using Unicode look-alikes can bypass filters:
+  </p>
+  <pre><code class="language-plaintext">Normal:    &lt;script&gt;
+Unicode:   ＜script＞  (using fullwidth characters)</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Ethical context:</strong> WAF evasion techniques should only be used during <strong>authorized
+    penetration testing</strong> or bug bounty programs where you have explicit permission. Using these
+    techniques against systems you do not own or have authorization to test is illegal and unethical.
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Defense perspective:</strong> Understanding evasion techniques is crucial for building better
+    defenses. Developers should not rely on WAFs alone — always validate and sanitize input at the
+    application level, use parameterized queries, and implement Content Security Policy.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Payload Obfuscator Workbench
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Payload Obfuscator Workbench
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Enter a payload and apply 3 different obfuscation techniques to see how each
+    one transforms the input. This demonstrates how the same payload can look completely different
+    to a signature-based WAF.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you applied 3 different obfuscation techniques!</div>
+
+  <div class="input-group">
+    <label>Payload Input</label>
+    <input class="input-field" type="text" id="obf-input" placeholder="e.g. <script>alert(1)</script> or ' OR 1=1--" />
+  </div>
+
+  <div class="input-group">
+    <label>Obfuscation Technique</label>
+    <div class="encoder-toggle" id="obf-toggles">
+      <button class="btn btn-secondary active" data-tech="case">Case Variation</button>
+      <button class="btn btn-secondary" data-tech="url">URL Encode</button>
+      <button class="btn btn-secondary" data-tech="html">HTML Entities</button>
+      <button class="btn btn-secondary" data-tech="sqlcomment">SQL Comment Insertion</button>
+      <button class="btn btn-secondary" data-tech="double">Double Encode</button>
+    </div>
+  </div>
+
+  <div class="flex gap-sm" style="margin-top:0.5rem;">
+    <button class="btn btn-primary" id="obf-apply">Apply Technique</button>
+  </div>
+
+  <div class="input-group" style="margin-top:1rem;">
+    <label>Obfuscated Output</label>
+    <textarea class="query-input" id="obf-output" rows="3" readonly placeholder="Transformed payload will appear here..."></textarea>
+  </div>
+
+  <div id="obf-progress" class="text-muted" style="margin-top:0.5rem;">Techniques applied: 0 / 3</div>
+</div>
+
+<!-- ============================================
+     LAB 2: WAF Evasion Knowledge Quiz
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> WAF Evasion Knowledge Quiz
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 2 out of 3 questions correctly about WAF evasion concepts.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Lab complete — you understand WAF evasion concepts!</div>
+
+  <div id="quiz2-container">
+    <!-- Question 1 -->
+    <div class="quiz-question" id="waf-q1">
+      <p><strong>1. Why does case variation bypass some WAFs?</strong></p>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="a"> Because HTML and SQL are case-insensitive but some filters match exact case</label>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="b"> Because browsers ignore uppercase letters</label>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="c"> Because servers cannot process mixed case</label>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="d"> Because WAFs only scan lowercase traffic</label>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question" id="waf-q2">
+      <p><strong>2. What does double encoding exploit?</strong></p>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="a"> A buffer overflow in the WAF</label>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="b"> The WAF decoding once while the application decodes again</label>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="c"> The browser rendering HTML twice</label>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="d"> DNS resolution timing differences</label>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question" id="waf-q3">
+      <p><strong>3. How do SQL inline comments help bypass WAFs?</strong></p>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="a"> They encrypt the SQL query</label>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="b"> They break up keywords so signature patterns no longer match</label>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="c"> They make the query run faster</label>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="d"> They hide the query from the database</label>
+    </div>
+  </div>
+
+  <div id="quiz2-result" class="quiz-result" style="display:none;"></div>
+
+  <div class="flex gap-sm" style="margin-top:1rem;">
+    <button class="btn btn-primary" id="quiz2-submit">Submit Answers</button>
+    <button class="btn btn-secondary" id="quiz2-reset" style="display:none;">Try Again</button>
+  </div>
+</div>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if not_found %}
+<div class="card">
+    <h2>404 // Signal Lost</h2>
+    <p>{{ message }}</p>
+</div>
+{% else %}
+<h1>{{ post['title'] }}</h1>
+<div class="card">
+    <p>{{ post['content'] }}</p>
+    <div class="meta">
+        <span class="category">{{ post['category'] }}</span>
+        &nbsp;|&nbsp; by <strong>{{ post['author'] }}</strong>
+        &nbsp;|&nbsp; {{ post['created_at'] }}
+    </div>
+</div>
+
+<h2>Comments ({{ comments|length }})</h2>
+
+{% for c in comments %}
+<div class="comment">
+    <span class="comment-author">{{ c['author'] }}</span>
+    <p>{{ c['content'] }}</p>
+</div>
+{% endfor %}
+
+<div class="card mt-2">
+    <h3>Add a Comment</h3>
+    <form method="post" action="/comment">
+        <input type="hidden" name="post_id" value="{{ post['id'] }}">
+        <label for="author">Handle</label>
+        <input type="text" id="author" name="author" placeholder="Your handle">
+        <label for="content">Message</label>
+        <textarea id="content" name="content" placeholder="Speak your mind..."></textarea>
+        <button type="submit">Transmit</button>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

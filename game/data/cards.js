@@ -63,44 +63,44 @@ Game.Cards = (() => {
 
   // Module unlock cards (one per educational module)
   const MODULE = {
-    cipher_master: {
-      id: 'cipher_master', name: 'Cipher Master', cost: 2, attack: 3, health: 3,
-      sigil: 'encodes', tier: 'module', moduleUnlock: 'm1',
-      description: 'Enemy across loses 1 atk each turn'
-    },
     sql_injector: {
       id: 'sql_injector', name: 'SQL Injector', cost: 3, attack: 4, health: 2,
-      sigil: 'drops_table', tier: 'module', moduleUnlock: 'm2',
+      sigil: 'drops_table', tier: 'module', moduleUnlock: 'vuln-sqli',
       description: 'Destroys 1 random enemy card on play'
+    },
+    xss_worm: {
+      id: 'xss_worm', name: 'XSS Worm', cost: 2, attack: 1, health: 1,
+      sigil: 'spread', tier: 'module', moduleUnlock: 'vuln-xss',
+      description: 'Spawns a 1/1 copy in an adjacent empty slot'
     },
     template_exploit: {
       id: 'template_exploit', name: 'Template Exploit', cost: 2, attack: 2, health: 2,
-      sigil: 'rce', tier: 'module', moduleUnlock: 'm3',
+      sigil: 'rce', tier: 'module', moduleUnlock: 'vuln-ssti',
       description: 'Deals 2 direct damage on play'
     },
     access_escalator: {
       id: 'access_escalator', name: 'Access Escalator', cost: 1, attack: 2, health: 3,
-      sigil: 'escalate', tier: 'module', moduleUnlock: 'm4',
+      sigil: 'escalate', tier: 'module', moduleUnlock: 'vuln-idor',
       description: 'Gains +1/+1 each turn'
-    },
-    xss_worm: {
-      id: 'xss_worm', name: 'XSS Worm', cost: 2, attack: 1, health: 1,
-      sigil: 'spread', tier: 'module', moduleUnlock: 'm5',
-      description: 'Spawns a 1/1 copy in an adjacent empty slot'
     },
     credential_stuffer: {
       id: 'credential_stuffer', name: 'Credential Stuffer', cost: 2, attack: 3, health: 2,
-      sigil: 'enumerate', tier: 'module', moduleUnlock: 'm6',
+      sigil: 'enumerate', tier: 'module', moduleUnlock: 'vuln-auth',
       description: 'Reveals next 2 enemy placements'
+    },
+    cipher_master: {
+      id: 'cipher_master', name: 'Cipher Master', cost: 2, attack: 3, health: 3,
+      sigil: 'encodes', tier: 'module', moduleUnlock: 'category-intro',
+      description: 'Enemy across loses 1 atk each turn'
     },
     session_hijacker: {
       id: 'session_hijacker', name: 'Session Hijacker', cost: 2, attack: 2, health: 4,
-      sigil: 'hijack', tier: 'module', moduleUnlock: 'm7',
+      sigil: 'hijack', tier: 'module', moduleUnlock: 'category-after',
       description: 'Takes control of enemy card across'
     },
     ddos_swarm: {
       id: 'ddos_swarm', name: 'DDoS Swarm', cost: 3, attack: 1, health: 1,
-      sigil: 'flood', tier: 'module', moduleUnlock: 'm8',
+      sigil: 'flood', tier: 'module', moduleUnlock: 'category-all',
       description: 'Fills all empty friendly slots with 1/1 tokens'
     }
   };

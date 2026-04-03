@@ -1,0 +1,313 @@
+<!-- Module: Same-Origin Policy & CORS -->
+<h1>Same-Origin Policy &amp; CORS</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>What Is the Same-Origin Policy?</h2>
+  <p>
+    The Same-Origin Policy (SOP) is the most fundamental security mechanism in web browsers. It restricts
+    how scripts loaded from one origin can interact with resources from another origin. Without SOP, any
+    website you visit could read your email, access your bank account, and steal your session cookies from
+    every other site you are logged into.
+  </p>
+
+  <h2>Defining "Origin"</h2>
+  <p>
+    An origin is defined by three components: <strong>scheme</strong> (protocol), <strong>host</strong>
+    (domain), and <strong>port</strong>. Two URLs have the same origin if and only if all three match exactly.
+  </p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>URL A</th>
+          <th>URL B</th>
+          <th>Same Origin?</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>https://example.com/page1</code></td>
+          <td><code>https://example.com/page2</code></td>
+          <td><span class="text-green">Yes</span></td>
+          <td>Same scheme, host, and port (443)</td>
+        </tr>
+        <tr>
+          <td><code>https://example.com</code></td>
+          <td><code>http://example.com</code></td>
+          <td><span class="text-red">No</span></td>
+          <td>Different scheme (https vs http)</td>
+        </tr>
+        <tr>
+          <td><code>https://example.com</code></td>
+          <td><code>https://api.example.com</code></td>
+          <td><span class="text-red">No</span></td>
+          <td>Different host (subdomain counts)</td>
+        </tr>
+        <tr>
+          <td><code>https://example.com</code></td>
+          <td><code>https://example.com:8443</code></td>
+          <td><span class="text-red">No</span></td>
+          <td>Different port (443 vs 8443)</td>
+        </tr>
+        <tr>
+          <td><code>http://example.com:80</code></td>
+          <td><code>http://example.com</code></td>
+          <td><span class="text-green">Yes</span></td>
+          <td>Port 80 is the default for http</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>What SOP Blocks and Allows</h2>
+
+  <div class="panel">
+    <h3>Cross-origin reads (BLOCKED by default)</h3>
+    <p>
+      JavaScript on <code>evil.com</code> cannot read the response from a <code>fetch()</code> or
+      <code>XMLHttpRequest</code> to <code>bank.com</code>. The browser sends the request, but blocks
+      the script from reading the response. This prevents data theft.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Cross-origin writes (ALLOWED)</h3>
+    <p>
+      Forms can submit POST requests to any origin. Links navigate to any origin. This is why CSRF
+      (Cross-Site Request Forgery) attacks are possible — the browser happily sends the request along
+      with cookies; it just does not let the attacker read the response.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Cross-origin embedding (ALLOWED)</h3>
+    <p>
+      Resources like <code>&lt;img&gt;</code>, <code>&lt;script&gt;</code>, <code>&lt;link&gt;</code>,
+      <code>&lt;iframe&gt;</code>, and <code>&lt;video&gt;</code> can be loaded from any origin. This is
+      how CDNs work — you load jQuery from <code>cdn.jsdelivr.net</code> even though your site is on a
+      different origin. However, the embedding page cannot read the pixel data of a cross-origin image on
+      a canvas (tainted canvas).
+    </p>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>SOP does not prevent requests, it prevents reading responses.</strong> The server still
+    receives and processes the cross-origin request. This distinction is crucial for understanding CSRF
+    and why CORS was created.
+  </div>
+
+  <h2>CORS — Cross-Origin Resource Sharing</h2>
+  <p>
+    CORS is a mechanism that allows servers to selectively relax the Same-Origin Policy. When a web app
+    on <code>frontend.com</code> needs to call an API on <code>api.backend.com</code>, the server can
+    include CORS headers to tell the browser "it is okay to let this origin read my response."
+  </p>
+
+  <div class="panel">
+    <h3>Simple Requests</h3>
+    <p>
+      For simple requests (GET, HEAD, POST with standard content types), the browser sends the request
+      directly and checks the response headers:
+    </p>
+    <pre><code class="language-http">Access-Control-Allow-Origin: https://frontend.com</code></pre>
+    <p>If the header matches the requesting origin, the browser allows the script to read the response.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Preflight Requests</h3>
+    <p>
+      For "non-simple" requests (PUT, DELETE, custom headers, JSON content type), the browser first sends
+      an OPTIONS request (the "preflight") to ask for permission:
+    </p>
+    <pre><code class="language-http">OPTIONS /api/data HTTP/1.1
+Host: api.backend.com
+Origin: https://frontend.com
+Access-Control-Request-Method: PUT
+Access-Control-Request-Headers: Content-Type, Authorization</code></pre>
+    <p>The server responds with allowed methods and headers:</p>
+    <pre><code class="language-http">Access-Control-Allow-Origin: https://frontend.com
+Access-Control-Allow-Methods: GET, PUT, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Max-Age: 86400</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>Credentials and CORS</h3>
+    <p>
+      By default, cross-origin requests do not include cookies or HTTP authentication. To include them,
+      the client must set <code>credentials: 'include'</code> (fetch) or <code>withCredentials = true</code>
+      (XHR), and the server must respond with:
+    </p>
+    <pre><code class="language-http">Access-Control-Allow-Credentials: true</code></pre>
+    <p>
+      <strong>Critical rule:</strong> When <code>Allow-Credentials: true</code>, the
+      <code>Access-Control-Allow-Origin</code> header CANNOT be the wildcard <code>*</code>. It must
+      specify the exact origin. Browsers enforce this.
+    </p>
+  </div>
+
+  <h2>CORS Misconfigurations</h2>
+  <p>
+    CORS misconfigurations are a common source of vulnerabilities. Here are the most dangerous patterns:
+  </p>
+
+  <div class="panel">
+    <h3>1. Origin Reflection</h3>
+    <p>
+      The server blindly reflects the <code>Origin</code> header in <code>Access-Control-Allow-Origin</code>.
+      Any website can now read authenticated responses:
+    </p>
+    <pre><code class="language-http">// Request from evil.com
+Origin: https://evil.com
+
+// Server response (vulnerable)
+Access-Control-Allow-Origin: https://evil.com
+Access-Control-Allow-Credentials: true</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>2. Null Origin Allowed</h3>
+    <p>
+      Some servers allow the <code>null</code> origin, thinking it is safe. But sandboxed iframes and
+      local file pages send <code>Origin: null</code>, making exploitation trivial:
+    </p>
+    <pre><code class="language-http">Access-Control-Allow-Origin: null
+Access-Control-Allow-Credentials: true</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>3. Wildcard with Credentials (Blocked by Browsers)</h3>
+    <p>
+      While <code>Access-Control-Allow-Origin: *</code> with <code>Access-Control-Allow-Credentials: true</code>
+      is rejected by browsers, some developers work around this by reflecting the origin — creating the
+      vulnerability described above.
+    </p>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Testing for CORS misconfiguration:</strong> Send a request with an arbitrary
+    <code>Origin</code> header and check if it is reflected in <code>Access-Control-Allow-Origin</code>.
+    Also test with <code>Origin: null</code>. If either is reflected with
+    <code>Allow-Credentials: true</code>, the application is vulnerable.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: SOP Checker
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Same-Origin Policy Checker
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Enter two URLs and determine if they share the same origin.
+    Correctly evaluate 5 pairs to complete this lab.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you understand origin comparison!</div>
+
+  <div class="lab-body">
+    <div class="panel">
+      <div class="input-group">
+        <label for="sop-url1">URL 1</label>
+        <input type="text" id="sop-url1" class="query-input" placeholder="https://example.com/page1" />
+      </div>
+      <div class="input-group">
+        <label for="sop-url2">URL 2</label>
+        <input type="text" id="sop-url2" class="query-input" placeholder="https://example.com:8443/page2" />
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-primary" id="sop-same">Same Origin</button>
+        <button class="btn btn-secondary" id="sop-diff">Different Origin</button>
+      </div>
+    </div>
+
+    <div id="sop-feedback" class="quiz-feedback" style="margin-top:12px;"></div>
+    <div id="sop-progress" class="text-muted" style="margin-top:8px;">Correct answers: 0 / 5</div>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 2: CORS Misconfiguration Quiz
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> CORS Misconfiguration Quiz
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 3 out of 4 questions correctly about CORS headers
+    and misconfigurations.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Lab complete — you understand CORS security!</div>
+
+  <div class="lab-body">
+    <!-- Question 1 -->
+    <div class="panel" id="cors-q1-panel">
+      <h3>Question 1</h3>
+      <p>Which CORS header tells the browser it is safe to include cookies in cross-origin requests?</p>
+      <div class="quiz-options" id="cors-q1-options">
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="a">Access-Control-Allow-Origin</button>
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="b">Access-Control-Allow-Credentials</button>
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="c">Access-Control-Allow-Methods</button>
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="d">Access-Control-Expose-Headers</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q1-feedback"></div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="panel" id="cors-q2-panel">
+      <h3>Question 2</h3>
+      <p>Is <code>Access-Control-Allow-Origin: *</code> combined with <code>Access-Control-Allow-Credentials: true</code> safe?</p>
+      <div class="quiz-options" id="cors-q2-options">
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="a">Yes, it allows all origins securely</button>
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="b">No, but browsers block this combination anyway</button>
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="c">Yes, the wildcard overrides credential checks</button>
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="d">It depends on the HTTP method used</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q2-feedback"></div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="panel" id="cors-q3-panel">
+      <h3>Question 3</h3>
+      <p>A server reflects any <code>Origin</code> header value in <code>Access-Control-Allow-Origin</code> with <code>Allow-Credentials: true</code>. What is the risk?</p>
+      <div class="quiz-options" id="cors-q3-options">
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="a">No risk — browsers verify the origin independently</button>
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="b">Any website can read authenticated responses from the server</button>
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="c">Only the performance is affected</button>
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="d">The server will crash from too many preflight requests</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q3-feedback"></div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="panel" id="cors-q4-panel">
+      <h3>Question 4</h3>
+      <p>What type of HTTP request does the browser send as a CORS "preflight"?</p>
+      <div class="quiz-options" id="cors-q4-options">
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="a">GET</button>
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="b">HEAD</button>
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="c">OPTIONS</button>
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="d">TRACE</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q4-feedback"></div>
+    </div>
+
+    <button class="btn btn-primary" id="lab2-submit">Submit Answers</button>
+    <div id="lab2-result" class="quiz-result"></div>
+  </div>
+</div>

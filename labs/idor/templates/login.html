@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<h1>// ACCESS TERMINAL</h1>
+
+<div class="card" style="max-width: 400px;">
+    <h2>Login</h2>
+    <form method="POST" action="{{ url_for('login') }}">
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" name="username" placeholder="username" autofocus>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="password">
+        </div>
+        <button type="submit" class="btn">AUTHENTICATE</button>
+    </form>
+
+    <div class="hint-box" style="margin-top: 1.5rem;">
+        <strong>Default credentials:</strong><br>
+        user / user123<br>
+        guest / guest
+    </div>
+</div>
+{% endblock %}

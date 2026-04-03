@@ -1,0 +1,205 @@
+<!-- Module: Legal & Ethics -->
+<h1>Legal &amp; Ethics in Security Testing</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Why Law &amp; Ethics Matter</h2>
+  <p>
+    Before you touch a single packet or write a single exploit, you must understand the legal boundaries
+    of security testing. The line between a penetration tester and a criminal is <strong>authorization</strong>.
+    The same technical action — scanning a network, exploiting a vulnerability, extracting data — can be
+    either a paid professional engagement or a felony depending on whether you have permission.
+  </p>
+
+  <h2>Key Cybercrime Laws</h2>
+
+  <div class="panel">
+    <h3>Computer Fraud and Abuse Act (CFAA) — United States</h3>
+    <p>
+      Enacted in 1986 and amended multiple times, the CFAA criminalizes "intentionally accessing a computer
+      without authorization or exceeding authorized access." Penalties range from fines to 20+ years in prison
+      for repeat offenses. The CFAA has been criticized for its broad language — even violating a website's
+      Terms of Service has been argued as a CFAA violation.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Computer Misuse Act (CMA) — United Kingdom</h3>
+    <p>
+      The CMA (1990) creates three primary offenses: unauthorized access to computer material (up to 2 years),
+      unauthorized access with intent to commit further offenses (up to 5 years), and unauthorized modification
+      of computer material (up to 10 years). The act applies regardless of whether the attacker is in the UK,
+      as long as the target system is.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Budapest Convention on Cybercrime</h3>
+    <p>
+      The first international treaty addressing cybercrime, signed in 2001. It harmonizes national laws,
+      improves investigative techniques, and establishes international cooperation mechanisms. Over 65 countries
+      have ratified the convention. It covers illegal access, data interference, system interference,
+      misuse of devices, and computer-related fraud.
+    </p>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Jurisdiction matters:</strong> Cybercrime laws vary by country. Testing a server in another
+    country may subject you to that country's laws. Always know where your target infrastructure is located
+    and which laws apply.
+  </div>
+
+  <h2>Authorization Types</h2>
+
+  <div class="panel">
+    <h3>Written Scope of Work</h3>
+    <p>
+      Professional penetration tests require a signed contract (sometimes called a "Statement of Work" or
+      "Rules of Engagement") that explicitly defines what you are allowed to test, which methods are permitted,
+      the time window for testing, and what is out of scope. This document is your legal shield.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Bug Bounty Programs</h3>
+    <p>
+      Companies like Google, Microsoft, and thousands of others run bug bounty programs through platforms such
+      as HackerOne and Bugcrowd. These programs provide a legal framework for security researchers to find and
+      report vulnerabilities in exchange for monetary rewards. Each program has its own scope, rules, and
+      safe harbor provisions.
+    </p>
+    <p>
+      <strong>Key elements of a bug bounty policy:</strong> in-scope domains/applications, out-of-scope areas,
+      prohibited actions (e.g., social engineering employees, DoS), disclosure timelines, and reward tiers.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Rules of Engagement (RoE)</h3>
+    <p>
+      Rules of engagement define the boundaries of a security assessment: testing hours, IP ranges,
+      whether social engineering is allowed, escalation procedures if critical vulnerabilities are found,
+      and emergency contacts. Violating the RoE can void your authorization and expose you to legal liability.
+    </p>
+  </div>
+
+  <h2>Ethical Hacking Principles</h2>
+  <p>Ethical hackers follow a set of core principles that distinguish them from malicious actors:</p>
+
+  <div class="panel">
+    <ul>
+      <li><strong>Get explicit permission</strong> — never test without written authorization</li>
+      <li><strong>Stay within scope</strong> — only test what you are authorized to test</li>
+      <li><strong>Do no harm</strong> — avoid actions that could cause damage, data loss, or service disruption</li>
+      <li><strong>Protect data</strong> — if you access sensitive data during testing, treat it as confidential</li>
+      <li><strong>Report everything</strong> — document and disclose all findings to the client</li>
+      <li><strong>Respect privacy</strong> — do not access personal data beyond what is necessary to demonstrate the vulnerability</li>
+    </ul>
+  </div>
+
+  <h2>Disclosure Models</h2>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Description</th>
+          <th>Pros</th>
+          <th>Cons</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Responsible Disclosure</td>
+          <td>Report to vendor first, give them time to fix (typically 90 days), then publish</td>
+          <td>Gives vendor time to patch; users protected</td>
+          <td>Vendor may ignore or delay; researcher has no leverage</td>
+        </tr>
+        <tr>
+          <td>Full Disclosure</td>
+          <td>Publish vulnerability details immediately to the public</td>
+          <td>Pressures vendor to act quickly; community can defend</td>
+          <td>Attackers get exploit details before patch exists</td>
+        </tr>
+        <tr>
+          <td>Coordinated Disclosure</td>
+          <td>Work with vendor and possibly a coordinator (e.g., CERT) to time the disclosure with a patch release</td>
+          <td>Best balance of transparency and safety</td>
+          <td>Requires cooperation from all parties</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Industry standard:</strong> Most bug bounty platforms follow coordinated disclosure with a
+    90-day window. Google's Project Zero popularized this timeline — after 90 days, the vulnerability
+    is published regardless of patch status.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Legal Scenarios Quiz
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Legal Scenarios Quiz
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer all 3 questions correctly to demonstrate your understanding of
+    legal and ethical boundaries in security testing.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you understand the legal boundaries of ethical hacking.</div>
+
+  <div class="lab-body">
+    <!-- Question 1 -->
+    <div class="panel" id="q1-panel">
+      <h3>Question 1</h3>
+      <p>You discover a SQL injection vulnerability on a company's public website. What should you do?</p>
+      <div class="quiz-options" id="q1-options">
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="a">Exploit it to see how much data you can extract</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="b">Report it through their bug bounty program or security contact</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="c">Tell your friends so they can test it too</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="d">Ignore it — it is not your problem</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="panel" id="q2-panel">
+      <h3>Question 2</h3>
+      <p>Which of these activities is legal WITHOUT prior authorization?</p>
+      <div class="quiz-options" id="q2-options">
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="a">Port scanning your own server</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="b">Accessing someone else's database to check for vulnerabilities</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="c">Testing for XSS on a production e-commerce site</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="d">Running SQLMap against a bank's login page</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="panel" id="q3-panel">
+      <h3>Question 3</h3>
+      <p>What does "scope" mean in a penetration testing engagement?</p>
+      <div class="quiz-options" id="q3-options">
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="a">A magnifying tool used for inspecting code</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="b">The defined boundaries and targets of what you are authorized to test</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="c">A programming language used for exploit development</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="d">A type of remote code execution exploit</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+
+    <button class="btn btn-primary" id="lab1-submit">Submit Answers</button>
+    <div id="lab1-result" class="quiz-result"></div>
+  </div>
+</div>

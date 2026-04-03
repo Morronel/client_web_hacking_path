@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}NeonAuth - Register{% endblock %}
+{% block content %}
+<h1>// REGISTER</h1>
+<p class="subtitle">Weak Password Policy - No complexity requirements enforced.</p>
+
+<div class="hint">
+    Hint: Try registering with a single-character password. The system accepts anything.
+</div>
+
+<div class="card">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    {% if message %}
+    <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+            <label>USERNAME</label>
+            <input type="text" name="username" autocomplete="off" placeholder="Choose a username">
+        </div>
+        <div class="form-group">
+            <label>PASSWORD</label>
+            <input type="password" name="password" placeholder="Any password works...">
+        </div>
+        <button type="submit" class="btn">Register</button>
+    </form>
+</div>
+{% endblock %}

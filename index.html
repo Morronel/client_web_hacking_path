@@ -30,46 +30,96 @@
 
   <!-- Sidebar navigation -->
   <nav class="sidebar">
+
+    <!-- Introduction -->
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Modules</div>
-      <a class="nav-item" href="#m1" data-module="m1">
-        <span class="module-num">01</span> Encoding &amp; Crypto
+      <div class="sidebar-section-title">Introduction</div>
+      <a class="nav-item" href="#intro-legal" data-module="intro-legal">
+        <span class="module-num">01</span> Legal &amp; Ethics
         <span class="progress-dot"></span>
       </a>
-      <a class="nav-item" href="#m2" data-module="m2">
-        <span class="module-num">02</span> SQL Injection
+      <a class="nav-item" href="#intro-networking" data-module="intro-networking">
+        <span class="module-num">02</span> Networking
         <span class="progress-dot"></span>
       </a>
-      <a class="nav-item" href="#m3" data-module="m3">
-        <span class="module-num">03</span> SSTI
+      <a class="nav-item" href="#intro-encoding" data-module="intro-encoding">
+        <span class="module-num">03</span> Encoding &amp; Crypto
         <span class="progress-dot"></span>
       </a>
-      <a class="nav-item" href="#m4" data-module="m4">
-        <span class="module-num">04</span> IDOR
+      <a class="nav-item" href="#intro-cookies" data-module="intro-cookies">
+        <span class="module-num">04</span> Cookies &amp; Sessions
         <span class="progress-dot"></span>
       </a>
-      <a class="nav-item" href="#m5" data-module="m5">
-        <span class="module-num">05</span> XSS
+      <a class="nav-item" href="#intro-sop" data-module="intro-sop">
+        <span class="module-num">05</span> SOP &amp; CORS
         <span class="progress-dot"></span>
       </a>
-      <a class="nav-item" href="#m6" data-module="m6">
-        <span class="module-num">06</span> Broken Auth
+      <a class="nav-item" href="#intro-history" data-module="intro-history">
+        <span class="module-num">06</span> History of Hacking
         <span class="progress-dot"></span>
       </a>
-      <a class="nav-item" href="#m7" data-module="m7">
-        <span class="module-num">07</span> Cookies
-        <span class="progress-dot"></span>
-      </a>
-      <a class="nav-item" href="#m8" data-module="m8">
-        <span class="module-num">08</span> Networking
+      <a class="nav-item" href="#intro-killchain" data-module="intro-killchain">
+        <span class="module-num">07</span> Cyber Kill Chain
         <span class="progress-dot"></span>
       </a>
     </div>
 
+    <!-- Vulnerabilities -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Vulnerabilities</div>
+      <a class="nav-item" href="#vuln-sqli" data-module="vuln-sqli">
+        <span class="module-num">08</span> SQL Injection
+        <span class="flask-badge">Flask Lab</span>
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#vuln-xss" data-module="vuln-xss">
+        <span class="module-num">09</span> XSS
+        <span class="flask-badge">Flask Lab</span>
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#vuln-ssti" data-module="vuln-ssti">
+        <span class="module-num">10</span> SSTI
+        <span class="flask-badge">Flask Lab</span>
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#vuln-idor" data-module="vuln-idor">
+        <span class="module-num">11</span> IDOR
+        <span class="flask-badge">Flask Lab</span>
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#vuln-auth" data-module="vuln-auth">
+        <span class="module-num">12</span> Broken Auth
+        <span class="flask-badge">Flask Lab</span>
+        <span class="progress-dot"></span>
+      </a>
+    </div>
+
+    <!-- Aftermath -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Aftermath</div>
+      <a class="nav-item" href="#after-reporting" data-module="after-reporting">
+        <span class="module-num">13</span> Reporting
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#after-obfuscation" data-module="after-obfuscation">
+        <span class="module-num">14</span> WAF Evasion
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#after-recon" data-module="after-recon">
+        <span class="module-num">15</span> Web Recon
+        <span class="progress-dot"></span>
+      </a>
+      <a class="nav-item" href="#after-next" data-module="after-next">
+        <span class="module-num">16</span> Next Steps
+        <span class="progress-dot"></span>
+      </a>
+    </div>
+
+    <!-- Bonus -->
     <div class="sidebar-section" style="margin-top: 16px;">
       <div class="sidebar-section-title">Bonus</div>
       <a class="nav-item" href="#game" data-module="game">
-        <span class="module-num" style="font-size:1rem;">⚔</span> Shadow Terminal
+        <span class="module-num" style="font-size:1rem;">&#x2694;</span> Shadow Terminal
         <span class="progress-dot"></span>
       </a>
     </div>
@@ -98,20 +148,32 @@
   <script src="js/db.js"></script>
   <script src="js/router.js"></script>
 
-  <!-- Module scripts -->
-  <script src="js/modules/m1-encoding.js"></script>
-  <script src="js/modules/m2-sqli.js"></script>
-  <script src="js/modules/m3-ssti.js"></script>
-  <script src="js/modules/m4-idor.js"></script>
-  <script src="js/modules/m5-xss.js"></script>
-  <script src="js/modules/m6-auth.js"></script>
-  <script src="js/modules/m7-cookies.js"></script>
-  <script src="js/modules/m8-networking.js"></script>
+  <!-- Module scripts — Introduction -->
+  <script src="js/modules/intro-legal.js"></script>
+  <script src="js/modules/intro-networking.js"></script>
+  <script src="js/modules/intro-encoding.js"></script>
+  <script src="js/modules/intro-cookies.js"></script>
+  <script src="js/modules/intro-sop.js"></script>
+  <script src="js/modules/intro-history.js"></script>
+  <script src="js/modules/intro-killchain.js"></script>
+
+  <!-- Module scripts — Vulnerabilities -->
+  <script src="js/modules/vuln-sqli.js"></script>
+  <script src="js/modules/vuln-xss.js"></script>
+  <script src="js/modules/vuln-ssti.js"></script>
+  <script src="js/modules/vuln-idor.js"></script>
+  <script src="js/modules/vuln-auth.js"></script>
+
+  <!-- Module scripts — Aftermath -->
+  <script src="js/modules/after-reporting.js"></script>
+  <script src="js/modules/after-obfuscation.js"></script>
+  <script src="js/modules/after-recon.js"></script>
+  <script src="js/modules/after-next.js"></script>
 
   <!-- Phaser 3 Engine -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 
-  <!-- Game scripts (state → data → ui → scenes → bootstrap) -->
+  <!-- Game scripts (state -> data -> ui -> scenes -> bootstrap) -->
   <script src="game/state/RunState.js"></script>
   <script src="game/state/SaveManager.js"></script>
   <script src="game/data/cards.js"></script>

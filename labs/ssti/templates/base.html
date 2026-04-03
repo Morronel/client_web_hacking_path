@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NeonGreet{% endblock %} - SSTI Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="/" class="brand">&gt;_ NeonGreet</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/greeting">Greeting</a>
+            <a href="/profile">Profile</a>
+            <a href="/feedback">Feedback</a>
+            <a href="/sandbox">Sandbox</a>
+            <a href="/debug">Debug</a>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <footer>
+        NeonGreet &mdash; SSTI Lab &mdash; Port 5003
+    </footer>
+</body>
+</html>

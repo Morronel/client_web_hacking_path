@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Downloads{% endblock %}
+
+{% block content %}
+<h1>// FILE DOWNLOADS</h1>
+
+<div class="card">
+    <h3>Your Files</h3>
+    <p>Download your purchased files:</p>
+
+    <div class="api-url">
+        <span>Download URL:</span><br>
+        <span id="api-endpoint">/download?file=receipt.txt</span>
+    </div>
+
+    <h2 style="margin-top:1rem;">receipt.txt (Your file)</h2>
+    <div class="data-display" id="file-data">Loading...</div>
+
+    <div style="margin-top:1rem;">
+        <a href="/api/files" class="btn btn-cyan" target="_blank">View All Files</a>
+    </div>
+
+    <div class="hint-box">
+        <strong>Hint:</strong> Your file is <code>receipt.txt</code>. But the file listing
+        at <a href="/api/files" style="color:#ff9900;">/api/files</a> shows all files
+        in the system. Can you download files that belong to other users?
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    fetch('/download?file=receipt.txt')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('file-data').textContent =
+                JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+            document.getElementById('file-data').textContent = 'Error: ' + err;
+        });
+</script>
+{% endblock %}

@@ -1,0 +1,385 @@
+/* ============================================================
+   CyberForum XSS Lab - Neon Synthwave Cyberpunk Theme
+   ============================================================ */
+
+:root {
+    --bg-primary: #0a0a1a;
+    --bg-card: #0f0f2a;
+    --bg-input: #0d0d20;
+    --neon-magenta: #ff00ff;
+    --neon-cyan: #00fff2;
+    --neon-yellow: #ffff00;
+    --neon-green: #39ff14;
+    --text-primary: #e0e0ff;
+    --text-muted: #8888aa;
+    --border-color: #1a1a3a;
+    --danger: #ff2255;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Courier New', Courier, monospace;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* --- Navigation --- */
+nav {
+    background: linear-gradient(180deg, #0f0f2a 0%, #0a0a1a 100%);
+    border-bottom: 2px solid var(--neon-magenta);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 20px rgba(255, 0, 255, 0.3);
+}
+
+nav .brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--neon-magenta);
+    text-shadow: 0 0 10px var(--neon-magenta), 0 0 30px var(--neon-magenta);
+    text-decoration: none;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+nav .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+}
+
+nav .nav-links a {
+    color: var(--neon-cyan);
+    text-decoration: none;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    padding: 0.3rem 0;
+    border-bottom: 2px solid transparent;
+}
+
+nav .nav-links a:hover {
+    color: var(--neon-magenta);
+    text-shadow: 0 0 8px var(--neon-magenta);
+    border-bottom-color: var(--neon-magenta);
+}
+
+/* --- Main Container --- */
+.container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+/* --- Page Title --- */
+h1, h2, h3 {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px rgba(0, 255, 242, 0.5);
+    margin-bottom: 1rem;
+}
+
+h1 { font-size: 2rem; letter-spacing: 2px; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.2rem; }
+
+/* --- Cards --- */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-magenta);
+    border-radius: 4px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 255, 242, 0.15);
+}
+
+.card .card-title {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.card .card-title a {
+    color: var(--neon-magenta);
+    text-decoration: none;
+    text-shadow: 0 0 6px rgba(255, 0, 255, 0.4);
+}
+
+.card .card-title a:hover {
+    text-shadow: 0 0 12px var(--neon-magenta);
+}
+
+.card .card-meta {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.card .card-body {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+/* --- Forms --- */
+form {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    color: var(--neon-cyan);
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+input[type="text"],
+input[type="url"],
+textarea {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: var(--bg-input);
+    border: 1px solid var(--neon-magenta);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 255, 242, 0.3);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+button, .btn {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    background: transparent;
+    color: var(--neon-magenta);
+    border: 2px solid var(--neon-magenta);
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+button:hover, .btn:hover {
+    background: var(--neon-magenta);
+    color: var(--bg-primary);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+}
+
+.btn-cyan {
+    color: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+}
+
+.btn-cyan:hover {
+    background: var(--neon-cyan);
+    color: var(--bg-primary);
+    box-shadow: 0 0 20px rgba(0, 255, 242, 0.5);
+}
+
+/* --- Comments --- */
+.comment {
+    background: var(--bg-input);
+    border-left: 3px solid var(--neon-cyan);
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.8rem;
+    border-radius: 2px;
+}
+
+.comment .comment-author {
+    color: var(--neon-yellow);
+    font-weight: bold;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+}
+
+.comment .comment-content {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+/* --- Profile --- */
+.profile-header {
+    text-align: center;
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.profile-header .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--neon-magenta);
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+    color: var(--neon-magenta);
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+}
+
+.profile-header .username {
+    color: var(--neon-magenta);
+    font-size: 1.3rem;
+    text-shadow: 0 0 8px rgba(255, 0, 255, 0.5);
+}
+
+.profile-header .bio {
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+}
+
+/* --- Search --- */
+.search-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-form input[type="text"] {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.search-form button {
+    white-space: nowrap;
+}
+
+.search-query {
+    color: var(--neon-yellow);
+    text-shadow: 0 0 6px rgba(255, 255, 0, 0.4);
+    margin-bottom: 1rem;
+}
+
+/* --- Alert / Info boxes --- */
+.alert {
+    padding: 1rem 1.2rem;
+    border-radius: 3px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.alert-info {
+    background: rgba(0, 255, 242, 0.08);
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+}
+
+.alert-success {
+    background: rgba(57, 255, 20, 0.08);
+    border: 1px solid var(--neon-green);
+    color: var(--neon-green);
+}
+
+.alert-warning {
+    background: rgba(255, 255, 0, 0.08);
+    border: 1px solid var(--neon-yellow);
+    color: var(--neon-yellow);
+}
+
+.alert-danger {
+    background: rgba(255, 34, 85, 0.08);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+
+/* --- CSP Demo --- */
+.csp-info {
+    background: var(--bg-card);
+    border: 1px dashed var(--neon-yellow);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--neon-yellow);
+}
+
+.csp-info code {
+    background: var(--bg-primary);
+    padding: 0.15rem 0.4rem;
+    border-radius: 2px;
+    color: var(--neon-cyan);
+}
+
+/* --- Footer --- */
+footer {
+    text-align: center;
+    padding: 1.5rem;
+    margin-top: 3rem;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+
+footer span {
+    color: var(--neon-magenta);
+}
+
+/* --- Misc --- */
+a {
+    color: var(--neon-cyan);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1.5rem 0;
+}
+
+#report-result {
+    margin-top: 1rem;
+}
+
+/* --- Scanline overlay effect --- */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.05) 0px,
+        rgba(0, 0, 0, 0.05) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+    z-index: 9999;
+}

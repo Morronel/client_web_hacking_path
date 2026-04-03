@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}NeonAuth - Users{% endblock %}
+{% block content %}
+<h1>// USER DIRECTORY</h1>
+<p class="subtitle">All registered users in the system. Passwords are not shown (but they exist in plaintext).</p>
+
+<div class="card">
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>USERNAME</th>
+                <th>ROLE</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.role }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

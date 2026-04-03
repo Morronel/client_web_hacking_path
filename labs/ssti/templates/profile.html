@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="panel">
+        <h2 class="glitch-text">&gt; 02 // PROFILE GENERATOR</h2>
+        <p>Create your NeonGreet cyberpunk profile. Write a bio and see it rendered.</p>
+        <p class="dim-text">Note: The system filters out <code>&#123;&#123;</code> and <code>&#125;&#125;</code> for "security".</p>
+
+        <div class="hint-box">
+            Challenge: Double curly braces are stripped, but other Jinja2 block tags are not. Jinja2 supports <code>&#123;% %&#125;</code> statement blocks. Can you find a way to print values using statement syntax?
+        </div>
+
+        <form method="POST" action="/profile">
+            <div class="form-group">
+                <label>&gt; WRITE YOUR BIO:</label>
+                <textarea name="bio" placeholder="Describe your cyberpunk persona...">{{ bio }}</textarea>
+            </div>
+            <button type="submit" class="btn">Render Profile</button>
+        </form>
+    </div>
+
+    {% if output %}
+    {{ output | safe }}
+    {% endif %}
+</div>
+{% endblock %}

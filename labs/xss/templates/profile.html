@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Profile - {{ user['username'] }}{% endblock %}
+
+{% block content %}
+<div class="profile-header">
+    <div class="avatar">@</div>
+    {# INTENTIONALLY VULNERABLE: display_name rendered with |safe inside attribute — allows attribute injection #}
+    <div data-name="{{ user['display_name']|safe }}" class="username">{{ user['display_name']|safe }}</div>
+    <div class="bio">{{ user['bio'] }}</div>
+</div>
+
+<!-- Hidden flags: accessible via DOM when XSS executes -->
+<div id="dom-flag" style="display:none">FLAG{d0m_xss_inn3rhtml}</div>
+<div id="attr-flag" style="display:none">FLAG{4ttr_1nj3ct10n_br34k0ut}</div>
+
+<h2>&gt; Extra Bio</h2>
+<div class="alert alert-info">
+    Append a <code>#fragment</code> to the URL to display additional bio info.
+</div>
+
+{# INTENTIONALLY VULNERABLE: DOM XSS — location.hash written to innerHTML #}
+<div id="bio-extra" class="card" style="min-height: 50px;"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // INTENTIONALLY VULNERABLE: DOM-based XSS
+    // Reads the URL hash fragment and writes it directly to innerHTML
+    // without any sanitization. An attacker can craft a URL like:
+    //   /profile/1#<img src=x onerror=alert(document.getElementById('dom-flag').textContent)>
+    var hash = location.hash.slice(1);
+    if (hash) {
+        document.getElementById('bio-extra').innerHTML = decodeURIComponent(hash);
+    }
+</script>
+{% endblock %}

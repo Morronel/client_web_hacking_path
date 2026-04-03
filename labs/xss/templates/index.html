@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<h1>&gt; Forum Posts</h1>
+<p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+    Welcome to the neon underground. Browse the latest discussions.
+</p>
+
+{% for post in posts %}
+<div class="card">
+    <div class="card-title">
+        <a href="{{ url_for('view_post', post_id=post['id']) }}">{{ post['title'] }}</a>
+    </div>
+    <div class="card-meta">
+        Posted by <a href="{{ url_for('profile', user_id=post['author_id']) }}">{{ post['display_name'] }}</a>
+    </div>
+    <div class="card-body">
+        {{ post['content'][:150] }}{% if post['content']|length > 150 %}...{% endif %}
+    </div>
+</div>
+{% endfor %}
+
+{% if not posts %}
+<div class="alert alert-info">No posts found. The forum is empty.</div>
+{% endif %}
+{% endblock %}
