@@ -15,7 +15,7 @@ const Router = (() => {
     'intro-killchain':  { file: 'content/intro/killchain.html',   handler: 'introKillchain',  title: 'Cyber Kill Chain',     labs: 1 },
     'intro-setup':      { file: 'content/intro/setup.html',       handler: 'introSetup',      title: 'Lab Setup',            labs: 0 },
 
-    // ── Vulnerabilities (14) ──
+    // ── Vulnerabilities (13) ──
     'vuln-sqli':         { file: 'content/vuln/sqli.html',         handler: 'vulnSqli',         title: 'SQL Injection',      labs: 4 },
     'vuln-xss':          { file: 'content/vuln/xss.html',          handler: 'vulnXss',          title: 'XSS',               labs: 3 },
     'vuln-ssti':         { file: 'content/vuln/ssti.html',         handler: 'vulnSsti',         title: 'SSTI',              labs: 2 },
@@ -24,7 +24,6 @@ const Router = (() => {
     'vuln-csrf':         { file: 'content/vuln/csrf.html',         handler: 'vulnCsrf',         title: 'CSRF',              labs: 1 },
     'vuln-ssrf':         { file: 'content/vuln/ssrf.html',         handler: 'vulnSsrf',         title: 'SSRF',              labs: 3 },
     'vuln-traversal':    { file: 'content/vuln/traversal.html',    handler: 'vulnTraversal',    title: 'Path Traversal',    labs: 3 },
-    'vuln-upload':       { file: 'content/vuln/upload.html',       handler: 'vulnUpload',       title: 'File Upload',       labs: 4 },
     'vuln-cmdi':         { file: 'content/vuln/cmdi.html',         handler: 'vulnCmdi',         title: 'Command Injection', labs: 5 },
     'vuln-xxe':          { file: 'content/vuln/xxe.html',          handler: 'vulnXxe',          title: 'XXE',               labs: 2 },
     'vuln-race':         { file: 'content/vuln/race.html',         handler: 'vulnRace',         title: 'Race Conditions',   labs: 2 },
@@ -42,7 +41,7 @@ const Router = (() => {
   const CATEGORIES = {
     intro:  ['intro-welcome', 'intro-legal', 'intro-networking', 'intro-encoding', 'intro-cookies', 'intro-sop', 'intro-history', 'intro-killchain', 'intro-setup'],
     vuln:   ['vuln-sqli', 'vuln-xss', 'vuln-ssti', 'vuln-idor', 'vuln-auth',
-             'vuln-csrf', 'vuln-ssrf', 'vuln-traversal', 'vuln-upload',
+             'vuln-csrf', 'vuln-ssrf', 'vuln-traversal',
              'vuln-cmdi', 'vuln-xxe', 'vuln-race', 'vuln-deserial', 'vuln-graphql'],
     after:  ['after-reporting', 'after-obfuscation', 'after-recon', 'after-next']
   };
