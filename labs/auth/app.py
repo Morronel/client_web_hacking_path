@@ -169,7 +169,7 @@ def login():
                 "role": user["role"],
             }
 
-            resp = make_response(redirect(url_for("dashboard")))
+            resp = make_response(redirect(url_for("index")))
             resp.set_cookie("neonauth_session", sid, httponly=False, samesite="Lax")
             return resp
 
@@ -248,14 +248,6 @@ def weak_password():
 
     user = get_current_user()
     return render_template("weak.html", error=error, flag=flag, user=user)
-
-
-# ---------- DASHBOARD ----------
-
-@app.route("/dashboard")
-def dashboard():
-    user = get_current_user()
-    return render_template("dashboard.html", user=user)
 
 
 # ---------- BRUTE FORCE (No Rate Limiting) ----------
