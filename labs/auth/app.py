@@ -9,10 +9,6 @@ All vulnerabilities are deliberate for CTF-style learning.
 import sqlite3
 import uuid
 import os
-import time
-import urllib.request
-from datetime import datetime
-from functools import wraps
 from flask import (
     Flask, request, render_template, redirect, url_for,
     jsonify, make_response, g
@@ -24,13 +20,9 @@ app.secret_key = "neonauth-insecure-key-12345"
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "neonauth.db")
 
 # ---------------------------------------------------------------------------
-# In-memory session store  (intentionally simple for session-fixation demo)
-# Maps neonauth_session cookie value -> {"user_id": int, "username": str, "role": str}
+# In-memory session store
 # ---------------------------------------------------------------------------
 SESSION_STORE: dict = {}
-
-# Store the last reset "email" content so /reset/simulate-email can show it
-LAST_RESET_EMAIL: dict = {}
 
 
 # ---------------------------------------------------------------------------
@@ -65,27 +57,12 @@ def init_db():
             flag_note TEXT DEFAULT ''
         );
 
-        CREATE TABLE IF NOT EXISTS reset_tokens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            token TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        );
-
         CREATE TABLE IF NOT EXISTS login_attempts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
             ip TEXT NOT NULL,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             success INTEGER DEFAULT 0
-        );
-
-        CREATE TABLE IF NOT EXISTS sessions_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id TEXT NOT NULL,
-            user_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
 
@@ -107,7 +84,7 @@ def init_db():
 
 
 # ---------------------------------------------------------------------------
-# Session helpers (custom — intentionally does NOT regenerate after login)
+# Session helpers
 # ---------------------------------------------------------------------------
 def get_session_id():
     """Return the current neonauth_session cookie value, or None."""
@@ -115,11 +92,7 @@ def get_session_id():
 
 
 def ensure_session(response):
-    """
-    If the visitor has no session cookie yet, set one.
-    This is called on every response so that a session id exists before login
-    (required for the session-fixation challenge).
-    """
+    """If the visitor has no session cookie yet, set one."""
     sid = get_session_id()
     if not sid:
         sid = str(uuid.uuid4())
@@ -189,20 +162,12 @@ def login():
             )
             db.commit()
 
-            # VULN: Session fixation — we do NOT regenerate the session id
             sid = get_session_id() or str(uuid.uuid4())
             SESSION_STORE[sid] = {
                 "user_id": user["id"],
                 "username": user["username"],
                 "role": user["role"],
             }
-
-            # Log session
-            db.execute(
-                "INSERT INTO sessions_log (session_id, user_id) VALUES (?, ?)",
-                (sid, user["id"]),
-            )
-            db.commit()
 
             resp = make_response(redirect(url_for("dashboard")))
             resp.set_cookie("neonauth_session", sid, httponly=False, samesite="Lax")
@@ -285,85 +250,12 @@ def weak_password():
     return render_template("weak.html", error=error, flag=flag, user=user)
 
 
-# ---------- PASSWORD RESET POISONING ----------
-
-@app.route("/reset", methods=["GET", "POST"])
-def reset():
-    error = None
-    message = None
-
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        db = get_db()
-        user_row = db.execute(
-            "SELECT * FROM users WHERE username = ?", (username,)
-        ).fetchone()
-
-        if not user_row:
-            error = "User not found"
-        else:
-            token = str(uuid.uuid4())
-            db.execute(
-                "INSERT INTO reset_tokens (user_id, token) VALUES (?, ?)",
-                (user_row["id"], token),
-            )
-            db.commit()
-
-            # VULN: Uses request.host which can be poisoned via Host header.
-            # The reset link is built using the Host header value.
-            # If an attacker sends Host: evil.com, the callback goes to evil.com.
-            reset_link = f"http://{request.host}/reset/confirm?token={token}"
-
-            # Store the "email" content so it can be viewed via /reset/simulate-email
-            LAST_RESET_EMAIL["to"] = f"{username}@neonauth.local"
-            LAST_RESET_EMAIL["link"] = reset_link
-            LAST_RESET_EMAIL["token"] = token
-            LAST_RESET_EMAIL["timestamp"] = datetime.now().isoformat()
-
-            # Simulate sending the email (in a real app this would be sent via SMTP).
-            # The link in the email uses request.host — if poisoned, it points to
-            # the attacker's domain, leaking the token.
-            message = f"Password reset link has been sent to {username}@neonauth.local."
-
-    user = get_current_user()
-    return render_template("reset.html", error=error, message=message, user=user)
-
-
-@app.route("/reset/simulate-email")
-def reset_simulate_email():
-    """
-    Simulates checking the user's email inbox.
-    Shows the last password reset email that was 'sent'.
-    In a real attack, the attacker would intercept this via Host header poisoning
-    (the link in the email would point to the attacker's domain).
-    """
-    user = get_current_user()
-    return render_template("reset_email.html", email=LAST_RESET_EMAIL, user=user)
-
-
-@app.route("/reset/confirm")
-def reset_confirm():
-    token = request.args.get("token", "")
-    db = get_db()
-    row = db.execute("SELECT * FROM reset_tokens WHERE token = ?", (token,)).fetchone()
-
-    if row:
-        flag = "FLAG{r3s3t_p01s0n_h0st}"
-        return render_template("reset_confirm.html", flag=flag, valid=True, user=get_current_user())
-    else:
-        return render_template("reset_confirm.html", flag=None, valid=False, user=get_current_user())
-
-
-# ---------- DASHBOARD (Session Fixation) ----------
+# ---------- DASHBOARD ----------
 
 @app.route("/dashboard")
 def dashboard():
     user = get_current_user()
-    sid = get_session_id()
-    flag = None
-    if user and user["role"] == "admin":
-        flag = "FLAG{s3ss10n_f1x4t10n_vuln}"
-    return render_template("dashboard.html", user=user, session_id=sid, flag=flag)
+    return render_template("dashboard.html", user=user)
 
 
 # ---------- BRUTE FORCE (No Rate Limiting) ----------

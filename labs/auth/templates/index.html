@@ -8,35 +8,21 @@
 
     <div class="card">
         <span class="difficulty easy">EASY</span>
-        <h3>Username Enumeration</h3>
+        <h3>Challenge 1: Username Enumeration</h3>
         <p>The login form leaks whether a username exists. Use the different error messages to enumerate valid accounts, then attempt to log in.</p>
         <a href="{{ url_for('login') }}" class="btn btn-blue">Launch</a>
     </div>
 
     <div class="card">
         <span class="difficulty easy">EASY</span>
-        <h3>Weak Password Policy</h3>
-        <p>The "operator" account uses a commonly known weak password. Can you guess it or crack it? Registration also accepts any password.</p>
+        <h3>Challenge 2: Weak Password Policy</h3>
+        <p>The "operator" account uses a commonly known weak password. Can you guess it or crack it?</p>
         <a href="{{ url_for('weak_password') }}" class="btn btn-blue">Launch</a>
     </div>
 
     <div class="card">
-        <span class="difficulty medium">MEDIUM</span>
-        <h3>Password Reset Poisoning</h3>
-        <p>The password reset flow builds the reset link using the Host header from your request. Manipulate the header to redirect the token to your server.</p>
-        <a href="{{ url_for('reset') }}" class="btn btn-blue">Launch</a>
-    </div>
-
-    <div class="card">
-        <span class="difficulty medium">MEDIUM</span>
-        <h3>Session Fixation</h3>
-        <p>The application assigns a session cookie before authentication and does not regenerate it after login. Fix a session ID and hijack an authenticated session.</p>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-blue">Launch</a>
-    </div>
-
-    <div class="card">
         <span class="difficulty easy">EASY</span>
-        <h3>Brute Force (No Rate Limiting)</h3>
+        <h3>Challenge 3: Brute Force (No Rate Limiting)</h3>
         <p>The brute-force endpoint has zero protections: no rate limiting, no CAPTCHA, no lockout. Script an attack to find admin's password.</p>
         <a href="{{ url_for('brute') }}" class="btn btn-blue">Launch</a>
     </div>
