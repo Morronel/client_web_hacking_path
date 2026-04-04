@@ -2,6 +2,12 @@
   NeonPing — Command Injection Lab Solutions (Port 5011)
 ===============================================================================
 
+NOTE: All flag files (/app/flag.txt through /app/flag5.txt) are technically
+readable from any challenge endpoint, since they all run commands as the same
+user. The educational value of each challenge is in learning the SPECIFIC
+BYPASS TECHNIQUE it teaches. Use the intended technique for each challenge
+rather than falling back to ch1's unrestricted injection.
+
 CHALLENGE 1: Basic Command Injection
 Flag: FLAG{cmd1_b4s1c_1nj3ct}
 

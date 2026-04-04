@@ -27,28 +27,4 @@
     <p class="meta">Target: <code>/internal/flag</code></p>
     <a class="btn mt-2" href="/fetch-safe?url=">Launch</a>
 </div>
-
-<div class="card">
-    <h3>Ch4: Proxy</h3>
-    <span class="category">Protocol Smuggling</span>
-    <p>Claims to allow only HTTP/HTTPS. Can you sneak in another protocol?</p>
-    <p class="meta">Target: <code>/app/flag.txt</code> on disk</p>
-    <a class="btn mt-2" href="/proxy?url=">Launch</a>
-</div>
-
-<div class="card">
-    <h3>Ch5: Redirect Fetch</h3>
-    <span class="category">Redirect Bypass</span>
-    <p>Blocks localhost in the initial URL but follows HTTP redirects blindly.</p>
-    <p class="meta">Target: <code>/internal/db-backup</code></p>
-    <a class="btn mt-2" href="/fetch-redirect">Launch</a>
-</div>
-
-<div class="card">
-    <h3>Ch6: DNS-Checked Fetch</h3>
-    <span class="category">DNS Rebinding / TOCTOU</span>
-    <p>Resolves the hostname and blocks 127.0.0.0/8 &mdash; but the check and fetch are separate steps.</p>
-    <p class="meta">Target: <code>/internal/metadata</code></p>
-    <a class="btn mt-2" href="/fetch-dns?url=">Launch</a>
-</div>
 {% endblock %}

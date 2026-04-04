@@ -2,6 +2,16 @@
 {% block content %}
 <h1>Latest Transmissions</h1>
 
+<div class="card">
+    <h2>SQLi Challenges</h2>
+    <ol>
+        <li><a href="/search">Challenge 1 &mdash; UNION-Based SQLi</a> &mdash; Search the datastream</li>
+        <li><a href="/login">Challenge 2 &mdash; Auth Bypass SQLi</a> &mdash; Neural authentication</li>
+        <li><a href="/post/1">Challenge 3 &mdash; Blind Boolean SQLi</a> &mdash; Read between the bits</li>
+        <li><a href="/api/user?id=1">Challenge 4 &mdash; Time-Based Blind SQLi</a> &mdash; Patience is a weapon</li>
+    </ol>
+</div>
+
 <form action="/search" method="get" class="search-bar">
     <input type="text" name="q" placeholder="Search the datastream...">
     <button type="submit">Scan</button>

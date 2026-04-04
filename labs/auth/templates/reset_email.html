@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}NeonAuth - Simulated Email Inbox{% endblock %}
+{% block content %}
+<h1>// SIMULATED EMAIL INBOX</h1>
+<p class="subtitle">This page simulates the user's email inbox, showing the last password reset email that was sent.</p>
+
+<div class="card">
+    {% if email and email.get('link') %}
+    <h3>Last Password Reset Email</h3>
+    <div style="margin-top: 1rem; padding: 1rem; border: 1px solid var(--border-color, #333); border-radius: 4px;">
+        <p><strong>To:</strong> {{ email.get('to', 'unknown') }}</p>
+        <p><strong>Sent:</strong> {{ email.get('timestamp', 'unknown') }}</p>
+        <p style="margin-top: 1rem;"><strong>Subject:</strong> Password Reset Request</p>
+        <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 4px;">
+            <p>Hello,</p>
+            <p>A password reset was requested for your account. Click the link below to reset your password:</p>
+            <p style="margin-top: 0.5rem; word-break: break-all;">
+                <a href="{{ email.get('link', '#') }}" style="color: var(--neon-green, #0f0);">{{ email.get('link', 'N/A') }}</a>
+            </p>
+            <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.8rem;">If you did not request this reset, please ignore this email.</p>
+        </div>
+    </div>
+    <p style="color: var(--neon-pink, #f0a); font-size: 0.85rem; margin-top: 1rem;">
+        Notice the hostname in the link above. If the Host header was poisoned when the reset was requested, the link will point to the attacker's domain instead of the real server.
+    </p>
+    {% else %}
+    <p>No password reset emails have been sent yet.</p>
+    <p style="margin-top: 1rem;"><a href="{{ url_for('reset') }}">Go to Password Reset</a></p>
+    {% endif %}
+</div>
+{% endblock %}

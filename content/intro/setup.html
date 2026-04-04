@@ -1,0 +1,190 @@
+<!-- Module 08: Lab Setup -->
+<h1>Module 08 — Lab Setup</h1>
+
+<section class="theory-section">
+
+  <h2>Before You Start Hacking: Setting Up Your Environment</h2>
+  <p>
+    The vulnerability modules in this course come with <strong>real, vulnerable web applications</strong>
+    that you can hack locally on your own machine. Each lab is a Flask (Python) app packaged in a
+    Docker container. This module walks you through installing everything you need.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>What you'll install:</strong> Git (to clone the repository) and Docker + Docker Compose
+    (to run the labs). That's it. No Python setup needed — Docker handles everything.
+  </div>
+
+  <h2>Step 1: Install Git</h2>
+  <p>
+    Git is a version control tool. You need it to download (clone) the course repository.
+  </p>
+
+  <div class="panel">
+    <h3>Windows</h3>
+    <p>Download and install <strong>Git for Windows</strong> from
+    <code>https://git-scm.com/download/win</code>. Run the installer with default options.
+    After installation, open <strong>Git Bash</strong> or <strong>PowerShell</strong> and verify:</p>
+    <pre><code class="language-bash">git --version
+# Should output something like: git version 2.43.0</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>macOS</h3>
+    <p>Git comes with Xcode Command Line Tools. Open Terminal and run:</p>
+    <pre><code class="language-bash">xcode-select --install
+# Or install via Homebrew:
+brew install git
+
+git --version</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>Linux (Ubuntu/Debian)</h3>
+    <pre><code class="language-bash">sudo apt update && sudo apt install git -y
+git --version</code></pre>
+  </div>
+
+  <h2>Step 2: Install Docker &amp; Docker Compose</h2>
+  <p>
+    Docker runs each lab in an isolated container — like a tiny virtual machine. Docker Compose
+    makes it easy to build and start these containers with a single command.
+  </p>
+
+  <div class="panel">
+    <h3>Windows &amp; macOS</h3>
+    <p>Install <strong>Docker Desktop</strong> from <code>https://www.docker.com/products/docker-desktop/</code>.
+    Docker Desktop includes both Docker and Docker Compose. After installation, make sure Docker Desktop
+    is running (you'll see a whale icon in your system tray).</p>
+    <pre><code class="language-bash">docker --version
+# Should output: Docker version 24.x or newer
+
+docker compose version
+# Should output: Docker Compose version v2.x</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>Linux (Ubuntu/Debian)</h3>
+    <pre><code class="language-bash"># Install Docker
+curl -fsSL https://get.docker.com | sh
+
+# Add your user to the docker group (so you don't need sudo)
+sudo usermod -aG docker $USER
+
+# Log out and back in, then verify:
+docker --version
+docker compose version</code></pre>
+    <p>If <code>docker compose</code> isn't found, you may need to install the Compose plugin separately:</p>
+    <pre><code class="language-bash">sudo apt install docker-compose-plugin</code></pre>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Common issue:</strong> If you get "permission denied" when running Docker commands on Linux,
+    make sure you've added your user to the <code>docker</code> group and logged out/back in. Or prefix
+    commands with <code>sudo</code>.
+  </div>
+
+  <h2>Step 3: Clone the Repository</h2>
+  <p>
+    Open a terminal and clone the WebHack Academy repository:
+  </p>
+  <pre><code class="language-bash">git clone https://github.com/morronel/client_web_hacking_path.git
+cd client_web_hacking_path</code></pre>
+  <p>
+    This downloads the entire course including all lab source code. The labs live in
+    the <code>labs/</code> directory:
+  </p>
+  <pre><code class="language-bash">ls labs/
+# sqli/  xss/  ssti/  idor/  auth/  csrf/  ssrf/  traversal/
+# upload/  cmdi/  xxe/  race/  deserial/  graphql/</code></pre>
+
+  <h2>Step 4: Start a Lab</h2>
+  <p>
+    Each lab is a self-contained Docker container. To start one:
+  </p>
+  <pre><code class="language-bash"># Navigate to a lab directory
+cd labs/sqli
+
+# Build and start the container
+docker compose up --build
+
+# The lab is now running! Visit it in your browser:
+# http://localhost:5001</code></pre>
+  <p>
+    Press <code>Ctrl+C</code> to stop the lab when you're done.
+  </p>
+
+  <div class="callout callout-success">
+    <strong>Tip:</strong> Add <code>-d</code> to run in the background: <code>docker compose up --build -d</code>.
+    Then use <code>docker compose down</code> to stop it.
+  </div>
+
+  <h2>Lab Port Reference</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Lab</th><th>Directory</th><th>Port</th><th>URL</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>SQL Injection</td><td><code>labs/sqli</code></td><td>5001</td><td><code>http://localhost:5001</code></td></tr>
+        <tr><td>XSS</td><td><code>labs/xss</code></td><td>5002</td><td><code>http://localhost:5002</code></td></tr>
+        <tr><td>SSTI</td><td><code>labs/ssti</code></td><td>5003</td><td><code>http://localhost:5003</code></td></tr>
+        <tr><td>IDOR</td><td><code>labs/idor</code></td><td>5004</td><td><code>http://localhost:5004</code></td></tr>
+        <tr><td>Broken Auth</td><td><code>labs/auth</code></td><td>5005</td><td><code>http://localhost:5005</code></td></tr>
+        <tr><td>CSRF</td><td><code>labs/csrf</code></td><td>5006</td><td><code>http://localhost:5006</code></td></tr>
+        <tr><td>SSRF</td><td><code>labs/ssrf</code></td><td>5008</td><td><code>http://localhost:5008</code></td></tr>
+        <tr><td>Path Traversal</td><td><code>labs/traversal</code></td><td>5009</td><td><code>http://localhost:5009</code></td></tr>
+        <tr><td>File Upload</td><td><code>labs/upload</code></td><td>5010</td><td><code>http://localhost:5010</code></td></tr>
+        <tr><td>Command Injection</td><td><code>labs/cmdi</code></td><td>5011</td><td><code>http://localhost:5011</code></td></tr>
+        <tr><td>XXE</td><td><code>labs/xxe</code></td><td>5012</td><td><code>http://localhost:5012</code></td></tr>
+        <tr><td>Race Conditions</td><td><code>labs/race</code></td><td>5013</td><td><code>http://localhost:5013</code></td></tr>
+        <tr><td>Deserialization</td><td><code>labs/deserial</code></td><td>5014</td><td><code>http://localhost:5014</code></td></tr>
+        <tr><td>GraphQL</td><td><code>labs/graphql</code></td><td>5015</td><td><code>http://localhost:5015</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Useful Tools</h2>
+  <p>
+    While you can solve most challenges with just a browser and <code>curl</code>, these tools make
+    your life easier:
+  </p>
+  <ul>
+    <li><strong>curl</strong> — Command-line HTTP client (comes with Linux/Mac, install via Git Bash on Windows)</li>
+    <li><strong>Burp Suite Community</strong> — Intercepts and modifies HTTP requests between your browser and the lab</li>
+    <li><strong>Browser DevTools (F12)</strong> — Network tab, Console, and Application tab for cookies</li>
+    <li><strong>webhook.site</strong> — Free service that gives you a URL to receive HTTP callbacks (useful for XSS cookie theft and SSRF testing)</li>
+    <li><strong>Python 3</strong> — For writing exploit scripts (blind SQLi automation, pickle payload generation, etc.)</li>
+  </ul>
+
+  <h2>Troubleshooting</h2>
+
+  <div class="panel">
+    <h3>"Cannot connect to the Docker daemon"</h3>
+    <p>Make sure Docker Desktop is running (Windows/Mac) or the Docker service is started (Linux):</p>
+    <pre><code class="language-bash"># Linux
+sudo systemctl start docker</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>"Port already in use"</h3>
+    <p>Another lab (or application) is using that port. Stop it first:</p>
+    <pre><code class="language-bash">docker compose down   # in the other lab's directory
+# Or stop all containers:
+docker stop $(docker ps -q)</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>"Build fails" or "pip install fails"</h3>
+    <p>The labs use pre-built wheel files for offline installation, so network issues during build
+    shouldn't be a problem. If a build fails, try:</p>
+    <pre><code class="language-bash">docker compose build --no-cache</code></pre>
+  </div>
+
+  <div class="callout callout-success">
+    <strong>You're ready!</strong> Once Git and Docker are installed, head to the first vulnerability
+    module (SQL Injection) and start hacking. Each module's page has the specific
+    <code>docker compose</code> command to start its lab.
+  </div>
+
+</section>

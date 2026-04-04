@@ -21,7 +21,7 @@
     </div>
     <p class="description">
         Redeem a voucher code to add credits. The server checks if the voucher is unused, <em>then</em> marks it redeemed.
-        Send many concurrent redeem requests to credit the voucher multiple times.
+        Can you credit the voucher multiple times?
     </p>
     <p class="status">Voucher NEON-GIFT-2024: <span class="neon-pink">{{ voucher_status }}</span></p>
 
@@ -33,49 +33,17 @@
     <div class="check-links">
         <a href="/check-balance" class="btn btn-sm">Check Balance (flag if &gt; 600)</a>
     </div>
-
-    <div class="exploit-hint">
-        <strong>Hint:</strong>
-        <code>for i in $(seq 1 20); do curl -s -X POST http://localhost:5013/redeem -d "code=NEON-GIFT-2024" &amp; done; wait</code>
-    </div>
 </div>
 
 <!-- Challenge 2 -->
 <div class="card">
     <div class="card-header">
         <span class="challenge-num">#2</span>
-        <h2>Parallel Registration</h2>
-    </div>
-    <p class="description">
-        Register a username. The server checks for duplicates, <em>then</em> inserts.
-        Send concurrent requests with the same username to bypass the uniqueness check.
-    </p>
-    <p class="status">Total registrations: <span class="neon-cyan">{{ reg_count }}</span> | Duplicates: <span class="neon-pink">{{ "Yes" if has_dupes else "None" }}</span></p>
-
-    <form action="/register" method="POST" class="inline-form">
-        <input type="text" name="username" placeholder="Username" value="neonrider">
-        <button type="submit" class="btn">Register</button>
-    </form>
-
-    <div class="check-links">
-        <a href="/check-dupes" class="btn btn-sm">Check Duplicates (flag if found)</a>
-    </div>
-
-    <div class="exploit-hint">
-        <strong>Hint:</strong>
-        <code>for i in $(seq 1 20); do curl -s -X POST http://localhost:5013/register -d "username=neonrider" &amp; done; wait</code>
-    </div>
-</div>
-
-<!-- Challenge 3 -->
-<div class="card">
-    <div class="card-header">
-        <span class="challenge-num">#3</span>
         <h2>Overdraft Withdrawal</h2>
     </div>
     <p class="description">
         Withdraw credits from your account. The server checks your balance is sufficient, <em>then</em> deducts.
-        Send many concurrent withdrawals that each pass the check but together exceed the balance.
+        Can you make your balance go negative?
     </p>
     <p class="status">Current balance: <span class="neon-green">{{ balance }}</span></p>
 
@@ -86,65 +54,6 @@
 
     <div class="check-links">
         <a href="/check-negative" class="btn btn-sm">Check Negative Balance (flag if &lt; 0)</a>
-    </div>
-
-    <div class="exploit-hint">
-        <strong>Hint:</strong>
-        <code>for i in $(seq 1 20); do curl -s -X POST http://localhost:5013/withdraw -d "amount=100" &amp; done; wait</code>
-    </div>
-</div>
-
-<!-- Challenge 4 -->
-<div class="card">
-    <div class="card-header">
-        <span class="challenge-num">#4</span>
-        <h2>Bonus Double-Claim</h2>
-    </div>
-    <p class="description">
-        Claim a one-time bonus of 300 credits. The server checks if the bonus is unclaimed, <em>then</em> marks it claimed and credits your account.
-        Race to claim it multiple times.
-    </p>
-    <p class="status">Bonus: <span class="neon-pink">{{ bonus_status }}</span></p>
-
-    <form action="/claim-bonus" method="POST" class="inline-form">
-        <button type="submit" class="btn">Claim Bonus</button>
-    </form>
-
-    <div class="check-links">
-        <a href="/check-bonus" class="btn btn-sm">Check Bonus (flag if balance &gt; 400)</a>
-    </div>
-
-    <div class="exploit-hint">
-        <strong>Hint:</strong>
-        <code>for i in $(seq 1 20); do curl -s -X POST http://localhost:5013/claim-bonus &amp; done; wait</code>
-    </div>
-</div>
-
-<!-- Challenge 5 -->
-<div class="card">
-    <div class="card-header">
-        <span class="challenge-num">#5</span>
-        <h2>Transfer Fraud</h2>
-    </div>
-    <p class="description">
-        Transfer credits from your account to another user. The server checks your balance, <em>then</em> deducts.
-        Race multiple transfers to overdraft your account.
-    </p>
-    <p class="status">Transfers logged: <span class="neon-cyan">{{ transfers }}</span></p>
-
-    <form action="/transfer" method="POST" class="inline-form">
-        <input type="text" name="to" placeholder="Recipient" value="alice">
-        <input type="number" name="amount" placeholder="Amount" value="100">
-        <button type="submit" class="btn">Transfer</button>
-    </form>
-
-    <div class="check-links">
-        <a href="/check-fraud" class="btn btn-sm">Check Fraud (flag if balance &lt; 0)</a>
-    </div>
-
-    <div class="exploit-hint">
-        <strong>Hint:</strong>
-        <code>for i in $(seq 1 20); do curl -s -X POST http://localhost:5013/transfer -d "to=alice&amp;amount=100" &amp; done; wait</code>
     </div>
 </div>
 

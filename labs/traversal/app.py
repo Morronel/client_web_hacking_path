@@ -2,7 +2,7 @@
 NeonDocs - Corporate Document Viewer
 Path Traversal Vulnerability Lab (Port 5009)
 
-A cyberpunk-themed Flask application with 5 intentional path traversal
+A cyberpunk-themed Flask application with 3 intentional path traversal
 vulnerabilities for security education purposes.
 """
 
@@ -19,13 +19,14 @@ BASE = "/app"
 
 DIRS = [
     f"{BASE}/documents/public",
+    f"{BASE}/documents/shared",
+    f"{BASE}/documents/archive",
     f"{BASE}/documents/private",
     f"{BASE}/secret",
-    f"{BASE}/secret/flag5",
 ]
 
 FILES = {
-    # Public documents
+    # Public documents (used by ch1)
     f"{BASE}/documents/public/readme.txt": (
         "=== NeonDocs README ===\n"
         "Welcome to NeonDocs v3.7 - MegaCorp's internal document viewer.\n"
@@ -44,9 +45,21 @@ FILES = {
         "=== NeonDocs User Manual ===\n"
         "1. Browse documents using the /view endpoint.\n"
         "2. Download files via /download.\n"
-        "3. API access available at /api/doc.\n"
-        "4. Do NOT attempt to access restricted sectors.\n"
-        "5. Violators will be reported to CorpSec.\n"
+        "3. Do NOT attempt to access restricted sectors.\n"
+        "4. Violators will be reported to CorpSec.\n"
+    ),
+    # Shared documents (used by ch2 /view-filtered)
+    f"{BASE}/documents/shared/memo.txt": (
+        "=== SHARED MEMO ===\n"
+        "Team sync scheduled for Friday 1400h.\n"
+        "All clearance-level-3 personnel must attend.\n"
+    ),
+    # Archive documents (used by ch3 /download)
+    f"{BASE}/documents/archive/changelog.txt": (
+        "=== NeonDocs Changelog ===\n"
+        "v3.7 - Added download endpoint\n"
+        "v3.6 - Fixed XSS in viewer\n"
+        "v3.5 - Initial deployment\n"
     ),
     # Private documents
     f"{BASE}/documents/private/internal.txt": (
@@ -62,12 +75,10 @@ FILES = {
         "Admin Panel: admin@megacorp // Pass: Ch1m3r4_Pr0j3ct\n"
         "Backup Server: bkp-node-7 // Key: xK9#mZ2$vQ8\n"
     ),
-    # Flags
+    # Flags at different paths
     f"{BASE}/secret/flag.txt": "FLAG{tr4v3rs4l_b4s1c}",
-    f"{BASE}/secret/flag2.txt": "FLAG{tr4v3rs4l_null_byt3}",
-    f"{BASE}/secret/flag3.txt": "FLAG{tr4v3rs4l_3nc0d1ng}",
-    f"{BASE}/secret/flag4.txt": "FLAG{tr4v3rs4l_3v4s10n}",
-    f"{BASE}/secret/flag5/readme.txt": "FLAG{tr4v3rs4l_wh1t3l1st}",
+    f"{BASE}/secret/flag2.txt": "FLAG{tr4v3rs4l_3nc0d1ng}",
+    f"{BASE}/secret/flag3.txt": "FLAG{tr4v3rs4l_3v4s10n}",
 }
 
 
@@ -112,22 +123,16 @@ def view_file():
         return render_template("view.html", challenge=1, error=f"Could not read file: {e}")
 
 
-# ---- Challenge 2: Null Byte Bypass ----------------------------------------
-@app.route("/view-safe")
-def view_safe():
+# ---- Challenge 2: Single-Pass Filter Bypass (was Ch3) ---------------------
+@app.route("/view-filtered")
+def view_filtered():
     file = request.args.get("file", "")
     if not file:
         return render_template("view.html", challenge=2, error="No file parameter provided.")
     try:
-        # Simulated null byte vulnerability: if %00 or actual null byte is
-        # present, strip everything after it before appending .txt
-        if "%00" in file or "\x00" in file:
-            # Simulate legacy null-byte truncation
-            file = file.split("%00")[0].split("\x00")[0]
-        else:
-            file = file + ".txt"
-
-        path = f"documents/public/{file}"
+        # "Security" filter: strip ../ (single pass only!)
+        sanitized = file.replace("../", "")
+        path = f"documents/shared/{sanitized}"
         with open(path, "r") as f:
             content = f.read()
         return render_template("view.html", challenge=2, filename=file, content=content)
@@ -135,68 +140,27 @@ def view_safe():
         return render_template("view.html", challenge=2, error=f"Could not read file: {e}")
 
 
-# ---- Challenge 3: Single-Pass Filter Bypass -------------------------------
-@app.route("/view-filtered")
-def view_filtered():
-    file = request.args.get("file", "")
-    if not file:
-        return render_template("view.html", challenge=3, error="No file parameter provided.")
-    try:
-        # "Security" filter: strip ../ (single pass only!)
-        sanitized = file.replace("../", "")
-        path = f"documents/public/{sanitized}"
-        with open(path, "r") as f:
-            content = f.read()
-        return render_template("view.html", challenge=3, filename=file, content=content)
-    except Exception as e:
-        return render_template("view.html", challenge=3, error=f"Could not read file: {e}")
-
-
-# ---- Challenge 4: URL-Encoding Evasion ------------------------------------
+# ---- Challenge 3: URL-Encoding Evasion (was Ch4) --------------------------
 @app.route("/download")
 def download():
     path_param = request.args.get("path", "")
     if not path_param:
-        return render_template("view.html", challenge=4, error="No path parameter provided.")
+        return render_template("view.html", challenge=3, error="No path parameter provided.")
 
     # "Security" check on the raw parameter BEFORE decoding
     if ".." in path_param or "/etc" in path_param:
-        return render_template("view.html", challenge=4,
+        return render_template("view.html", challenge=3,
                                error="Blocked: path traversal characters detected!")
 
     # Decode AFTER the check -- the vulnerability
     decoded = urllib.parse.unquote(path_param)
     try:
-        full_path = f"documents/public/{decoded}"
+        full_path = f"documents/archive/{decoded}"
         with open(full_path, "r") as f:
             content = f.read()
-        return render_template("view.html", challenge=4, filename=decoded, content=content)
+        return render_template("view.html", challenge=3, filename=decoded, content=content)
     except Exception as e:
-        return render_template("view.html", challenge=4, error=f"Could not read file: {e}")
-
-
-# ---- Challenge 5: Whitelist Bypass -----------------------------------------
-WHITELIST = ["readme.txt", "report.txt", "manual.txt"]
-
-
-@app.route("/api/doc")
-def api_doc():
-    name = request.args.get("name", "")
-    if not name:
-        return render_template("view.html", challenge=5, error="No name parameter provided.")
-
-    # Weak whitelist check: only verifies the filename ENDS with an allowed name
-    if not any(name.endswith(allowed) for allowed in WHITELIST):
-        return render_template("view.html", challenge=5,
-                               error=f"Access denied: '{name}' is not in the approved document list.")
-
-    try:
-        full_path = f"documents/public/{name}"
-        with open(full_path, "r") as f:
-            content = f.read()
-        return render_template("view.html", challenge=5, filename=name, content=content)
-    except Exception as e:
-        return render_template("view.html", challenge=5, error=f"Could not read file: {e}")
+        return render_template("view.html", challenge=3, error=f"Could not read file: {e}")
 
 
 # ---------------------------------------------------------------------------

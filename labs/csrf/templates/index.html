@@ -11,28 +11,4 @@ Your goal: trick the admin bot into performing actions on their account.</p>
     <p>The /transfer endpoint has no CSRF protection at all. Craft an HTML page that, when visited by the admin, transfers funds to your account.</p>
     <p style="margin-top:.5rem;"><a href="/challenge/1" class="btn">Launch Challenge</a></p>
 </div>
-
-<div class="card">
-    <h3>Challenge 2: JSON API CSRF</h3>
-    <p>The /api/settings endpoint accepts JSON to change the user's email &mdash; but it also accepts text/plain content type, bypassing CORS preflight.</p>
-    <p style="margin-top:.5rem;"><a href="/challenge/2" class="btn">Launch Challenge</a></p>
-</div>
-
-<div class="card">
-    <h3>Challenge 3: Referer Check Bypass</h3>
-    <p>The /transfer-protected endpoint validates the Referer header, but uses a flawed substring check. Find a way to bypass it.</p>
-    <p style="margin-top:.5rem;"><a href="/challenge/3" class="btn">Launch Challenge</a></p>
-</div>
-
-<div class="card">
-    <h3>Challenge 4: CSRF Token Leak via Referer</h3>
-    <p>The /change-email endpoint uses a CSRF token, but it is placed in the URL query parameter. An external image load leaks it via the Referer header.</p>
-    <p style="margin-top:.5rem;"><a href="/challenge/4" class="btn">Launch Challenge</a></p>
-</div>
-
-<div class="card">
-    <h3>Challenge 5: CORS Misconfiguration</h3>
-    <p>The /api/transfer endpoint has misconfigured CORS headers and lacks CSRF protection for simple requests. Exploit it with a cross-origin request.</p>
-    <p style="margin-top:.5rem;"><a href="/challenge/5" class="btn">Launch Challenge</a></p>
-</div>
 {% endblock %}

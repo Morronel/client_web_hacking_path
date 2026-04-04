@@ -7,56 +7,41 @@
     Each one has a different "security" mechanism. Your mission: break them all
     and recover the hidden flags from the restricted sectors.
 </p>
+<p class="mb-1" style="color: var(--neon-blue); font-size: .85rem;">
+    Note: Each challenge uses a different base directory and targets a different flag file.
+    While cross-reading is technically possible via traversal, the goal is to practice each
+    specific bypass technique against its intended endpoint.
+</p>
 
 <h2 class="mt-2">Challenge 1 &mdash; Basic Traversal</h2>
 <div class="card">
     <h3>File Viewer</h3>
-    <p>The <code>/view</code> endpoint reads files from the public documents folder.
+    <p>The <code>/view</code> endpoint reads files from the <code>documents/public/</code> folder.
        No filtering is applied to user input.</p>
     <div class="code-block">GET /view?file=readme.txt</div>
     <p>Target: <code>/app/secret/flag.txt</code></p>
     <a href="/view?file=readme.txt" class="btn">Open Viewer</a>
 </div>
 
-<h2>Challenge 2 &mdash; Null Byte Bypass</h2>
-<div class="card">
-    <h3>Safe Viewer</h3>
-    <p>The <code>/view-safe</code> endpoint forces a <code>.txt</code> extension on all
-       requests. But legacy null-byte handling might let you truncate the path.</p>
-    <div class="code-block">GET /view-safe?file=readme</div>
-    <p>Target: <code>/app/secret/flag2.txt</code></p>
-    <a href="/view-safe?file=readme" class="btn">Open Safe Viewer</a>
-</div>
-
-<h2>Challenge 3 &mdash; Filter Bypass</h2>
+<h2>Challenge 2 &mdash; Filter Bypass</h2>
 <div class="card">
     <h3>Filtered Viewer</h3>
-    <p>The <code>/view-filtered</code> endpoint strips <code>../</code> from the input.
-       But the filter only runs once&mdash;can you sneak past it?</p>
-    <div class="code-block">GET /view-filtered?file=readme.txt</div>
-    <p>Target: <code>/app/secret/flag3.txt</code></p>
-    <a href="/view-filtered?file=readme.txt" class="btn">Open Filtered Viewer</a>
+    <p>The <code>/view-filtered</code> endpoint reads from <code>documents/shared/</code> and strips
+       <code>../</code> from the input. But the filter only runs once&mdash;can you sneak past it?</p>
+    <div class="code-block">GET /view-filtered?file=memo.txt</div>
+    <p>Target: <code>/app/secret/flag2.txt</code></p>
+    <a href="/view-filtered?file=memo.txt" class="btn">Open Filtered Viewer</a>
 </div>
 
-<h2>Challenge 4 &mdash; Encoding Evasion</h2>
+<h2>Challenge 3 &mdash; Encoding Evasion</h2>
 <div class="card">
     <h3>Download Endpoint</h3>
-    <p>The <code>/download</code> endpoint blocks <code>..</code> and <code>/etc</code>
-       in the raw request. But it URL-decodes the path <em>after</em> the security check.</p>
-    <div class="code-block">GET /download?path=readme.txt</div>
-    <p>Target: <code>/app/secret/flag4.txt</code></p>
-    <a href="/download?path=readme.txt" class="btn">Open Download</a>
-</div>
-
-<h2>Challenge 5 &mdash; Whitelist Bypass</h2>
-<div class="card">
-    <h3>Document API</h3>
-    <p>The <code>/api/doc</code> endpoint uses a whitelist: only <code>readme.txt</code>,
-       <code>report.txt</code>, and <code>manual.txt</code> are allowed. But the check
-       only verifies the filename <em>ends with</em> an approved name.</p>
-    <div class="code-block">GET /api/doc?name=readme.txt</div>
-    <p>Target: <code>/app/secret/flag5/readme.txt</code></p>
-    <a href="/api/doc?name=readme.txt" class="btn">Open API</a>
+    <p>The <code>/download</code> endpoint reads from <code>documents/archive/</code> and blocks
+       <code>..</code> and <code>/etc</code> in the raw request. But it URL-decodes the path
+       <em>after</em> the security check.</p>
+    <div class="code-block">GET /download?path=changelog.txt</div>
+    <p>Target: <code>/app/secret/flag3.txt</code></p>
+    <a href="/download?path=changelog.txt" class="btn">Open Download</a>
 </div>
 
 <div class="text-center mt-2">

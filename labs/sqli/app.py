@@ -3,6 +3,12 @@ NeonPulse Blog - SQL Injection Practice Lab
 =============================================
 EDUCATIONAL PURPOSE ONLY - All vulnerabilities are intentional.
 This application is designed for authorized security training.
+
+Challenges:
+  1. UNION-based SQLi  (/search)       - Flag in flags table
+  2. Auth bypass SQLi  (/login)        - Flag in users.secret_note
+  3. Blind boolean SQLi (/post/<id>)   - Flag in posts.hidden_content
+  4. Time-based blind SQLi (/api/user) - Flag in users.time_flag
 """
 
 import sqlite3
@@ -27,8 +33,6 @@ def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(DATABASE)
         g.db.row_factory = sqlite3.Row
-        # Enable executing multiple statements (needed for stacked queries)
-        g.db.execute("PRAGMA journal_mode=WAL")
     return g.db
 
 
@@ -54,7 +58,8 @@ def init_db():
             username TEXT NOT NULL,
             password TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'user',
-            secret_note TEXT DEFAULT ''
+            secret_note TEXT DEFAULT '',
+            time_flag TEXT DEFAULT ''
         )
     """)
 
@@ -65,6 +70,7 @@ def init_db():
             content TEXT NOT NULL,
             author TEXT NOT NULL,
             category TEXT NOT NULL,
+            hidden_content TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -86,26 +92,21 @@ def init_db():
         )
     """)
 
-    cur.execute("""
-        CREATE TABLE admin_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            action TEXT NOT NULL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_admin_visible INTEGER DEFAULT 1
-        )
-    """)
-
     # ---- Seed: users -----------------------------------------------------
+    # Ch2 flag lives ONLY in admin's secret_note
+    # Ch4 flag lives ONLY in admin's time_flag
     cur.execute(
-        "INSERT INTO users (username, password, role, secret_note) "
-        "VALUES ('admin', 'supersecret', 'admin', 'FLAG{sqli_profile_idor_4dm1n}')"
+        "INSERT INTO users (username, password, role, secret_note, time_flag) "
+        "VALUES ('admin', 'supersecret', 'admin', "
+        "'FLAG{4uth_byp4ss_sqli}', 'FLAG{t1m3_b4s3d_bl1nd}')"
     )
     cur.execute(
-        "INSERT INTO users (username, password, role, secret_note) "
-        "VALUES ('guest', 'guest123', 'user', 'Nothing here')"
+        "INSERT INTO users (username, password, role, secret_note, time_flag) "
+        "VALUES ('guest', 'guest123', 'user', 'Nothing here', '')"
     )
 
     # ---- Seed: posts -----------------------------------------------------
+    # Ch3 flag lives ONLY in hidden_content of post id 3
     posts = [
         (
             "Chrome-Dome Implants: A Buyer's Guide",
@@ -116,6 +117,7 @@ def init_db():
             "your wetware before connecting to unknown subnets.",
             "z3r0c00l",
             "cyberware",
+            "",
         ),
         (
             "Decking 101: How to Breach ICE Without Dying",
@@ -126,6 +128,7 @@ def init_db():
             "actually works when the black ICE bites back.",
             "gh0stwr1t3r",
             "hacking",
+            "",
         ),
         (
             "Neon District After Dark: Underground Raves",
@@ -135,6 +138,7 @@ def init_db():
             "is true - DJ Chromatic is an AI running on a stolen military core.",
             "neonrider",
             "culture",
+            "FLAG{bl1nd_sql1_pr0}",
         ),
         (
             "Corp Wars: Militech vs Arasaka - 2087 Update",
@@ -144,6 +148,7 @@ def init_db():
             "New Shanghai. We compile the timeline of events and leaked memos.",
             "dataphr34k",
             "news",
+            "",
         ),
         (
             "Building Your First EMP Grenade on a Budget",
@@ -154,41 +159,20 @@ def init_db():
             "Seriously. Don't do this. ...Unless you really need to.",
             "z3r0c00l",
             "hardware",
+            "",
         ),
     ]
-    for title, content, author, category in posts:
+    for title, content, author, category, hidden in posts:
         cur.execute(
-            "INSERT INTO posts (title, content, author, category) "
-            "VALUES (?, ?, ?, ?)",
-            (title, content, author, category),
+            "INSERT INTO posts (title, content, author, category, hidden_content) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (title, content, author, category, hidden),
         )
 
-    # ---- Seed: flags -----------------------------------------------------
-    flags = [
+    # ---- Seed: flags (Ch1 flag ONLY) -------------------------------------
+    cur.execute(
+        "INSERT INTO flags (flag_name, flag_value) VALUES (?, ?)",
         ("search_flag", "FLAG{un10n_s3l3ct_m4st3r}"),
-        ("blind_flag", "FLAG{bl1nd_sql1_pr0}"),
-        ("api_flag", "FLAG{3rr0r_b4s3d_l34k}"),
-        ("stacked_flag", "FLAG{st4ck3d_qu3ry_h4ck}"),
-    ]
-    for name, value in flags:
-        cur.execute(
-            "INSERT INTO flags (flag_name, flag_value) VALUES (?, ?)",
-            (name, value),
-        )
-
-    # ---- Seed: admin_logs ------------------------------------------------
-    cur.execute(
-        "INSERT INTO admin_logs (action, timestamp, is_admin_visible) "
-        "VALUES ('System boot sequence completed', '2087-01-15 03:22:11', 1)"
-    )
-    cur.execute(
-        "INSERT INTO admin_logs (action, timestamp, is_admin_visible) "
-        "VALUES ('Firewall rule #47 updated by admin', '2087-02-20 14:05:33', 1)"
-    )
-    cur.execute(
-        "INSERT INTO admin_logs (action, timestamp, is_admin_visible) "
-        "VALUES ('SECRET: FLAG{st4ck3d_qu3ry_h4ck} - hidden log entry', "
-        "'2087-03-01 00:00:00', 0)"
     )
 
     # ---- Seed: comments --------------------------------------------------
@@ -213,16 +197,16 @@ def init_db():
 def index():
     """Homepage - list all posts."""
     db = get_db()
-    posts = db.execute("SELECT * FROM posts ORDER BY created_at DESC").fetchall()
+    posts = db.execute("SELECT id, title, content, author, category, created_at FROM posts ORDER BY created_at DESC").fetchall()
     return render_template("index.html", posts=posts)
 
 
 @app.route("/search")
 def search():
     """
-    Search posts.
-    VULN: UNION-based SQL Injection.
-    Extract flags via: ' UNION SELECT 1,flag_name,flag_value,4,5,6 FROM flags--
+    Challenge 1: UNION-based SQL Injection.
+    Flag: FLAG{un10n_s3l3ct_m4st3r}  (in flags table)
+    Extract via: ' UNION SELECT 1,flag_name,flag_value,4,5,6 FROM flags--
     """
     q = request.args.get("q", "")
     db = get_db()
@@ -230,7 +214,7 @@ def search():
     error = None
 
     if q:
-        query = f"SELECT * FROM posts WHERE title LIKE '%{q}%' OR content LIKE '%{q}%'"
+        query = f"SELECT id, title, content, author, category, created_at FROM posts WHERE title LIKE '%{q}%' OR content LIKE '%{q}%'"
         try:
             results = db.execute(query).fetchall()
         except Exception as e:
@@ -242,10 +226,9 @@ def search():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """
-    Login form.
-    VULN: Authentication bypass via SQL Injection.
-    Bypass: username = admin'--  password = anything
-    Or:     username = ' OR 1=1--  password = anything
+    Challenge 2: Authentication bypass via SQL Injection.
+    Flag: FLAG{4uth_byp4ss_sqli}  (in admin's secret_note column)
+    Bypass: username = admin'--   password = anything
     """
     error = None
     success = None
@@ -266,7 +249,7 @@ def login():
             if user:
                 if user["role"] == "admin":
                     success = f"Welcome back, {user['username']}! You have admin access."
-                    flag = "FLAG{4uth_byp4ss_sqli}"
+                    flag = user["secret_note"]
                 else:
                     success = f"Welcome, {user['username']}! You are logged in as {user['role']}."
             else:
@@ -280,13 +263,15 @@ def login():
 @app.route("/post/<post_id>")
 def view_post(post_id):
     """
-    View a single post.
-    VULN: Blind SQL Injection via post_id.
-    Boolean-based: /post/1 AND 1=1  vs  /post/1 AND 1=2
-    Extract flag char by char from flags table.
+    Challenge 3: Blind Boolean-Based SQL Injection.
+    Flag: FLAG{bl1nd_sql1_pr0}  (in posts.hidden_content of post id 3)
+    The query does NOT return hidden_content, so it must be extracted
+    character-by-character via boolean conditions.
+    Boolean test: /post/1 AND 1=1  vs  /post/1 AND 1=2
     """
     db = get_db()
-    query = f"SELECT * FROM posts WHERE id = {post_id}"
+    # Note: hidden_content is deliberately excluded from the SELECT
+    query = f"SELECT id, title, content, author, category, created_at FROM posts WHERE id = {post_id}"
 
     try:
         post = db.execute(query).fetchone()
@@ -309,35 +294,9 @@ def view_post(post_id):
     return render_template("post.html", post=post, comments=comments, not_found=False)
 
 
-@app.route("/profile")
-def profile():
-    """
-    User profile page.
-    VULN: Integer-based injection on id parameter.
-    /profile?id=1  shows admin profile with secret flag in secret_note.
-    Also injectable: /profile?id=1 UNION SELECT 1,2,3,4,5 FROM flags--
-    """
-    user_id = request.args.get("id", "1")
-    db = get_db()
-    error = None
-    user = None
-
-    query = f"SELECT * FROM users WHERE id = {user_id}"
-    try:
-        user = db.execute(query).fetchone()
-    except Exception as e:
-        error = f"Database error: {e}"
-
-    return render_template("profile.html", user=user, error=error)
-
-
 @app.route("/comment", methods=["POST"])
 def add_comment():
-    """
-    Add a comment to a post.
-    VULN: Second-order SQL Injection via author field in INSERT.
-    The author value is concatenated directly into the INSERT statement.
-    """
+    """Add a comment to a post (not a challenge, just supporting functionality)."""
     post_id = request.form.get("post_id", "0")
     author = request.form.get("author", "anonymous")
     content = request.form.get("content", "")
@@ -345,13 +304,11 @@ def add_comment():
     db = get_db()
     error = None
 
-    query = (
-        f"INSERT INTO comments (post_id, author, content) "
-        f"VALUES ({post_id}, '{author}', '{content}')"
-    )
-
     try:
-        db.execute(query)
+        db.execute(
+            "INSERT INTO comments (post_id, author, content) VALUES (?, ?, ?)",
+            (post_id, author, content),
+        )
         db.commit()
     except Exception as e:
         error = str(e)
@@ -368,116 +325,35 @@ def add_comment():
     return redirect(url_for("view_post", post_id=post_id))
 
 
-@app.route("/admin/logs")
-def admin_logs():
+@app.route("/api/user")
+def api_user():
     """
-    Admin logs page.
-    VULN: Stacked queries via sort parameter.
-    Inject: ;UPDATE admin_logs SET is_admin_visible=1 WHERE 1=1--
-    to reveal hidden log containing the flag.
+    Challenge 4: Time-based Blind SQL Injection.
+    Flag: FLAG{t1m3_b4s3d_bl1nd}  (in admin's time_flag column, id=1)
+    The endpoint returns ONLY the username as JSON — the flag is never
+    in the response.  Use timing side-channels to extract it:
+      /api/user?id=1 AND CASE WHEN (unicode(substr((SELECT time_flag FROM users WHERE id=1),1,1))>64) THEN randomblob(100000000) ELSE 0 END
     """
-    sort = request.args.get("sort", "id")
-    db = get_db()
-    logs = []
-    error = None
+    user_id = request.args.get("id", "")
+    if not user_id:
+        return jsonify({"status": "error", "message": "Missing id parameter"}), 400
 
-    query = f"SELECT * FROM admin_logs WHERE is_admin_visible = 1 ORDER BY {sort}"
+    db = get_db()
+
+    # Vulnerable: string concatenation
+    query = "SELECT id, username FROM users WHERE id = " + user_id
 
     try:
-        # executescript allows multiple statements (stacked queries)
-        # We need a workaround: use the raw connection to allow multi-statement
-        raw_conn = db.connection if hasattr(db, "connection") else None
-
-        # For stacked queries to work we execute via the underlying connection
-        cursor = db.cursor()
-        # Split on semicolons and execute each statement
-        statements = query.split(";")
-        for stmt in statements[:-1]:
-            stmt = stmt.strip()
-            if stmt:
-                cursor.execute(stmt)
-                db.commit()
-        # The last statement is the SELECT (or the only statement)
-        last = statements[-1].strip()
-        if last:
-            cursor.execute(last)
-            logs = cursor.fetchall()
-    except Exception as e:
-        error = str(e)
-        # If error, try just the basic query
-        try:
-            logs = db.execute(
-                "SELECT * FROM admin_logs WHERE is_admin_visible = 1 ORDER BY id"
-            ).fetchall()
-        except Exception:
-            pass
-
-    return render_template("admin.html", logs=logs, error=error, sort=sort)
-
-
-@app.route("/api/posts")
-def api_posts():
-    """
-    JSON API for posts.
-    VULN: Error-based SQL Injection via category parameter.
-    Errors returned in JSON with full SQL error message.
-    Extractable via: ' AND 1=CAST((SELECT flag_value FROM flags LIMIT 1) AS INT)--
-    """
-    category = request.args.get("category", "")
-    db = get_db()
-
-    if not category:
-        try:
-            posts = db.execute("SELECT * FROM posts").fetchall()
+        user = db.execute(query).fetchone()
+        if user:
             return jsonify({
                 "status": "success",
-                "count": len(posts),
-                "posts": [
-                    {
-                        "id": p["id"],
-                        "title": p["title"],
-                        "content": p["content"],
-                        "author": p["author"],
-                        "category": p["category"],
-                        "created_at": p["created_at"],
-                    }
-                    for p in posts
-                ],
+                "user": {"id": user["id"], "username": user["username"]},
             })
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
-
-    query = f"SELECT * FROM posts WHERE category = '{category}'"
-
-    try:
-        posts = db.execute(query).fetchall()
-        return jsonify({
-            "status": "success",
-            "count": len(posts),
-            "posts": [
-                {
-                    "id": p["id"],
-                    "title": p["title"],
-                    "content": p["content"],
-                    "author": p["author"],
-                    "category": p["category"],
-                    "created_at": p["created_at"],
-                }
-                for p in posts
-            ],
-        })
+        else:
+            return jsonify({"status": "error", "message": "User not found"}), 404
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e),
-            "query": query,
-        }), 500
-
-
-@app.route("/api/docs")
-def api_docs():
-    """API documentation page."""
-    return render_template("api.html")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # ---------------------------------------------------------------------------

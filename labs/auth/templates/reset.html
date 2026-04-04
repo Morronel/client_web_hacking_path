@@ -5,7 +5,7 @@
 <p class="subtitle">Host Header Poisoning - The reset link is built from the request's Host header.</p>
 
 <div class="hint">
-    Hint: Intercept the reset request and modify the Host header to your own server (e.g., evil.com). The generated reset link will point to your domain, leaking the token. Try: <code>curl -X POST http://localhost:5005/reset -d "username=admin" -H "Host: evil.com"</code>
+    Hint: The server constructs the reset link using the <code>Host</code> header from your request. If you change the Host header, the link in the "email" will point to your domain, leaking the token. Try: <code>curl -X POST http://localhost:5005/reset -d "username=admin" -H "Host: evil.com"</code> then check <a href="/reset/simulate-email">/reset/simulate-email</a> to see the generated link.
 </div>
 
 <div class="card">
@@ -25,12 +25,11 @@
         <button type="submit" class="btn">Send Reset Link</button>
     </form>
 
-    {% if reset_link %}
-    <h3 style="margin-top: 1.5rem;">Generated Reset Link:</h3>
-    <div class="reset-link-box">{{ reset_link }}</div>
-    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">
-        Notice the hostname in the link above. If you modified the Host header, it will reflect your injected value.
+    <p style="margin-top: 1.5rem;">
+        <a href="/reset/simulate-email" class="btn" style="background: var(--neon-blue, #0af);">Check Simulated Email Inbox</a>
     </p>
-    {% endif %}
+    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">
+        The reset link is no longer shown directly here. Check the simulated email inbox to see what was "sent".
+    </p>
 </div>
 {% endblock %}

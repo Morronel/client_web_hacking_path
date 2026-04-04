@@ -9,6 +9,7 @@
     <h3>Ping</h3>
     <p>Run a basic ping against any host. The input is passed directly to <code>os.popen()</code> with no sanitization.</p>
     <div class="meta">Difficulty: Easy &bull; Hint: Try appending a second command with <code>;</code> or <code>|</code></div>
+    <div class="meta" style="margin-top:.3rem; color:var(--neon-blue);">Note: This challenge teaches basic command separator injection. The goal is to read <code>/app/flag.txt</code>.</div>
     <div class="mt-2"><a class="btn" href="/ping?host=">Launch Ping</a></div>
 </div>
 
@@ -17,6 +18,7 @@
     <h3>DNS Check</h3>
     <p>Checks whether a domain resolves, but only returns "success" or "failed" &mdash; no command output is shown. You must exfiltrate data out-of-band.</p>
     <div class="meta">Difficulty: Medium &bull; Hint: Redirect output to a file you can read via the web server</div>
+    <div class="meta" style="margin-top:.3rem; color:var(--neon-blue);">Note: This challenge teaches blind injection and out-of-band exfiltration. While you could use ch1 to read the flag file directly, the goal here is to practice writing output to a web-accessible path.</div>
     <div class="mt-2"><a class="btn" href="/dns-check">Launch DNS Check</a></div>
 </div>
 
@@ -25,6 +27,7 @@
     <h3>Filtered Ping</h3>
     <p>Like the basic ping, but <code>;</code>, <code>|</code>, <code>&amp;</code>, and backticks are blocked. Can you find another way to inject?</p>
     <div class="meta">Difficulty: Medium &bull; Hint: Not all command substitution syntax is blocked</div>
+    <div class="meta" style="margin-top:.3rem; color:var(--neon-blue);">Note: This challenge teaches <code>$()</code> substitution and newline-based bypasses. Practice these techniques rather than using ch1's unfiltered endpoint.</div>
     <div class="mt-2"><a class="btn" href="/ping-safe?host=">Launch Filtered Ping</a></div>
 </div>
 
@@ -33,6 +36,7 @@
     <h3>Traceroute</h3>
     <p>Runs traceroute with <code>subprocess.run(shell=True)</code>. Semicolons and pipes are blocked, but there are other ways to chain commands.</p>
     <div class="meta">Difficulty: Medium &bull; Hint: <code>$IFS</code> can substitute for spaces; newlines can separate commands</div>
+    <div class="meta" style="margin-top:.3rem; color:var(--neon-blue);">Note: This challenge teaches <code>$IFS</code> as a space replacement. Practice the technique here rather than bypassing via a simpler endpoint.</div>
     <div class="mt-2"><a class="btn" href="/traceroute">Launch Traceroute</a></div>
 </div>
 
@@ -41,6 +45,7 @@
     <h3>Whois</h3>
     <p>Looks up WHOIS records for a domain. Spaces are strictly blocked by a regex filter. Find a way to run commands without spaces.</p>
     <div class="meta">Difficulty: Hard &bull; Hint: Brace expansion <code>{cmd,arg}</code> or <code>$IFS</code> can replace spaces</div>
+    <div class="meta" style="margin-top:.3rem; color:var(--neon-blue);">Note: This challenge teaches space-free payloads using input redirection (<code>&lt;</code>) and brace expansion. The goal is to practice these advanced bypass techniques.</div>
     <div class="mt-2"><a class="btn" href="/whois?domain=">Launch Whois</a></div>
 </div>
 {% endblock %}

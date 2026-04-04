@@ -14,11 +14,10 @@ BASE_UPLOAD = '/app/uploads'
 DB_PATH = '/app/neongallery.db'
 
 FLAGS = {
-    1: ('FLAG{upl04d_unr3str1ct3d}', '/app/flag.txt'),
-    2: ('FLAG{upl04d_3xt_byp4ss}', '/app/flag2.txt'),
-    3: ('FLAG{upl04d_ct_byp4ss}', '/app/flag3.txt'),
-    4: ('FLAG{upl04d_m4g1c_byt3s}', '/app/flag4.txt'),
-    5: ('FLAG{upl04d_s1z3_l1m1t}', '/app/flag5.txt'),
+    1: ('FLAG{upl04d_3xt_byp4ss}', '/app/flag.txt'),
+    2: ('FLAG{upl04d_ct_byp4ss}', '/app/flag2.txt'),
+    3: ('FLAG{upl04d_m4g1c_byt3s}', '/app/flag3.txt'),
+    4: ('FLAG{upl04d_s1z3_l1m1t}', '/app/flag4.txt'),
 }
 
 BLOCKED_EXTENSIONS = {'.py', '.sh', '.php', '.jsp', '.exe', '.bat'}
@@ -31,7 +30,7 @@ IMAGE_MAGIC = [
 
 
 def init_dirs():
-    for i in range(1, 6):
+    for i in range(1, 5):
         os.makedirs(os.path.join(BASE_UPLOAD, f'ch{i}'), exist_ok=True)
     for ch, (flag_val, flag_path) in FLAGS.items():
         with open(flag_path, 'w') as f:
@@ -99,7 +98,7 @@ def save_upload(file_storage, challenge, filename_override=None):
 @app.route('/')
 def index():
     files = {}
-    for i in range(1, 6):
+    for i in range(1, 5):
         ch_dir = os.path.join(BASE_UPLOAD, f'ch{i}')
         if os.path.isdir(ch_dir):
             files[i] = os.listdir(ch_dir)
@@ -123,85 +122,73 @@ def list_files():
     return jsonify(challenge=ch, files=listing)
 
 
-# ===== Challenge 1: No validation =====
+# ===== Challenge 1: Extension blacklist (bypassable) =====
 @app.route('/upload', methods=['POST'])
 def upload_ch1():
     f = request.files.get('file')
     if not f or f.filename == '':
         return render_template('result.html', title='Challenge 1', success=False,
                                message='No file selected.')
+    original = f.filename
+    _, ext = os.path.splitext(original)
+    # Vulnerability: only checks lowercase exact match of final extension
+    if ext.lower() in BLOCKED_EXTENSIONS:
+        return render_template('result.html', title='Challenge 1', success=False,
+                               message=f'Extension "{ext}" is blocked! Nice try.')
     fname, dest = save_upload(f, 1)
     return render_template('result.html', title='Challenge 1', success=True,
                            message=f'File uploaded: {fname}', challenge=1, filename=fname)
 
 
-# ===== Challenge 2: Extension blacklist (bypassable) =====
-@app.route('/upload-filtered', methods=['POST'])
+# ===== Challenge 2: Content-Type check (bypassable) =====
+@app.route('/upload-ct', methods=['POST'])
 def upload_ch2():
     f = request.files.get('file')
     if not f or f.filename == '':
         return render_template('result.html', title='Challenge 2', success=False,
                                message='No file selected.')
-    original = f.filename
-    _, ext = os.path.splitext(original)
-    # Vulnerability: only checks lowercase exact match of final extension
-    if ext.lower() in BLOCKED_EXTENSIONS:
+    ct = f.content_type or ''
+    if not ct.startswith('image/'):
         return render_template('result.html', title='Challenge 2', success=False,
-                               message=f'Extension "{ext}" is blocked! Nice try.')
+                               message=f'Only image uploads allowed. Got Content-Type: {ct}')
     fname, dest = save_upload(f, 2)
     return render_template('result.html', title='Challenge 2', success=True,
                            message=f'File uploaded: {fname}', challenge=2, filename=fname)
 
 
-# ===== Challenge 3: Content-Type check (bypassable) =====
-@app.route('/upload-ct', methods=['POST'])
+# ===== Challenge 3: Magic bytes check (bypassable) =====
+@app.route('/upload-magic', methods=['POST'])
 def upload_ch3():
     f = request.files.get('file')
     if not f or f.filename == '':
         return render_template('result.html', title='Challenge 3', success=False,
                                message='No file selected.')
-    ct = f.content_type or ''
-    if not ct.startswith('image/'):
+    header = f.read(4)
+    f.seek(0)
+    valid = any(header.startswith(m) for m in IMAGE_MAGIC)
+    if not valid:
         return render_template('result.html', title='Challenge 3', success=False,
-                               message=f'Only image uploads allowed. Got Content-Type: {ct}')
+                               message=f'Invalid magic bytes. File does not appear to be an image.')
     fname, dest = save_upload(f, 3)
     return render_template('result.html', title='Challenge 3', success=True,
                            message=f'File uploaded: {fname}', challenge=3, filename=fname)
 
 
-# ===== Challenge 4: Magic bytes check (bypassable) =====
-@app.route('/upload-magic', methods=['POST'])
+# ===== Challenge 4: Size limit (bypassable) =====
+@app.route('/upload-size', methods=['POST'])
 def upload_ch4():
     f = request.files.get('file')
     if not f or f.filename == '':
         return render_template('result.html', title='Challenge 4', success=False,
                                message='No file selected.')
-    header = f.read(4)
-    f.seek(0)
-    valid = any(header.startswith(m) for m in IMAGE_MAGIC)
-    if not valid:
-        return render_template('result.html', title='Challenge 4', success=False,
-                               message=f'Invalid magic bytes. File does not appear to be an image.')
-    fname, dest = save_upload(f, 4)
-    return render_template('result.html', title='Challenge 4', success=True,
-                           message=f'File uploaded: {fname}', challenge=4, filename=fname)
-
-
-# ===== Challenge 5: Size limit (bypassable) =====
-@app.route('/upload-size', methods=['POST'])
-def upload_ch5():
-    f = request.files.get('file')
-    if not f or f.filename == '':
-        return render_template('result.html', title='Challenge 5', success=False,
-                               message='No file selected.')
     data = f.read()
     if len(data) > 100:
-        return render_template('result.html', title='Challenge 5', success=False,
+        return render_template('result.html', title='Challenge 4', success=False,
                                message=f'File too large ({len(data)} bytes). Max 100 bytes.')
     f.seek(0)
-    fname, dest = save_upload(f, 5)
-    return render_template('result.html', title='Challenge 5', success=True,
-                           message=f'File uploaded: {fname} ({len(data)} bytes)', challenge=5, filename=fname)
+    fname, dest = save_upload(f, 4)
+    return render_template('result.html', title='Challenge 4', success=True,
+                           message=f'File uploaded: {fname} ({len(data)} bytes)', challenge=4, filename=fname)
 
 
 # ===== /run — Execute uploaded Python file =====
@@ -217,7 +204,7 @@ def run_file():
         return render_template('result.html', title='Run', success=False,
                                message='No file specified.')
 
-    # For ch2, also accept .py3, .Py, .PY etc.
+    # For ch1, also accept .py3, .Py, .PY etc.
     allowed_run_ext = {'.py', '.py3'}
     _, ext = os.path.splitext(fname)
     if ext.lower() not in allowed_run_ext:
@@ -233,7 +220,7 @@ def run_file():
         with open(fpath, 'rb') as fp:
             raw = fp.read()
 
-        # Strip leading non-ASCII bytes (for magic byte bypass in ch4)
+        # Strip leading non-ASCII bytes (for magic byte bypass in ch3)
         text = raw.decode('utf-8', errors='ignore')
         # Remove any leading non-printable / non-ASCII characters before first valid Python
         cleaned = re.sub(r'^[^\x20-\x7e\n\r\t]+', '', text)

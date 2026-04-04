@@ -10,6 +10,7 @@ import sqlite3
 import uuid
 import os
 import time
+import urllib.request
 from datetime import datetime
 from functools import wraps
 from flask import (
@@ -27,6 +28,9 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "neonauth.db"
 # Maps neonauth_session cookie value -> {"user_id": int, "username": str, "role": str}
 # ---------------------------------------------------------------------------
 SESSION_STORE: dict = {}
+
+# Store the last reset "email" content so /reset/simulate-email can show it
+LAST_RESET_EMAIL: dict = {}
 
 
 # ---------------------------------------------------------------------------
@@ -285,7 +289,6 @@ def weak_password():
 
 @app.route("/reset", methods=["GET", "POST"])
 def reset():
-    reset_link = None
     error = None
     message = None
 
@@ -306,12 +309,36 @@ def reset():
             )
             db.commit()
 
-            # VULN: Uses request.host which can be poisoned via Host header
+            # VULN: Uses request.host which can be poisoned via Host header.
+            # The reset link is built using the Host header value.
+            # If an attacker sends Host: evil.com, the callback goes to evil.com.
             reset_link = f"http://{request.host}/reset/confirm?token={token}"
-            message = f"Password reset email 'sent' to {username}@neonauth.local"
+
+            # Store the "email" content so it can be viewed via /reset/simulate-email
+            LAST_RESET_EMAIL["to"] = f"{username}@neonauth.local"
+            LAST_RESET_EMAIL["link"] = reset_link
+            LAST_RESET_EMAIL["token"] = token
+            LAST_RESET_EMAIL["timestamp"] = datetime.now().isoformat()
+
+            # Simulate sending the email (in a real app this would be sent via SMTP).
+            # The link in the email uses request.host — if poisoned, it points to
+            # the attacker's domain, leaking the token.
+            message = f"Password reset link has been sent to {username}@neonauth.local."
 
     user = get_current_user()
-    return render_template("reset.html", reset_link=reset_link, error=error, message=message, user=user)
+    return render_template("reset.html", error=error, message=message, user=user)
+
+
+@app.route("/reset/simulate-email")
+def reset_simulate_email():
+    """
+    Simulates checking the user's email inbox.
+    Shows the last password reset email that was 'sent'.
+    In a real attack, the attacker would intercept this via Host header poisoning
+    (the link in the email would point to the attacker's domain).
+    """
+    user = get_current_user()
+    return render_template("reset_email.html", email=LAST_RESET_EMAIL, user=user)
 
 
 @app.route("/reset/confirm")

