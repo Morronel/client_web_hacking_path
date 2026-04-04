@@ -7,11 +7,13 @@
 <div class="card">
     <p>This ping endpoint filters out <code>;</code>, <code>|</code>, <code>&amp;</code>, and backticks. Can you find another way to inject commands?</p>
     <div class="meta">Blocked characters: <code>; | &amp; `</code></div>
+    <div class="meta" style="margin-top:.3rem; color:var(--neon-blue);">Goal: Practice <code>$()</code> substitution or newline injection to read <code>/app/flag3.txt</code>.</div>
 </div>
 {% else %}
 <div class="card">
     <p>Enter a hostname or IP to ping. The input is passed directly into a system command with no filtering.</p>
     <div class="meta">Vulnerable call: <code>os.popen(f"ping -c 1 {host}")</code></div>
+    <div class="meta" style="margin-top:.3rem; color:var(--neon-blue);">Goal: Use basic command separators to read <code>/app/flag.txt</code>.</div>
 </div>
 {% endif %}
 

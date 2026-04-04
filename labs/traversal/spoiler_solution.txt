@@ -2,6 +2,11 @@
   NeonDocs — Path Traversal Lab Solutions (Port 5009)
 ===============================================================================
 
+NOTE: Each challenge uses a different base directory (public/, shared/,
+archive/) and targets a different flag file. While cross-reading other
+flag files is technically possible via traversal, the educational value
+is in practicing each specific bypass technique against its endpoint.
+
 CHALLENGE 1: Basic Path Traversal
 Flag: FLAG{tr4v3rs4l_b4s1c}
 
@@ -11,47 +16,30 @@ Flag: FLAG{tr4v3rs4l_b4s1c}
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 2: Null Byte Bypass
-Flag: FLAG{tr4v3rs4l_null_byt3}
-
-  The /view-safe endpoint appends ".txt" to the filename. But if the
-  input contains %00 (null byte), the code strips everything after
-  the null byte before appending .txt (simulating legacy C behavior).
-
-  curl "http://localhost:5009/view-safe?file=../../secret/flag2.txt%2500"
-
-  The %25 is double-encoded so Flask decodes it to %00 (literal string),
-  which the code then splits on. Everything after %00 is discarded.
-  Result: reads ../../secret/flag2.txt (the .txt is NOT appended since
-  the null byte was detected).
-
-  Note: Using %00 directly may cause binary output issues. Use %2500
-  (double-encoded) for clean results.
-
--------------------------------------------------------------------------------
-
-CHALLENGE 3: Double-Encoding Filter Bypass
+CHALLENGE 2: Single-Pass Filter Bypass
 Flag: FLAG{tr4v3rs4l_3nc0d1ng}
 
-  The /view-filtered endpoint does file.replace("../", "") but only
-  in a single pass. Use ....// which becomes ../ after the replacement.
+  The /view-filtered endpoint reads from documents/shared/ and does
+  file.replace("../", "") but only in a single pass. Use ....// which
+  becomes ../ after the replacement.
 
-  curl "http://localhost:5009/view-filtered?file=....//....//secret/flag3.txt"
+  curl "http://localhost:5009/view-filtered?file=....//....//secret/flag2.txt"
 
   After single-pass removal of "../":
-    ....// → ../ (the outer ../ remains after inner ../ is removed)
+    ....// -> ../ (the outer ../ remains after inner ../ is removed)
 
-  Alternative: ..././..././secret/flag3.txt
+  Alternative: ..././..././secret/flag2.txt
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 4: URL-Encoding Evasion
+CHALLENGE 3: URL-Encoding Evasion
 Flag: FLAG{tr4v3rs4l_3v4s10n}
 
-  The /download endpoint checks the raw parameter for ".." and "/etc"
-  BEFORE URL-decoding it. URL-encode the dots to bypass the check.
+  The /download endpoint reads from documents/archive/ and checks the raw
+  parameter for ".." and "/etc" BEFORE URL-decoding it. URL-encode the
+  dots to bypass the check.
 
-  curl "http://localhost:5009/download?path=%252e%252e/%252e%252e/secret/flag4.txt"
+  curl "http://localhost:5009/download?path=%252e%252e/%252e%252e/%252e%252e/secret/flag3.txt"
 
   NOTE: Flask automatically URL-decodes query parameters before the code
   sees them, so single %2e%2e would be decoded to ".." and caught by the
@@ -59,22 +47,10 @@ Flag: FLAG{tr4v3rs4l_3v4s10n}
   urllib.parse.unquote() decodes %2e to ".").
 
   The flow: %252e%252e → Flask decodes to %2e%2e → check passes (no "..")
-  → urllib.parse.unquote() decodes to ../../secret/flag4.txt
+  → urllib.parse.unquote() decodes to ../../secret/flag3.txt
 
--------------------------------------------------------------------------------
-
-CHALLENGE 5: Whitelist Bypass via Path Prefix
-Flag: FLAG{tr4v3rs4l_wh1t3l1st}
-
-  The /api/doc endpoint has a whitelist check:
-    any(name.endswith(allowed) for allowed in whitelist)
-  where whitelist = ['readme.txt', 'report.txt', 'manual.txt']
-
-  It only checks the END of the filename, not the full path.
-
-  curl "http://localhost:5009/api/doc?name=../../secret/flag5/readme.txt"
-
-  The name ends with "readme.txt" (whitelisted) but the ../ prefix
-  escapes to the secret directory where the flag is stored.
+  The base path is documents/archive/ so you need three levels of ../
+  to reach /app/secret/flag3.txt:
+    documents/archive/../../../secret/flag3.txt
 
 ===============================================================================
