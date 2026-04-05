@@ -22,7 +22,7 @@ const Router = (() => {
     'vuln-idor':         { file: 'content/vuln/idor.html',         handler: 'vulnIdor',         title: 'IDOR',              labs: 2 },
     'vuln-auth':         { file: 'content/vuln/auth.html',         handler: 'vulnAuth',         title: 'Broken Auth',       labs: 2 },
     'vuln-csrf':         { file: 'content/vuln/csrf.html',         handler: 'vulnCsrf',         title: 'CSRF',              labs: 1 },
-    'vuln-ssrf':         { file: 'content/vuln/ssrf.html',         handler: 'vulnSsrf',         title: 'SSRF',              labs: 3 },
+    'vuln-ssrf':         { file: 'content/vuln/ssrf.html',         handler: 'vulnSsrf',         title: 'SSRF',              labs: 2 },
     'vuln-traversal':    { file: 'content/vuln/traversal.html',    handler: 'vulnTraversal',    title: 'Path Traversal',    labs: 3 },
     'vuln-cmdi':         { file: 'content/vuln/cmdi.html',         handler: 'vulnCmdi',         title: 'Command Injection', labs: 5 },
     'vuln-xxe':          { file: 'content/vuln/xxe.html',          handler: 'vulnXxe',          title: 'XXE',               labs: 2 },

@@ -11,38 +11,13 @@ Flag: FLAG{ssrf_m3t4d4ta_l34k}
 
   Response includes cloud metadata with the flag.
 
-  NOTE: /internal/metadata is always accessible from localhost. The other
-  internal endpoints (/internal/admin-api and /internal/flag) require a
-  specific X-Internal-Source header that only the ch2 and ch3 handlers add,
-  so ch1's /fetch cannot reach those flags.
+  NOTE: /internal/metadata is always accessible from localhost. The
+  /internal/flag endpoint requires a specific X-Internal-Source header
+  that only the ch2 handler adds, so ch1's /fetch cannot reach that flag.
 
 -------------------------------------------------------------------------------
 
-CHALLENGE 2: Blind SSRF — Webhook with Logging
-Flag: FLAG{ssrf_bl1nd_00b}
-
-  The /webhook endpoint fetches a URL but doesn't return the response.
-  It logs URL, status code, and response length to a database.
-  Crucially, the webhook handler adds the header "X-Internal-Source: webhook"
-  to its outgoing requests, which is required by /internal/admin-api.
-
-  Step 1: Trigger the blind fetch:
-    curl -X POST http://localhost:5008/webhook \
-      -d "url=http://127.0.0.1:5008/internal/admin-api"
-
-  Step 2: Check the log to see the result:
-    curl http://localhost:5008/check-log
-
-  The log shows status 200 and a non-zero response length, confirming
-  the internal endpoint was accessed. The flag is in the JSON response
-  body (which you can't see directly — that's what makes it "blind").
-
-  To actually read the flag, you would need to exfiltrate the response
-  to an external server you control (e.g., webhook.site).
-
--------------------------------------------------------------------------------
-
-CHALLENGE 3: IP Filter Bypass — Alternative Representations
+CHALLENGE 2: IP Filter Bypass — Alternative Representations
 Flag: FLAG{ssrf_f1lt3r_byp4ss}
 
   The /fetch-safe endpoint blocks "127.0.0.1" and "localhost"

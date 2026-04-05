@@ -11,14 +11,7 @@
 </div>
 
 <div class="card">
-    <h3>Ch2: Blind Webhook</h3>
-    <span class="category">Blind SSRF</span>
-    <p>The <code>/webhook</code> endpoint fetches your URL server-side but never shows the response body. It does, however, log the status code and response length to a database. Use <code>/check-log</code> to see if internal endpoints responded successfully.</p>
-    <p class="meta">A successful fetch to an internal endpoint (status 200, non-zero length) confirms SSRF. The webhook handler adds an internal header that the <code>/internal/admin-api</code> endpoint requires.</p>
-</div>
-
-<div class="card">
-    <h3>Ch3: Filtered Fetch</h3>
+    <h3>Ch2: Filtered Fetch</h3>
     <span class="category">Filter Bypass</span>
     <p>The filter blocks the strings <code>127.0.0.1</code> and <code>localhost</code> (case-insensitive). But there are many ways to represent the loopback address:</p>
     <ul style="margin:.5rem 0 0 1.5rem; color:var(--neon-green);">
