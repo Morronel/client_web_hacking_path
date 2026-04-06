@@ -176,50 +176,60 @@ const introCookies = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'What does the HttpOnly cookie flag prevent?',
+          text_uk: 'Чому запобігає прапорець HttpOnly у cookie?',
           options: [
-            { value: 'a', label: 'The cookie from being sent over HTTP' },
-            { value: 'b', label: 'JavaScript from accessing the cookie via document.cookie' },
-            { value: 'c', label: 'The cookie from being stored on disk' },
-            { value: 'd', label: 'Cross-site requests from including the cookie' }
+            { value: 'a', label: 'The cookie from being sent over HTTP', label_uk: 'Надсиланню cookie через HTTP' },
+            { value: 'b', label: 'JavaScript from accessing the cookie via document.cookie', label_uk: 'Доступу JavaScript до cookie через document.cookie' },
+            { value: 'c', label: 'The cookie from being stored on disk', label_uk: 'Збереженню cookie на диску' },
+            { value: 'd', label: 'Cross-site requests from including the cookie', label_uk: 'Включенню cookie в міжсайтові запити' }
           ],
           answer: 'b',
-          hint: 'This flag is specifically about restricting client-side script access.'
+          hint: 'This flag is specifically about restricting client-side script access.',
+          hint_uk: 'Цей прапорець саме про обмеження доступу клієнтських скриптів.'
         },
         {
           type: 'mc', id: 'q2',
           text: 'What does the Secure flag on a cookie do?',
+          text_uk: 'Що робить прапорець Secure на cookie?',
           options: [
-            { value: 'a', label: 'Encrypts the cookie value' },
-            { value: 'b', label: 'Prevents JavaScript access to the cookie' },
-            { value: 'c', label: 'Ensures the cookie is only sent over HTTPS connections' },
-            { value: 'd', label: 'Makes the cookie expire after the session ends' }
+            { value: 'a', label: 'Encrypts the cookie value', label_uk: 'Шифрує значення cookie' },
+            { value: 'b', label: 'Prevents JavaScript access to the cookie', label_uk: 'Запобігає доступу JavaScript до cookie' },
+            { value: 'c', label: 'Ensures the cookie is only sent over HTTPS connections', label_uk: 'Забезпечує, що cookie надсилається тільки через HTTPS-з\'єднання' },
+            { value: 'd', label: 'Makes the cookie expire after the session ends', label_uk: 'Робить cookie протухлим після завершення сесії' }
           ],
           answer: 'c',
-          hint: 'This flag controls the transport channel, not the cookie contents.'
+          hint: 'This flag controls the transport channel, not the cookie contents.',
+          hint_uk: 'Цей прапорець контролює канал передачі, а не вміст cookie.'
         },
         {
           type: 'tf', id: 'q3',
           text: 'Setting SameSite=Strict on a cookie prevents it from being sent with any cross-site requests.',
+          text_uk: 'Встановлення SameSite=Strict на cookie запобігає його надсиланню з будь-якими міжсайтовими запитами.',
           answer: true,
-          hint: 'Strict mode blocks the cookie on all cross-site navigations.'
+          hint: 'Strict mode blocks the cookie on all cross-site navigations.',
+          hint_uk: 'Режим Strict блокує cookie при всіх міжсайтових навігаціях.'
         },
         {
           type: 'mc', id: 'q4',
           text: 'Why is storing session data in a Base64-encoded cookie (without server-side validation) dangerous?',
+          text_uk: 'Чому зберігання даних сесії в Base64-кодованому cookie (без серверної валідації) є небезпечним?',
           options: [
-            { value: 'a', label: 'Base64 is too slow for real-time decoding' },
-            { value: 'b', label: 'Attackers can decode, modify, and re-encode the cookie to escalate privileges' },
-            { value: 'c', label: 'Base64 cookies are too large for browsers to store' },
-            { value: 'd', label: 'It violates the HTTP specification' }
+            { value: 'a', label: 'Base64 is too slow for real-time decoding', label_uk: 'Base64 занадто повільний для декодування в реальному часі' },
+            { value: 'b', label: 'Attackers can decode, modify, and re-encode the cookie to escalate privileges', label_uk: 'Зловмисники можуть декодувати, змінити та перекодувати cookie для підвищення привілеїв' },
+            { value: 'c', label: 'Base64 cookies are too large for browsers to store', label_uk: 'Base64 cookies занадто великі для зберігання в браузері' },
+            { value: 'd', label: 'It violates the HTTP specification', label_uk: 'Це порушує специфікацію HTTP' }
           ],
           answer: 'b',
-          hint: 'Base64 is encoding, not encryption — anyone can decode and tamper with it.'
+          hint: 'Base64 is encoding, not encryption — anyone can decode and tamper with it.',
+          hint_uk: 'Base64 — це кодування, а не шифрування — будь-хто може декодувати та змінити його.'
         },
         {
           type: 'tf', id: 'q5',
           text: 'A session cookie (one without an explicit Expires or Max-Age) is deleted when the browser is closed.',
+          text_uk: 'Сесійний cookie (без явного Expires або Max-Age) видаляється при закритті браузера.',
           answer: true,
-          hint: 'Without an expiration directive, cookies only persist for the browser session.'
+          hint: 'Without an expiration directive, cookies only persist for the browser session.',
+          hint_uk: 'Без директиви закінчення терміну дії cookies зберігаються тільки протягом сесії браузера.'
         }
       ]
     });

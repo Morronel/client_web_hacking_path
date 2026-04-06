@@ -192,50 +192,60 @@ window.introSop = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'What three components define an "origin" in the Same-Origin Policy?',
+          text_uk: 'Які три компоненти визначають "origin" у Same-Origin Policy?',
           options: [
-            { value: 'a', label: 'Domain, path, and query string' },
-            { value: 'b', label: 'Scheme, host, and port' },
-            { value: 'c', label: 'Protocol, domain, and path' },
-            { value: 'd', label: 'Host, port, and cookie domain' }
+            { value: 'a', label: 'Domain, path, and query string', label_uk: 'Домен, шлях та рядок запиту' },
+            { value: 'b', label: 'Scheme, host, and port', label_uk: 'Схема, хост та порт' },
+            { value: 'c', label: 'Protocol, domain, and path', label_uk: 'Протокол, домен та шлях' },
+            { value: 'd', label: 'Host, port, and cookie domain', label_uk: 'Хост, порт та домен cookie' }
           ],
           answer: 'b',
-          hint: 'The origin tuple has exactly three parts — think about what makes two URLs "same origin".'
+          hint: 'The origin tuple has exactly three parts — think about what makes two URLs "same origin".',
+          hint_uk: 'Кортеж origin складається рівно з трьох частин — подумай, що робить два URL "same origin".'
         },
         {
           type: 'tf', id: 'q2',
           text: 'http://example.com and https://example.com are considered the same origin.',
+          text_uk: 'http://example.com та https://example.com вважаються одним origin.',
           answer: false,
-          hint: 'The scheme (http vs https) is one of the three origin components.'
+          hint: 'The scheme (http vs https) is one of the three origin components.',
+          hint_uk: 'Схема (http vs https) — один із трьох компонентів origin.'
         },
         {
           type: 'mc', id: 'q3',
           text: 'What does CORS stand for?',
+          text_uk: 'Що означає абревіатура CORS?',
           options: [
-            { value: 'a', label: 'Cookie Origin Resource Standard' },
-            { value: 'b', label: 'Cross-Origin Resource Sharing' },
-            { value: 'c', label: 'Client-Operated Request System' },
-            { value: 'd', label: 'Centralized Origin Relay Service' }
+            { value: 'a', label: 'Cookie Origin Resource Standard', label_uk: 'Cookie Origin Resource Standard' },
+            { value: 'b', label: 'Cross-Origin Resource Sharing', label_uk: 'Cross-Origin Resource Sharing' },
+            { value: 'c', label: 'Client-Operated Request System', label_uk: 'Client-Operated Request System' },
+            { value: 'd', label: 'Centralized Origin Relay Service', label_uk: 'Centralized Origin Relay Service' }
           ],
           answer: 'b',
-          hint: 'It is a mechanism that allows controlled access across different origins.'
+          hint: 'It is a mechanism that allows controlled access across different origins.',
+          hint_uk: 'Це механізм, який дозволяє контрольований доступ між різними origin.'
         },
         {
           type: 'mc', id: 'q4',
           text: 'Which CORS header specifies which origins are allowed to access a resource?',
+          text_uk: 'Який CORS-заголовок вказує, яким origin дозволено отримувати доступ до ресурсу?',
           options: [
-            { value: 'a', label: 'Access-Control-Allow-Methods' },
-            { value: 'b', label: 'Access-Control-Allow-Origin' },
-            { value: 'c', label: 'Access-Control-Allow-Headers' },
-            { value: 'd', label: 'Access-Control-Max-Age' }
+            { value: 'a', label: 'Access-Control-Allow-Methods', label_uk: 'Access-Control-Allow-Methods' },
+            { value: 'b', label: 'Access-Control-Allow-Origin', label_uk: 'Access-Control-Allow-Origin' },
+            { value: 'c', label: 'Access-Control-Allow-Headers', label_uk: 'Access-Control-Allow-Headers' },
+            { value: 'd', label: 'Access-Control-Max-Age', label_uk: 'Access-Control-Max-Age' }
           ],
           answer: 'b',
-          hint: 'The header name itself contains the word "Origin".'
+          hint: 'The header name itself contains the word "Origin".',
+          hint_uk: 'Назва заголовка містить слово "Origin".'
         },
         {
           type: 'tf', id: 'q5',
           text: 'Setting Access-Control-Allow-Origin to * (wildcard) while also allowing credentials is a dangerous CORS misconfiguration.',
+          text_uk: 'Встановлення Access-Control-Allow-Origin на * (wildcard) з одночасним дозволом credentials є небезпечною помилкою конфігурації CORS.',
           answer: true,
-          hint: 'Wildcard plus credentials means any site can make authenticated requests.'
+          hint: 'Wildcard plus credentials means any site can make authenticated requests.',
+          hint_uk: 'Wildcard плюс credentials означає, що будь-який сайт може робити автентифіковані запити.'
         }
       ]
     });
