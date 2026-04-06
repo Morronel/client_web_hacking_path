@@ -174,47 +174,52 @@ const introCookies = (() => {
     QuizEngine.init(container, 'intro-cookies', {
       questions: [
         {
-          type: 'mc',
+          type: 'mc', id: 'q1',
           text: 'What does the HttpOnly cookie flag prevent?',
           options: [
-            'The cookie from being sent over HTTP',
-            'JavaScript from accessing the cookie via document.cookie',
-            'The cookie from being stored on disk',
-            'Cross-site requests from including the cookie'
+            { value: 'a', label: 'The cookie from being sent over HTTP' },
+            { value: 'b', label: 'JavaScript from accessing the cookie via document.cookie' },
+            { value: 'c', label: 'The cookie from being stored on disk' },
+            { value: 'd', label: 'Cross-site requests from including the cookie' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'This flag is specifically about restricting client-side script access.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q2',
           text: 'What does the Secure flag on a cookie do?',
           options: [
-            'Encrypts the cookie value',
-            'Prevents JavaScript access to the cookie',
-            'Ensures the cookie is only sent over HTTPS connections',
-            'Makes the cookie expire after the session ends'
+            { value: 'a', label: 'Encrypts the cookie value' },
+            { value: 'b', label: 'Prevents JavaScript access to the cookie' },
+            { value: 'c', label: 'Ensures the cookie is only sent over HTTPS connections' },
+            { value: 'd', label: 'Makes the cookie expire after the session ends' }
           ],
-          answer: 2
+          answer: 'c',
+          hint: 'This flag controls the transport channel, not the cookie contents.'
         },
         {
-          type: 'tf',
+          type: 'tf', id: 'q3',
           text: 'Setting SameSite=Strict on a cookie prevents it from being sent with any cross-site requests.',
-          answer: true
+          answer: true,
+          hint: 'Strict mode blocks the cookie on all cross-site navigations.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q4',
           text: 'Why is storing session data in a Base64-encoded cookie (without server-side validation) dangerous?',
           options: [
-            'Base64 is too slow for real-time decoding',
-            'Attackers can decode, modify, and re-encode the cookie to escalate privileges',
-            'Base64 cookies are too large for browsers to store',
-            'It violates the HTTP specification'
+            { value: 'a', label: 'Base64 is too slow for real-time decoding' },
+            { value: 'b', label: 'Attackers can decode, modify, and re-encode the cookie to escalate privileges' },
+            { value: 'c', label: 'Base64 cookies are too large for browsers to store' },
+            { value: 'd', label: 'It violates the HTTP specification' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'Base64 is encoding, not encryption — anyone can decode and tamper with it.'
         },
         {
-          type: 'tf',
+          type: 'tf', id: 'q5',
           text: 'A session cookie (one without an explicit Expires or Max-Age) is deleted when the browser is closed.',
-          answer: true
+          answer: true,
+          hint: 'Without an expiration directive, cookies only persist for the browser session.'
         }
       ]
     });

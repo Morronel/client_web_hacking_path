@@ -190,47 +190,52 @@ window.introSop = (() => {
     QuizEngine.init(container, 'intro-sop', {
       questions: [
         {
-          type: 'mc',
+          type: 'mc', id: 'q1',
           text: 'What three components define an "origin" in the Same-Origin Policy?',
           options: [
-            'Domain, path, and query string',
-            'Scheme, host, and port',
-            'Protocol, domain, and path',
-            'Host, port, and cookie domain'
+            { value: 'a', label: 'Domain, path, and query string' },
+            { value: 'b', label: 'Scheme, host, and port' },
+            { value: 'c', label: 'Protocol, domain, and path' },
+            { value: 'd', label: 'Host, port, and cookie domain' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'The origin tuple has exactly three parts — think about what makes two URLs "same origin".'
         },
         {
-          type: 'tf',
+          type: 'tf', id: 'q2',
           text: 'http://example.com and https://example.com are considered the same origin.',
-          answer: false
+          answer: false,
+          hint: 'The scheme (http vs https) is one of the three origin components.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q3',
           text: 'What does CORS stand for?',
           options: [
-            'Cookie Origin Resource Standard',
-            'Cross-Origin Resource Sharing',
-            'Client-Operated Request System',
-            'Centralized Origin Relay Service'
+            { value: 'a', label: 'Cookie Origin Resource Standard' },
+            { value: 'b', label: 'Cross-Origin Resource Sharing' },
+            { value: 'c', label: 'Client-Operated Request System' },
+            { value: 'd', label: 'Centralized Origin Relay Service' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'It is a mechanism that allows controlled access across different origins.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q4',
           text: 'Which CORS header specifies which origins are allowed to access a resource?',
           options: [
-            'Access-Control-Allow-Methods',
-            'Access-Control-Allow-Origin',
-            'Access-Control-Allow-Headers',
-            'Access-Control-Max-Age'
+            { value: 'a', label: 'Access-Control-Allow-Methods' },
+            { value: 'b', label: 'Access-Control-Allow-Origin' },
+            { value: 'c', label: 'Access-Control-Allow-Headers' },
+            { value: 'd', label: 'Access-Control-Max-Age' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'The header name itself contains the word "Origin".'
         },
         {
-          type: 'tf',
+          type: 'tf', id: 'q5',
           text: 'Setting Access-Control-Allow-Origin to * (wildcard) while also allowing credentials is a dangerous CORS misconfiguration.',
-          answer: true
+          answer: true,
+          hint: 'Wildcard plus credentials means any site can make authenticated requests.'
         }
       ]
     });

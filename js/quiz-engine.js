@@ -130,6 +130,15 @@ const QuizEngine = (() => {
   function init(container, moduleId, config) {
     if (!config || (!config.questions?.length && !config.flags?.length)) return;
 
+    // Remove ALL old quiz markup to prevent duplicates
+    container.querySelectorAll('.quiz-section, .quiz-container, #quiz-container, #career-quiz-container').forEach(el => el.remove());
+    // Also hide old-style lab quiz containers that conflict
+    container.querySelectorAll('.quiz-options, .quiz-result, .quiz-feedback').forEach(el => {
+      // Only remove if it's part of an old quiz, not part of interactive labs
+      if (el.closest('.lab-container')) return;
+      el.remove();
+    });
+
     // Find or create the quiz mount point
     let mount = container.querySelector('#qe-mount');
     if (!mount) {

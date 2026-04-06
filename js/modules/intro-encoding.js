@@ -338,42 +338,52 @@ window.introEncoding = (() => {
     QuizEngine.init(container, 'intro-encoding', {
       questions: [
         {
-          type: 'mc',
+          type: 'mc', id: 'q1',
           text: 'What does Base64 encoding do?',
           options: [
-            'Encrypts data so it cannot be read',
-            'Represents binary data in an ASCII string format',
-            'Compresses data to reduce size',
-            'Hashes data into a fixed-length digest'
+            { value: 'a', label: 'Encrypts data so it cannot be read' },
+            { value: 'b', label: 'Represents binary data in an ASCII string format' },
+            { value: 'c', label: 'Compresses data to reduce size' },
+            { value: 'd', label: 'Hashes data into a fixed-length digest' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'Base64 is an encoding scheme, not encryption or compression.'
         },
         {
-          type: 'tf',
+          type: 'tf', id: 'q2',
           text: 'URL encoding replaces unsafe characters with a percent sign followed by two hex digits (e.g., %20 for a space).',
-          answer: true
+          answer: true,
+          hint: 'This is exactly how percent-encoding works in URLs.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q3',
           text: 'Which of the following is a cryptographic hash function?',
-          options: ['Base64', 'ROT13', 'SHA-256', 'XOR'],
-          answer: 2
+          options: [
+            { value: 'a', label: 'Base64' },
+            { value: 'b', label: 'ROT13' },
+            { value: 'c', label: 'SHA-256' },
+            { value: 'd', label: 'XOR' }
+          ],
+          answer: 'c',
+          hint: 'Only one of these produces a fixed-length, one-way digest.'
         },
         {
-          type: 'tf',
+          type: 'tf', id: 'q4',
           text: 'Hashing is reversible — you can always recover the original input from a hash.',
-          answer: false
+          answer: false,
+          hint: 'Cryptographic hash functions are designed to be one-way.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q5',
           text: 'What is the "alg: none" attack in JWT?',
           options: [
-            'Using no algorithm makes the token expire faster',
-            'Setting the algorithm to "none" bypasses signature verification',
-            'It encrypts the token with a null cipher',
-            'It compresses the payload to zero bytes'
+            { value: 'a', label: 'Using no algorithm makes the token expire faster' },
+            { value: 'b', label: 'Setting the algorithm to "none" bypasses signature verification' },
+            { value: 'c', label: 'It encrypts the token with a null cipher' },
+            { value: 'd', label: 'It compresses the payload to zero bytes' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'This attack tricks the server into accepting an unsigned token.'
         }
       ]
     });

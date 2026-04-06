@@ -391,43 +391,58 @@ const introNetworking = (() => {
     QuizEngine.init(container, 'intro-networking', {
       questions: [
         {
-          type: 'mc',
+          type: 'mc', id: 'q1',
           text: 'Which HTTP method is considered "safe" and should only retrieve data?',
-          options: ['POST', 'GET', 'PUT', 'DELETE'],
-          answer: 1
+          options: [
+            { value: 'a', label: 'POST' },
+            { value: 'b', label: 'GET' },
+            { value: 'c', label: 'PUT' },
+            { value: 'd', label: 'DELETE' }
+          ],
+          answer: 'b',
+          hint: 'This method should have no side effects on the server.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q2',
           text: 'What does HTTP status code 403 indicate?',
           options: [
-            'Not Found',
-            'Internal Server Error',
-            'Forbidden — server understood the request but refuses to authorize it',
-            'Redirect to another URL'
+            { value: 'a', label: 'Not Found' },
+            { value: 'b', label: 'Internal Server Error' },
+            { value: 'c', label: 'Forbidden — server understood the request but refuses to authorize it' },
+            { value: 'd', label: 'Redirect to another URL' }
           ],
-          answer: 2
+          answer: 'c',
+          hint: 'The server knows what you want but will not allow it.'
         },
         {
-          type: 'tf',
+          type: 'tf', id: 'q3',
           text: 'DNS resolves domain names to IP addresses.',
-          answer: true
+          answer: true,
+          hint: 'DNS is often called the phonebook of the internet.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q4',
           text: 'Which DNS record type maps a domain name to an IPv4 address?',
-          options: ['CNAME', 'MX', 'A', 'TXT'],
-          answer: 2
+          options: [
+            { value: 'a', label: 'CNAME' },
+            { value: 'b', label: 'MX' },
+            { value: 'c', label: 'A' },
+            { value: 'd', label: 'TXT' }
+          ],
+          answer: 'c',
+          hint: 'The simplest and most fundamental DNS record type.'
         },
         {
-          type: 'mc',
+          type: 'mc', id: 'q5',
           text: 'What is the purpose of the TCP three-way handshake?',
           options: [
-            'To encrypt data in transit',
-            'To establish a reliable connection between client and server',
-            'To resolve domain names',
-            'To authenticate the server certificate'
+            { value: 'a', label: 'To encrypt data in transit' },
+            { value: 'b', label: 'To establish a reliable connection between client and server' },
+            { value: 'c', label: 'To resolve domain names' },
+            { value: 'd', label: 'To authenticate the server certificate' }
           ],
-          answer: 1
+          answer: 'b',
+          hint: 'SYN, SYN-ACK, ACK — what do these steps accomplish?'
         }
       ]
     });
