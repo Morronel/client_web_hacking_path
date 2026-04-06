@@ -1,0 +1,223 @@
+<section class="module-header">
+  <h1>Модуль 21 — Вразливості GraphQL</h1>
+  <p>Дізнайся, як GraphQL API створюють унікальні поверхні атак, включаючи витоки через introspection, атаки глибиною запитів, ін'єкції та обхід авторизації.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Інший тип API — інший тип атак</h2>
+  <p>
+    GraphQL розробили у Facebook у 2012 році та зробили open-source у 2015. Він вирішує реальну проблему REST API: надмірне або недостатнє завантаження даних. Замість того, щоб робити запити на кілька REST-ендпоінтів і отримувати фіксовані формати відповідей, клієнт відправляє один запит, де точно вказує, які дані йому потрібні, і сервер повертає саме це.
+  </p>
+  <p>
+    Ця потужність має свою ціну. GraphQL створює поверхні атак, яких просто не існує в REST:
+  </p>
+  <ul>
+    <li><strong>Один ендпоінт</strong> обробляє всі операції — правила WAF, розраховані на REST-шляхи, не працюють</li>
+    <li><strong>Introspection</strong> розкриває всю схему будь-кому, хто запитає</li>
+    <li>Клієнти контролюють <strong>глибину та складність запитів</strong>, що дозволяє DoS-атаки</li>
+    <li><strong>Авторизацію</strong> потрібно перевіряти для кожного поля в кожному резолвері, а не просто для кожного ендпоінта</li>
+    <li><strong>Batching</strong> дозволяє атакуючим відправляти тисячі операцій в одному HTTP-запиті</li>
+  </ul>
+  <p>
+    Якщо ти зустрінеш ендпоінт <code>/graphql</code> під час пентесту або баг-баунті, зверни на нього особливу увагу. GraphQL API часто неправильно налаштовані, і вразливості можуть бути серйозними.
+  </p>
+
+  <h2>Основи GraphQL (швидкий вступ)</h2>
+  <pre><code class="language-graphql"># Query — read data (like GET in REST)
+{
+  users {
+    id
+    username
+    email
+    posts {
+      title
+    }
+  }
+}
+
+# Mutation — modify data (like POST/PUT/DELETE in REST)
+mutation {
+  createPost(title: "Hello", content: "World") {
+    id
+    createdAt
+  }
+}
+
+# The response mirrors the query structure:
+# { "data": { "users": [{ "id": 1, "username": "alice", "email": "...", "posts": [...] }] } }</code></pre>
+
+  <h2>Атака #1: Introspection — схема як на долоні</h2>
+  <p>
+    GraphQL має вбудовану функцію <strong>introspection</strong>, яка дозволяє будь-якому клієнту запитати повну схему — кожен тип, кожне поле, кожен зв'язок, кожну мутацію. Це неймовірно корисно під час розробки. Це також неймовірно корисно для атакуючих.
+  </p>
+  <pre><code class="language-graphql"># The introspection query — reveals EVERYTHING
+{
+  __schema {
+    types {
+      name
+      fields {
+        name
+        type { name kind }
+      }
+    }
+  }
+}
+
+# Find all queries and mutations
+{
+  __schema {
+    queryType { fields { name } }
+    mutationType { fields { name } }
+  }
+}</code></pre>
+  <p>
+    Коли ти запускаєш це проти неправильно налаштованого production API, ти можеш виявити типи на кшталт <code>AdminUser</code>, <code>InternalConfig</code>, <code>DebugLog</code> або мутації типу <code>deleteUser</code>, <code>promoteToAdmin</code>, <code>resetPassword</code>. Схема — це, по суті, карта всього API, включаючи частини, про які розробники думали, що їх ніхто не знайде.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Інструменти:</strong> Використовуй <strong>GraphQL Voyager</strong> для візуалізації схеми як інтерактивного графа, або <strong>InQL</strong> (розширення для Burp Suite) для автоматичного витягування та аналізу GraphQL-схем. Для тестування з командного рядка <code>graphql-cop</code> виконує автоматичні перевірки безпеки GraphQL-ендпоінтів.
+  </div>
+
+  <h2>Атака #2: DoS через глибину та складність</h2>
+  <p>
+    Зв'язки GraphQL можна вкладати рекурсивно. Якщо <code>User</code> має <code>posts</code>, а <code>Post</code> має <code>author</code>, їх можна вкладати нескінченно:
+  </p>
+  <pre><code class="language-graphql"># This query is exponentially expensive
+{
+  users {
+    posts {
+      author {
+        posts {
+          author {
+            posts {
+              author {
+                # ... keeps going — each level multiplies the work
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+  <p>
+    Без обмеження глибини цей запит може спожити величезну кількість серверних ресурсів — CPU, пам'яті та з'єднань з базою даних. Один зловмисний запит може покласти весь API. Це атака <strong>Denial of Service (DoS)</strong>, унікальна для GraphQL.
+  </p>
+
+  <h2>Атака #3: Обхід авторизації</h2>
+  <p>
+    У REST авторизація часто перевіряється на рівні ендпоінта: "тільки адміни мають доступ до <code>/api/admin/users</code>." У GraphQL є лише один ендпоінт. Авторизацію потрібно перевіряти <strong>в кожному резолвері</strong>, для кожного поля.
+  </p>
+  <pre><code class="language-python"># DANGEROUS: no auth check — returns ALL posts including private ones
+def resolve_posts(root, info):
+    return db.execute('SELECT * FROM posts').fetchall()
+
+# SAFE: filter by current user's permissions
+def resolve_posts(root, info):
+    user = info.context['user']
+    if user.is_admin:
+        return db.execute('SELECT * FROM posts').fetchall()
+    return db.execute('SELECT * FROM posts WHERE author_id=? OR public=1',
+                      (user.id,)).fetchall()</code></pre>
+  <p>
+    Типові помилки: захистити мутацію типу <code>deleteUser</code>, але не відповідний запит, що розкриває дані користувачів, або захистити ресурс по одному шляху запиту (<code>user.privateEmail</code>), але не по іншому (<code>post.author.privateEmail</code>).
+  </p>
+
+  <h2>Атака #4: SQL Injection через резолвери</h2>
+  <p>
+    GraphQL магічно не запобігає ін'єкціям. Якщо резолвер будує SQL-запити конкатенацією аргументів від користувача, він вразливий до тієї самої SQL injection, що й будь-який інший додаток:
+  </p>
+  <pre><code class="language-python"># DANGEROUS: string interpolation in resolver
+def resolve_search_users(root, info, name):
+    return db.execute(
+        f"SELECT * FROM users WHERE name LIKE '%{name}%'"
+    ).fetchall()
+    # GraphQL query: { searchUsers(name: "' UNION SELECT * FROM secrets--") { ... } }
+    # → SQL injection!</code></pre>
+
+  <h2>Атака #5: Batching та брутфорс</h2>
+  <p>
+    Багато GraphQL-серверів приймають масиви запитів в одному HTTP-запиті. Це дозволяє:
+  </p>
+  <ul>
+    <li><strong>Обхід rate limiting:</strong> відправити 1 000 спроб логіну в одному HTTP-запиті — якщо rate limiter рахує HTTP-запити, він бачить лише один</li>
+    <li><strong>Прискорення брутфорсу:</strong> перебрати тисячі паролів, OTP-кодів або API-ключів пачкою</li>
+  </ul>
+  <pre><code class="language-json">// Single HTTP request, 100 login attempts
+[
+  { "query": "mutation { login(email: \"admin@x.com\", pass: \"pass1\") { token } }" },
+  { "query": "mutation { login(email: \"admin@x.com\", pass: \"pass2\") { token } }" },
+  { "query": "mutation { login(email: \"admin@x.com\", pass: \"pass3\") { token } }" }
+  // ... 97 more
+]</code></pre>
+
+  <h2>Атака #6: Витоки через підказки полів</h2>
+  <p>
+    Навіть коли introspection вимкнений, багато реалізацій GraphQL підказують правильні назви полів, коли ти допускаєш помилку. Запитай <code>{ users { passwor } }</code> — і помилка може сказати: <em>"Did you mean 'password' or 'passwordHash'?"</em> Це витік інформації про схему через чорний хід.
+  </p>
+
+  <h2>Чеклист захисту</h2>
+  <ul>
+    <li><strong>Вимкни introspection у production</strong> — у більшості фреймворків це один рядок конфігурації</li>
+    <li><strong>Реалізуй обмеження глибини запитів</strong> — обмеж до 5-10 рівнів</li>
+    <li><strong>Аналіз вартості запитів</strong> — присвоюй вагу полям і відхиляй запити, що перевищують бюджет</li>
+    <li><strong>Авторизація на рівні полів у кожному резолвері</strong> — ніколи не вважай поле "прихованим"</li>
+    <li><strong>Параметризовані запити в резолверах</strong> — ті самі правила, що й для будь-якого SQL-коду</li>
+    <li><strong>Обмеження розміру batch</strong> — обмеж масиви запитів до 10-20 операцій</li>
+    <li><strong>Rate limiting на операцію</strong>, а не лише на HTTP-запит</li>
+    <li><strong>Вимкни підказки полів</strong> у повідомленнях про помилки для production</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <strong>Вплив:</strong> Вразливості GraphQL можуть розкрити всю схему бази даних, викрити приватні дані через прогалини в авторизації, забезпечити DoS через дорогі запити, слугувати вектором ін'єкцій через небезпечні резолвери та обходити rate limiting через batching. Архітектура з одним ендпоінтом означає, що традиційні правила WAF та API-шлюзи часто пропускають ці атаки повністю.
+  </div>
+
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What does GraphQL introspection allow?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">Running arbitrary SQL on the database</button>
+        <button class="quiz-opt" data-q="1" data-val="b">Querying the full schema to discover all types, fields, and relationships</button>
+        <button class="quiz-opt" data-q="1" data-val="c">Bypassing authentication entirely</button>
+        <button class="quiz-opt" data-q="1" data-val="d">Executing server-side JavaScript</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>What is the primary defense against nested query DoS attacks?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">Query depth limiting and cost analysis</button>
+        <button class="quiz-opt" data-q="2" data-val="b">Using POST instead of GET</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Requiring API keys</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Adding CORS headers</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Where should authorization be enforced in a GraphQL API?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Only at the HTTP middleware level</button>
+        <button class="quiz-opt" data-q="3" data-val="b">Only on mutations, not queries</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Only at the schema level via type directives</button>
+        <button class="quiz-opt" data-q="3" data-val="d">At the individual resolver level (per-field authorization)</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonGraph</h2>
+  <p>Exploit GraphQL vulnerabilities in a social network API with 6 challenges:</p>
+  <div class="code-block">cd labs/graphql && docker compose up --build<br>Visit http://localhost:5015/</div>
+  <p class="text-muted">Challenges cover introspection, depth attacks, auth bypass, SQL injection in resolvers, batching abuse, and field suggestion leaks.</p>
+</section>

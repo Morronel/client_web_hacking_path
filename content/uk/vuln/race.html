@@ -1,0 +1,183 @@
+<section class="module-header">
+  <h1>Модуль 20 — Race Conditions</h1>
+  <p>Досліди, як вади TOCTOU (Time-of-Check to Time-of-Use) дозволяють атакуючим експлуатувати часові проміжки в конкурентних операціях.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Вразливість, яку сканери не знайдуть</h2>
+  <p>
+    Race conditions фундаментально відрізняються від усіх інших вразливостей у цьому курсі. SQLi, XSS, SSRF — вони всі про те, <em>що</em> ти відправляєш. Race conditions — про те, <em>коли</em> ти це відправляєш. Пейлоад — це абсолютно нормальний запит. Експлойт полягає у відправці його в точно потрібний момент — або, точніше, у відправці багатьох його копій в один і той самий момент.
+  </p>
+  <p>
+    Саме тому автоматизовані сканери вразливостей майже ніколи не знаходять race conditions. Вони тестують по одному запиту за раз і аналізують відповідь. Race conditions проявляються лише тоді, коли кілька запитів потрапляють на один і той самий ендпоінт <strong>одночасно</strong>, створюючи вікно, в якому припущення додатка про стан тимчасово хибні.
+  </p>
+
+  <h2>TOCTOU — Time-of-Check to Time-of-Use</h2>
+  <p>
+    Ключовий патерн називається TOCTOU: сервер <strong>перевіряє</strong> умову (чи достатньо у користувача балансу? чи ваучер ще дійсний?), а потім <strong>використовує</strong> цю умову для дії (списує баланс, позначає ваучер як використаний). Між перевіркою та дією є проміжок — можливо, кілька мілісекунд, а можливо й більше, якщо між ними є запит до бази даних або мережевий виклик. Якщо інший запит проскочить у цей проміжок, він теж пройде перевірку, бо перший запит ще не оновив стан.
+  </p>
+
+  <h3 class="text-red">Вразливий код</h3>
+  <pre><code class="language-python">@app.route('/redeem', methods=['POST'])
+def redeem():
+    code = request.form['code']
+
+    # CHECK: is the voucher valid and unredeemed?
+    voucher = db.execute(
+        'SELECT * FROM vouchers WHERE code=? AND redeemed=0', (code,)
+    ).fetchone()
+
+    if not voucher:
+        return 'Invalid or already redeemed'
+
+    # ← TOCTOU GAP: between the CHECK above and the USE below,
+    #   another request can also pass the check
+    #   because redeemed is still 0 in the database
+
+    # USE: mark as redeemed and credit the account
+    db.execute('UPDATE vouchers SET redeemed=1 WHERE code=?', (code,))
+    db.execute('UPDATE accounts SET balance=balance+? WHERE id=?',
+               (voucher['value'], user_id))
+    db.commit()
+    return 'Voucher redeemed!'</code></pre>
+
+  <p>
+    Якщо 20 запитів прийдуть одночасно, вони всі виконають SELECT приблизно в один і той самий час. Всі побачать <code>redeemed=0</code>. Всі пройдуть перевірку. Всі зарахують кошти на рахунок. Один ваучер, 20 зарахувань. Це і є race condition.
+  </p>
+
+  <h3 class="text-green">Безпечний код — атомарні операції</h3>
+  <pre><code class="language-python">@app.route('/redeem', methods=['POST'])
+def redeem():
+    code = request.form['code']
+
+    # SAFE: check and modify in a SINGLE atomic query
+    # Only ONE of the concurrent requests will match the WHERE clause
+    result = db.execute(
+        'UPDATE vouchers SET redeemed=1 WHERE code=? AND redeemed=0', (code,)
+    )
+
+    if result.rowcount == 0:
+        return 'Invalid or already redeemed'
+
+    # Only the winning request reaches here
+    db.execute('UPDATE accounts SET balance=balance+? WHERE id=?',
+               (voucher_value, user_id))
+    db.commit()
+    return 'Voucher redeemed!'</code></pre>
+
+  <p>
+    Виправлення об'єднує перевірку та модифікацію в один запит <code>UPDATE...WHERE</code>. База даних гарантує його атомарність — лише один із конкурентних запитів успішно оновить рядок (бо після того, як перший встановить <code>redeemed=1</code>, WHERE-умова решти вже не спрацює).
+  </p>
+
+  <h2>Реальні сценарії Race Conditions</h2>
+  <ul>
+    <li><strong>Подвійне списання:</strong> активувати ту саму подарункову карту, купон або промокод кілька разів</li>
+    <li><strong>Овердрафт:</strong> одночасно відправити кілька запитів на зняття коштів, щоб зняти більше, ніж є на балансі</li>
+    <li><strong>Дублювання реєстрації:</strong> створити кілька акаунтів з "унікальним" іменем або email, обігнавши перевірку унікальності</li>
+    <li><strong>Накрутка лайків/голосів:</strong> поставити "лайк" посту сотні разів, відправляючи конкурентні запити до виконання перевірки на дублікати</li>
+    <li><strong>Зловживання запрошеннями:</strong> використати одноразове посилання-запрошення кілька разів</li>
+    <li><strong>Перезапис файлів при завантаженні:</strong> одночасно завантажити два файли з логікою колізії імен, що ламається при конкурентному доступі</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>Реальна історія:</strong> У 2023 році Джеймс Кеттл з PortSwigger опублікував революційне дослідження "single-packet attacks" для HTTP/2. Відправляючи кілька HTTP/2-запитів в одному TCP-пакеті, він зміг усунути мережевий джитер і створити надзвичайно вузькі вікна гонки — часто лише кілька мікросекунд. Це зробило race conditions експлуатованими навіть коли TOCTOU-проміжок був мізерно малим. Техніку додали до інструменту Turbo Intruder у Burp Suite.
+  </div>
+
+  <h2>Техніки експлуатації</h2>
+  <pre><code class="language-bash"># Method 1: curl with xargs for parallel requests
+seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/redeem \
+  -d "code=GIFT-CARD-123"
+
+# Method 2: Python threading for precise timing
+import threading, requests
+
+def redeem():
+    requests.post('http://localhost:5013/redeem',
+                  data={'code': 'GIFT-CARD-123'})
+
+threads = [threading.Thread(target=redeem) for _ in range(20)]
+for t in threads: t.start()   # Launch all at once
+for t in threads: t.join()    # Wait for completion</code></pre>
+
+  <pre><code class="language-python"># Method 3: asyncio for maximum concurrency
+import asyncio, aiohttp
+
+async def race():
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            session.post('http://localhost:5013/redeem',
+                        data={'code': 'GIFT-CARD-123'})
+            for _ in range(50)
+        ]
+        responses = await asyncio.gather(*tasks)
+        for r in responses:
+            print(r.status, await r.text())</code></pre>
+
+  <h2>Стратегії запобігання</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Стратегія</th><th>Як це працює</th><th>Найкраще для</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Атомарний UPDATE</strong></td><td><code>UPDATE ... WHERE condition</code> — перевірка та модифікація в одному запиті</td><td>Прості переходи стану (активація ваучера)</td></tr>
+        <tr><td><strong>SELECT FOR UPDATE</strong></td><td>Блокує рядок до завершення транзакції</td><td>Складні багатокрокові операції</td></tr>
+        <tr><td><strong>Оптимістичне блокування</strong></td><td>Колонка версії перевіряється при оновленні; повтор при застарілих даних</td><td>Сценарії з низькою конкуренцією</td></tr>
+        <tr><td><strong>Ключі ідемпотентності</strong></td><td>Унікальний ID запиту; сервер відхиляє дублікати</td><td>Обробка платежів, API-операції</td></tr>
+        <tr><td><strong>Обмеження бази даних</strong></td><td>Обмеження UNIQUE запобігає дублюванню вставок</td><td>Реєстрація, одноразові операції</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>Вплив:</strong> Race conditions спричиняють фінансові втрати (подвійне списання), пошкодження даних, ескалацію привілеїв та обхід перевірок безпеки. Їх надзвичайно складно виявити автоматичним скануванням, і вони зазвичай вимагають ручного тестування з інструментами для конкурентних запитів. У баг-баунті програмах race conditions на фінансових операціях (платежі, кредити, перекази) зазвичай оцінюються як High або Critical.
+  </div>
+
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What does TOCTOU stand for?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">Time of Check to Time of Use</button>
+        <button class="quiz-opt" data-q="1" data-val="b">Transfer of Control to Other Users</button>
+        <button class="quiz-opt" data-q="1" data-val="c">Thread Orchestration and Concurrent Transactions Under Update</button>
+        <button class="quiz-opt" data-q="1" data-val="d">Token of Credit to Offset Usage</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>What is the most effective database-level prevention for race conditions?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">Adding more indexes</button>
+        <button class="quiz-opt" data-q="2" data-val="b">Using <code>time.sleep()</code> between queries</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Increasing connection pool size</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Atomic <code>UPDATE ... WHERE</code> that combines check and modification in one query</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Which mechanism ensures that concurrent transactions don't read stale data?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Connection pooling</button>
+        <button class="quiz-opt" data-q="3" data-val="b">Database transactions with row-level locking (<code>SELECT FOR UPDATE</code>)</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Rate limiting</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Using a NoSQL database instead</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonVault</h2>
+  <p>Exploit race conditions in a digital wallet system with 5 challenges:</p>
+  <div class="code-block">cd labs/race && docker compose up --build<br>Visit http://localhost:5013/</div>
+  <p class="text-muted">Challenges cover voucher double-spend, duplicate registration, overdraft withdrawal, bonus double-claim, and transfer fraud. Use concurrent requests to exploit TOCTOU gaps.</p>
+</section>

@@ -120,50 +120,60 @@ const vulnIdor = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'What is the difference between authentication and authorization?',
+          text_uk: 'Яка різниця між автентифікацією та авторизацією?',
           options: [
-            { value: 'a', label: 'Authentication checks permissions; authorization verifies identity' },
-            { value: 'b', label: 'Authentication verifies identity; authorization checks what you can access' },
-            { value: 'c', label: 'They are the same thing' },
-            { value: 'd', label: 'Authentication uses cookies; authorization uses tokens' }
+            { value: 'a', label: 'Authentication checks permissions; authorization verifies identity', label_uk: 'Автентифікація перевіряє дозволи; авторизація підтверджує особу' },
+            { value: 'b', label: 'Authentication verifies identity; authorization checks what you can access', label_uk: 'Автентифікація підтверджує особу; авторизація перевіряє, до чого ти маєш доступ' },
+            { value: 'c', label: 'They are the same thing', label_uk: 'Це одне й те саме' },
+            { value: 'd', label: 'Authentication uses cookies; authorization uses tokens', label_uk: 'Автентифікація використовує cookies; авторизація використовує токени' }
           ],
           answer: 'b',
-          hint: 'AuthN = who are you? AuthZ = what can you do?'
+          hint: 'AuthN = who are you? AuthZ = what can you do?',
+          hint_uk: 'AuthN = хто ти? AuthZ = що ти можеш робити?'
         },
         {
           type: 'mc', id: 'q2',
           text: 'A regular user accessing another regular user\'s profile is an example of:',
+          text_uk: 'Звичайний користувач, що отримує доступ до профілю іншого звичайного користувача — це приклад:',
           options: [
-            { value: 'a', label: 'Vertical privilege escalation' },
-            { value: 'b', label: 'Horizontal privilege escalation' },
-            { value: 'c', label: 'SQL injection' },
-            { value: 'd', label: 'Cross-site scripting' }
+            { value: 'a', label: 'Vertical privilege escalation', label_uk: 'Вертикальне підвищення привілеїв' },
+            { value: 'b', label: 'Horizontal privilege escalation', label_uk: 'Горизонтальне підвищення привілеїв' },
+            { value: 'c', label: 'SQL injection', label_uk: 'SQL injection' },
+            { value: 'd', label: 'Cross-site scripting', label_uk: 'Cross-site scripting' }
           ],
           answer: 'b',
-          hint: 'Same privilege level, different user\'s data.'
+          hint: 'Same privilege level, different user\'s data.',
+          hint_uk: 'Той самий рівень привілеїв, дані іншого користувача.'
         },
         {
           type: 'tf', id: 'q3',
           text: 'Using UUIDs instead of sequential integers fully prevents IDOR vulnerabilities.',
+          text_uk: 'Використання UUID замість послідовних цілих чисел повністю запобігає вразливостям IDOR.',
           answer: false,
-          hint: 'UUIDs make enumeration harder but don\'t fix the root cause — missing authorization checks.'
+          hint: 'UUIDs make enumeration harder but don\'t fix the root cause — missing authorization checks.',
+          hint_uk: 'UUID ускладнюють перебір, але не виправляють основну причину — відсутність перевірок авторизації.'
         },
         {
           type: 'mc', id: 'q4',
           text: 'Which testing approach is most effective for finding IDORs?',
+          text_uk: 'Який підхід до тестування є найефективнішим для знаходження IDOR?',
           options: [
-            { value: 'a', label: 'Run an automated vulnerability scanner' },
-            { value: 'b', label: 'Create two accounts, note the IDs, and try accessing each other\'s resources' },
-            { value: 'c', label: 'Check if the site uses HTTPS' },
-            { value: 'd', label: 'Review the HTML source code' }
+            { value: 'a', label: 'Run an automated vulnerability scanner', label_uk: 'Запустити автоматичний сканер вразливостей' },
+            { value: 'b', label: 'Create two accounts, note the IDs, and try accessing each other\'s resources', label_uk: 'Створити два акаунти, записати ID та спробувати отримати доступ до ресурсів один одного' },
+            { value: 'c', label: 'Check if the site uses HTTPS', label_uk: 'Перевірити, чи сайт використовує HTTPS' },
+            { value: 'd', label: 'Review the HTML source code', label_uk: 'Переглянути HTML-код сторінки' }
           ],
           answer: 'b',
-          hint: 'The two-account cross-reference technique is the standard IDOR testing methodology.'
+          hint: 'The two-account cross-reference technique is the standard IDOR testing methodology.',
+          hint_uk: 'Техніка перехресної перевірки двох акаунтів — стандартна методологія тестування IDOR.'
         },
         {
           type: 'tf', id: 'q5',
           text: 'An endpoint that properly checks authorization on GET requests is guaranteed to also check it on PUT and DELETE.',
+          text_uk: 'Ендпоінт, що правильно перевіряє авторизацію на GET-запитах, гарантовано перевіряє її і на PUT та DELETE.',
           answer: false,
-          hint: 'Authorization must be checked on EVERY HTTP method separately — developers often forget non-GET methods.'
+          hint: 'Authorization must be checked on EVERY HTTP method separately — developers often forget non-GET methods.',
+          hint_uk: 'Авторизацію потрібно перевіряти на КОЖНОМУ HTTP-методі окремо — розробники часто забувають про не-GET методи.'
         }
       ],
       flags: [

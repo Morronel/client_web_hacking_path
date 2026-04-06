@@ -393,56 +393,66 @@ const introNetworking = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'Which HTTP method is considered "safe" and should only retrieve data?',
+          text_uk: 'Який HTTP-метод вважається "безпечним" і повинен лише отримувати дані?',
           options: [
-            { value: 'a', label: 'POST' },
-            { value: 'b', label: 'GET' },
-            { value: 'c', label: 'PUT' },
-            { value: 'd', label: 'DELETE' }
+            { value: 'a', label: 'POST', label_uk: 'POST' },
+            { value: 'b', label: 'GET', label_uk: 'GET' },
+            { value: 'c', label: 'PUT', label_uk: 'PUT' },
+            { value: 'd', label: 'DELETE', label_uk: 'DELETE' }
           ],
           answer: 'b',
-          hint: 'This method should have no side effects on the server.'
+          hint: 'This method should have no side effects on the server.',
+          hint_uk: 'Цей метод не повинен мати побічних ефектів на сервері.'
         },
         {
           type: 'mc', id: 'q2',
           text: 'What does HTTP status code 403 indicate?',
+          text_uk: 'Що означає HTTP-код стану 403?',
           options: [
-            { value: 'a', label: 'Not Found' },
-            { value: 'b', label: 'Internal Server Error' },
-            { value: 'c', label: 'Forbidden — server understood the request but refuses to authorize it' },
-            { value: 'd', label: 'Redirect to another URL' }
+            { value: 'a', label: 'Not Found', label_uk: 'Not Found (не знайдено)' },
+            { value: 'b', label: 'Internal Server Error', label_uk: 'Internal Server Error (внутрішня помилка сервера)' },
+            { value: 'c', label: 'Forbidden — server understood the request but refuses to authorize it', label_uk: 'Forbidden — сервер зрозумів запит, але відмовляється його авторизувати' },
+            { value: 'd', label: 'Redirect to another URL', label_uk: 'Перенаправлення на інший URL' }
           ],
           answer: 'c',
-          hint: 'The server knows what you want but will not allow it.'
+          hint: 'The server knows what you want but will not allow it.',
+          hint_uk: 'Сервер знає, чого ти хочеш, але не дозволить це зробити.'
         },
         {
           type: 'tf', id: 'q3',
           text: 'DNS resolves domain names to IP addresses.',
+          text_uk: 'DNS перетворює доменні імена на IP-адреси.',
           answer: true,
-          hint: 'DNS is often called the phonebook of the internet.'
+          hint: 'DNS is often called the phonebook of the internet.',
+          hint_uk: 'DNS часто називають телефонною книгою інтернету.'
         },
         {
           type: 'mc', id: 'q4',
           text: 'Which DNS record type maps a domain name to an IPv4 address?',
+          text_uk: 'Який тип DNS-запису зіставляє доменне ім\'я з IPv4-адресою?',
           options: [
-            { value: 'a', label: 'CNAME' },
-            { value: 'b', label: 'MX' },
-            { value: 'c', label: 'A' },
-            { value: 'd', label: 'TXT' }
+            { value: 'a', label: 'CNAME', label_uk: 'CNAME' },
+            { value: 'b', label: 'MX', label_uk: 'MX' },
+            { value: 'c', label: 'A', label_uk: 'A' },
+            { value: 'd', label: 'TXT', label_uk: 'TXT' }
           ],
           answer: 'c',
-          hint: 'The simplest and most fundamental DNS record type.'
+          hint: 'The simplest and most fundamental DNS record type.',
+          hint_uk: 'Найпростіший і найосновніший тип DNS-запису.'
         },
         {
           type: 'mc', id: 'q5',
           text: 'What is the purpose of the TCP three-way handshake?',
+          text_uk: 'Яке призначення трьохетапного TCP-рукостискання?',
           options: [
-            { value: 'a', label: 'To encrypt data in transit' },
-            { value: 'b', label: 'To establish a reliable connection between client and server' },
-            { value: 'c', label: 'To resolve domain names' },
-            { value: 'd', label: 'To authenticate the server certificate' }
+            { value: 'a', label: 'To encrypt data in transit', label_uk: 'Шифрування даних під час передачі' },
+            { value: 'b', label: 'To establish a reliable connection between client and server', label_uk: 'Встановлення надійного з\'єднання між клієнтом і сервером' },
+            { value: 'c', label: 'To resolve domain names', label_uk: 'Резолвінг доменних імен' },
+            { value: 'd', label: 'To authenticate the server certificate', label_uk: 'Автентифікація сертифіката сервера' }
           ],
           answer: 'b',
-          hint: 'SYN, SYN-ACK, ACK — what do these steps accomplish?'
+          hint: 'SYN, SYN-ACK, ACK — what do these steps accomplish?',
+          hint_uk: 'SYN, SYN-ACK, ACK — що досягають ці кроки?'
         }
       ]
     });

@@ -175,50 +175,60 @@ const vulnAuth = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'What is the primary risk of returning different error messages for valid vs invalid usernames?',
+          text_uk: 'Який основний ризик повернення різних повідомлень про помилку для дійсних та недійсних імен користувачів?',
           options: [
-            { value: 'a', label: 'It makes the site slower' },
-            { value: 'b', label: 'It allows username enumeration — attackers can determine which accounts exist' },
-            { value: 'c', label: 'It violates GDPR' },
-            { value: 'd', label: 'It causes SQL injection' }
+            { value: 'a', label: 'It makes the site slower', label_uk: 'Сайт працює повільніше' },
+            { value: 'b', label: 'It allows username enumeration — attackers can determine which accounts exist', label_uk: 'Це дозволяє перебір імен користувачів — зловмисники можуть визначити, які акаунти існують' },
+            { value: 'c', label: 'It violates GDPR', label_uk: 'Це порушує GDPR' },
+            { value: 'd', label: 'It causes SQL injection', label_uk: 'Це спричиняє SQL injection' }
           ],
           answer: 'b',
-          hint: 'Knowing which usernames exist is the first step to a targeted password attack.'
+          hint: 'Knowing which usernames exist is the first step to a targeted password attack.',
+          hint_uk: 'Знання того, які імена користувачів існують — перший крок до цілеспрямованої атаки на паролі.'
         },
         {
           type: 'mc', id: 'q2',
           text: 'Which password attack tries ONE common password against MANY accounts to avoid lockouts?',
+          text_uk: 'Яка атака на паролі пробує ОДИН поширений пароль проти БАГАТЬОХ акаунтів, щоб уникнути блокування?',
           options: [
-            { value: 'a', label: 'Brute force' },
-            { value: 'b', label: 'Credential stuffing' },
-            { value: 'c', label: 'Password spraying' },
-            { value: 'd', label: 'Dictionary attack' }
+            { value: 'a', label: 'Brute force', label_uk: 'Brute force' },
+            { value: 'b', label: 'Credential stuffing', label_uk: 'Credential stuffing' },
+            { value: 'c', label: 'Password spraying', label_uk: 'Password spraying' },
+            { value: 'd', label: 'Dictionary attack', label_uk: 'Атака за словником' }
           ],
           answer: 'c',
-          hint: 'This technique stays under the per-account lockout threshold.'
+          hint: 'This technique stays under the per-account lockout threshold.',
+          hint_uk: 'Ця техніка залишається нижче порогу блокування для кожного акаунту.'
         },
         {
           type: 'tf', id: 'q3',
           text: 'bcrypt is preferred over SHA-256 for password hashing because bcrypt is intentionally slow.',
+          text_uk: 'bcrypt є кращим за SHA-256 для хешування паролів, тому що bcrypt навмисно повільний.',
           answer: true,
-          hint: 'Slow hashing makes brute force impractical — each guess takes ~250ms instead of nanoseconds.'
+          hint: 'Slow hashing makes brute force impractical — each guess takes ~250ms instead of nanoseconds.',
+          hint_uk: 'Повільне хешування робить brute force непрактичним — кожна спроба займає ~250 мс замість наносекунд.'
         },
         {
           type: 'mc', id: 'q4',
           text: 'Which MFA method is most resistant to phishing attacks?',
+          text_uk: 'Який метод MFA найстійкіший до фішингових атак?',
           options: [
-            { value: 'a', label: 'SMS codes' },
-            { value: 'b', label: 'Email codes' },
-            { value: 'c', label: 'TOTP (Google Authenticator)' },
-            { value: 'd', label: 'FIDO2/WebAuthn hardware keys' }
+            { value: 'a', label: 'SMS codes', label_uk: 'SMS-коди' },
+            { value: 'b', label: 'Email codes', label_uk: 'Коди на email' },
+            { value: 'c', label: 'TOTP (Google Authenticator)', label_uk: 'TOTP (Google Authenticator)' },
+            { value: 'd', label: 'FIDO2/WebAuthn hardware keys', label_uk: 'Апаратні ключі FIDO2/WebAuthn' }
           ],
           answer: 'd',
-          hint: 'Hardware keys use cryptographic challenge-response bound to the domain — they cannot be phished.'
+          hint: 'Hardware keys use cryptographic challenge-response bound to the domain — they cannot be phished.',
+          hint_uk: 'Апаратні ключі використовують криптографічний challenge-response, прив\'язаний до домену — їх неможливо зафішити.'
         },
         {
           type: 'tf', id: 'q5',
           text: 'A timing side-channel in login can reveal valid usernames even when error messages are identical.',
+          text_uk: 'Часовий побічний канал при логіні може розкрити дійсні імена користувачів, навіть коли повідомлення про помилку ідентичні.',
           answer: true,
-          hint: 'If valid usernames trigger a bcrypt hash check (~500ms) but invalid ones return quickly (~10ms), the timing difference leaks information.'
+          hint: 'If valid usernames trigger a bcrypt hash check (~500ms) but invalid ones return quickly (~10ms), the timing difference leaks information.',
+          hint_uk: 'Якщо дійсні імена запускають перевірку bcrypt-хешу (~500 мс), а недійсні повертаються швидко (~10 мс), різниця в часі витікає інформацію.'
         }
       ],
       flags: [

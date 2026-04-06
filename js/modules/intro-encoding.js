@@ -340,50 +340,60 @@ window.introEncoding = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'What does Base64 encoding do?',
+          text_uk: 'Що робить кодування Base64?',
           options: [
-            { value: 'a', label: 'Encrypts data so it cannot be read' },
-            { value: 'b', label: 'Represents binary data in an ASCII string format' },
-            { value: 'c', label: 'Compresses data to reduce size' },
-            { value: 'd', label: 'Hashes data into a fixed-length digest' }
+            { value: 'a', label: 'Encrypts data so it cannot be read', label_uk: 'Шифрує дані, щоб їх не можна було прочитати' },
+            { value: 'b', label: 'Represents binary data in an ASCII string format', label_uk: 'Представляє двійкові дані у форматі ASCII-рядка' },
+            { value: 'c', label: 'Compresses data to reduce size', label_uk: 'Стискає дані для зменшення розміру' },
+            { value: 'd', label: 'Hashes data into a fixed-length digest', label_uk: 'Хешує дані у дайджест фіксованої довжини' }
           ],
           answer: 'b',
-          hint: 'Base64 is an encoding scheme, not encryption or compression.'
+          hint: 'Base64 is an encoding scheme, not encryption or compression.',
+          hint_uk: 'Base64 — це схема кодування, а не шифрування чи стиснення.'
         },
         {
           type: 'tf', id: 'q2',
           text: 'URL encoding replaces unsafe characters with a percent sign followed by two hex digits (e.g., %20 for a space).',
+          text_uk: 'URL-кодування замінює небезпечні символи знаком відсотка з двома hex-цифрами (наприклад, %20 для пробілу).',
           answer: true,
-          hint: 'This is exactly how percent-encoding works in URLs.'
+          hint: 'This is exactly how percent-encoding works in URLs.',
+          hint_uk: 'Саме так працює відсоткове кодування в URL.'
         },
         {
           type: 'mc', id: 'q3',
           text: 'Which of the following is a cryptographic hash function?',
+          text_uk: 'Що з наведеного є криптографічною хеш-функцією?',
           options: [
-            { value: 'a', label: 'Base64' },
-            { value: 'b', label: 'ROT13' },
-            { value: 'c', label: 'SHA-256' },
-            { value: 'd', label: 'XOR' }
+            { value: 'a', label: 'Base64', label_uk: 'Base64' },
+            { value: 'b', label: 'ROT13', label_uk: 'ROT13' },
+            { value: 'c', label: 'SHA-256', label_uk: 'SHA-256' },
+            { value: 'd', label: 'XOR', label_uk: 'XOR' }
           ],
           answer: 'c',
-          hint: 'Only one of these produces a fixed-length, one-way digest.'
+          hint: 'Only one of these produces a fixed-length, one-way digest.',
+          hint_uk: 'Тільки одне з цього створює одностороній дайджест фіксованої довжини.'
         },
         {
           type: 'tf', id: 'q4',
           text: 'Hashing is reversible — you can always recover the original input from a hash.',
+          text_uk: 'Хешування є оборотним — ти завжди можеш відновити оригінальне введення з хешу.',
           answer: false,
-          hint: 'Cryptographic hash functions are designed to be one-way.'
+          hint: 'Cryptographic hash functions are designed to be one-way.',
+          hint_uk: 'Криптографічні хеш-функції спроектовані як односторонні.'
         },
         {
           type: 'mc', id: 'q5',
           text: 'What is the "alg: none" attack in JWT?',
+          text_uk: 'Що таке атака "alg: none" в JWT?',
           options: [
-            { value: 'a', label: 'Using no algorithm makes the token expire faster' },
-            { value: 'b', label: 'Setting the algorithm to "none" bypasses signature verification' },
-            { value: 'c', label: 'It encrypts the token with a null cipher' },
-            { value: 'd', label: 'It compresses the payload to zero bytes' }
+            { value: 'a', label: 'Using no algorithm makes the token expire faster', label_uk: 'Відсутність алгоритму змушує токен швидше протухнути' },
+            { value: 'b', label: 'Setting the algorithm to "none" bypasses signature verification', label_uk: 'Встановлення алгоритму "none" обходить перевірку підпису' },
+            { value: 'c', label: 'It encrypts the token with a null cipher', label_uk: 'Шифрує токен нульовим шифром' },
+            { value: 'd', label: 'It compresses the payload to zero bytes', label_uk: 'Стискає пейлоад до нуля байтів' }
           ],
           answer: 'b',
-          hint: 'This attack tricks the server into accepting an unsigned token.'
+          hint: 'This attack tricks the server into accepting an unsigned token.',
+          hint_uk: 'Ця атака змушує сервер прийняти непідписаний токен.'
         }
       ]
     });
