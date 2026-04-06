@@ -1,47 +1,128 @@
 <section class="module-header">
-  <h1>Module 12 — Broken Authentication &amp; Username Enumeration</h1>
+  <h1>Module 09 — Broken Authentication</h1>
   <p>Discover how poor authentication implementations leak information and enable credential attacks.</p>
 </section>
 
 <section class="theory-section">
-  <h2>Authentication Flaws</h2>
-  <p>Authentication is the process of verifying identity. Common flaws include:</p>
-  <ul>
-    <li><strong>Verbose error messages</strong> — revealing whether a username exists</li>
-    <li><strong>No rate limiting</strong> — allowing unlimited login attempts</li>
-    <li><strong>Weak password policies</strong> — accepting easily guessable passwords</li>
-    <li><strong>Insecure credential storage</strong> — plaintext or weak hashing</li>
-    <li><strong>Missing MFA</strong> — single factor authentication only</li>
-  </ul>
 
-  <h2>Username Enumeration</h2>
-  <p>When an application responds differently for valid vs invalid usernames, attackers can enumerate valid accounts:</p>
+  <h2>Why Authentication Is the #1 Target</h2>
+  <p>
+    Here is a stat that should keep you up at night: according to the Verizon Data Breach Investigations Report, <strong>over 80% of data breaches involve stolen or compromised credentials</strong>. Not some clever zero-day exploit. Not a sophisticated supply chain attack. Just... bad passwords, leaked credentials, and login forms that give away too much information.
+  </p>
+  <p>
+    Think about it. Every single web application has a login page. Every. Single. One. It is the front door, and it is the first thing attackers look at. If your authentication is broken, nothing else matters. You can have the best firewall, the most secure code, the fanciest WAF in the world — if someone can just log in as admin with <code>admin/password123</code>, all of that is worthless.
+  </p>
+  <p>
+    Authentication answers the question: <strong>"Who are you?"</strong> It is the process of verifying that a user is who they claim to be. And it turns out that verifying identity over an untrusted network is genuinely hard. There are so many ways to get it wrong.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Fun Fact:</strong> The concept of "something you know, something you have, something you are" (the three factors of authentication) was formalized in a 1984 paper, but humans have been using these factors for thousands of years. Ancient Roman soldiers used watchwords (something you know), seals on documents (something you have), and face recognition at the gate (something you are).
+  </div>
+
+  <h2>Authentication vs. Authorization</h2>
+  <p>
+    Before we go further, let me clear up one of the most commonly confused concepts in security. These two words sound similar but mean very different things:
+  </p>
+  <ul>
+    <li><strong>Authentication</strong> (AuthN): "Who are you?" — Proving your identity (logging in)</li>
+    <li><strong>Authorization</strong> (AuthZ): "What can you do?" — Checking your permissions (accessing resources)</li>
+  </ul>
+  <p>
+    A bouncer at a club checks your ID — that is <strong>authentication</strong>. Then they check if you are on the VIP list — that is <strong>authorization</strong>. You can be perfectly authenticated (the bouncer knows who you are) but not authorized (you are not on the list). And vice versa: just because you are authorized to be in the VIP section does not mean anyone verified your actual identity.
+  </p>
+  <p>
+    This module covers authentication failures. The next module (IDOR) covers authorization failures. They are closely related, but they break in different ways and require different fixes.
+  </p>
+
+  <h2>Username Enumeration — The Information Leak That Starts Everything</h2>
+  <p>
+    Imagine you are an attacker. You want to break into someone's account on a website. You have no idea what usernames exist. So you go to the login page and type <code>admin</code> as the username with a random password. The server responds:
+  </p>
+  <pre><code class="language-plaintext">"Invalid password for this account"</code></pre>
+  <p>
+    Wait. Did you catch that? The server just told you that <strong>the username "admin" exists</strong>. It did not say "invalid username or password" — it specifically said the <em>password</em> was wrong, which means the <em>username</em> was right. Now you try <code>nonexistent_user</code>:
+  </p>
+  <pre><code class="language-plaintext">"User not found in the system"</code></pre>
+  <p>
+    And there it is. Two different error messages. One tells you the username exists, the other tells you it does not. You have just discovered <strong>username enumeration</strong> — one of the most common authentication vulnerabilities, and one that most developers create without even thinking about it.
+  </p>
+  <p>
+    "But wait," you might think, "what is the big deal? So they know a username exists. They still do not have the password." True. But knowing which usernames are valid is the first step to a targeted attack. Instead of guessing both username AND password (impossible at scale), the attacker now only needs to guess the password for a known user. That is a much, much smaller problem.
+  </p>
+
+  <h3>How Username Enumeration Leaks</h3>
+  <p>
+    Error messages are the most obvious vector, but they are not the only one. Here are all the ways applications accidentally reveal whether an account exists:
+  </p>
 
   <div class="table-wrapper">
     <table>
-      <thead><tr><th>Scenario</th><th>Valid Username</th><th>Invalid Username</th></tr></thead>
+      <thead><tr><th>Vector</th><th>Valid Username</th><th>Invalid Username</th></tr></thead>
       <tbody>
         <tr><td>Error message</td><td><code>"Incorrect password"</code></td><td><code>"User not found"</code></td></tr>
-        <tr><td>Response time</td><td>~500ms (password hashed)</td><td>~50ms (quick reject)</td></tr>
-        <tr><td>Account lockout</td><td>Account locked after 5 tries</td><td>No lockout behavior</td></tr>
-        <tr><td>HTTP status</td><td>401 Unauthorized</td><td>404 Not Found</td></tr>
+        <tr><td>Response time</td><td>~500ms (bcrypt password check)</td><td>~10ms (quick reject, no hash computed)</td></tr>
+        <tr><td>Account lockout</td><td>Account locked after 5 attempts</td><td>No lockout behavior (nothing to lock)</td></tr>
+        <tr><td>HTTP status code</td><td>401 Unauthorized</td><td>404 Not Found</td></tr>
+        <tr><td>Registration page</td><td><code>"Username already taken"</code></td><td>Registration succeeds</td></tr>
+        <tr><td>Password reset</td><td><code>"Reset link sent to your email"</code></td><td><code>"No account found"</code></td></tr>
+        <tr><td>Response body size</td><td>4,231 bytes</td><td>4,198 bytes (slightly different HTML)</td></tr>
       </tbody>
     </table>
   </div>
 
-  <div class="callout callout-success">
-    <strong>Correct implementation:</strong> Always return a generic message like <code>"Invalid username or password"</code> regardless of which field is wrong. Use constant-time comparison for credentials.
+  <p>
+    The timing attack is particularly sneaky. Even if the error messages are identical, if the server takes 500ms when the username is valid (because it is computing a bcrypt hash to check the password) but only 10ms when the username is invalid (because it stops early), an attacker can measure the response times and figure out which usernames exist. This is called a <strong>timing side-channel</strong>.
+  </p>
+
+  <div class="callout callout-warning">
+    <strong>Think About It:</strong> Your registration page says "This email is already in use." Seems harmless, right? But an attacker can now check whether any email address is registered on your platform. For a dating site or a medical portal, that is a significant privacy violation.
   </div>
 
-  <h2>Credential Attack Types</h2>
-  <ul>
-    <li><strong>Brute force:</strong> Try all possible passwords for one account</li>
-    <li><strong>Credential stuffing:</strong> Use leaked username/password pairs from other breaches</li>
-    <li><strong>Password spraying:</strong> Try a few common passwords against many accounts</li>
-  </ul>
+  <div class="callout callout-success">
+    <strong>The Fix:</strong> Always return a generic message: <code>"Invalid username or password"</code> regardless of which field was wrong. For registration, say <code>"If this email is not already registered, you will receive a confirmation"</code>. For password reset, say <code>"If an account exists with that email, a reset link has been sent"</code>. Use constant-time comparison so that checking a valid vs invalid username takes the same amount of time.
+  </div>
 
-  <h2>Top 20 Weak Passwords</h2>
-  <p>These are consistently found in breach databases year after year:</p>
+  <h2>Password Attacks — The Brute Reality</h2>
+  <p>
+    Once an attacker knows which usernames are valid, the next step is cracking the password. There are several approaches, and understanding the differences is important because each requires a different defense.
+  </p>
+
+  <h3>Brute Force</h3>
+  <p>
+    The simplest approach: try every possible password for a target account. Start with <code>a</code>, then <code>b</code>, then <code>c</code>... then <code>aa</code>, <code>ab</code>, <code>ac</code>... and keep going. With a fast enough computer, you will eventually find the right password.
+  </p>
+  <p>
+    The problem? Math. A password with 8 lowercase characters has 26^8 = 208 billion possible combinations. At 1,000 guesses per second against a remote server (a realistic online rate), that would take <strong>6,600 years</strong>. So pure brute force against online systems is not practical — but against offline password hashes, modern GPUs can try billions of hashes per second, making it very real.
+  </p>
+
+  <h3>Dictionary Attacks</h3>
+  <p>
+    Humans are terrible at choosing passwords. Instead of trying every possible combination, just try the passwords humans actually use. The infamous <strong>rockyou.txt</strong> wordlist contains 14 million real passwords leaked from the RockYou breach in 2009. Using that list, you can crack a significant percentage of accounts in minutes.
+  </p>
+
+  <div class="callout callout-success">
+    <strong>Real Story:</strong> In 2009, the social app RockYou stored 32 million user passwords in <em>plaintext</em> — no hashing, no encryption, nothing. When the database was breached, the entire password list was leaked. Security researchers analyzed it and found that the most common password was <code>123456</code> (used by 290,731 accounts). The rockyou.txt file became the go-to wordlist for password cracking and is still used in every penetration test today, over 15 years later.
+  </div>
+
+  <h3>Credential Stuffing</h3>
+  <p>
+    Here is where it gets really scary. Remember how people reuse passwords? If someone uses <code>hunter2</code> on LinkedIn AND their email AND their banking app, and LinkedIn gets breached... the attacker now has a valid username/password combo that works on ALL their accounts. This is <strong>credential stuffing</strong>: taking leaked credentials from one breach and trying them on other sites.
+  </p>
+  <p>
+    The "Collection #1" leak in 2019 contained <strong>773 million unique email addresses and 21 million unique passwords</strong>. That is a massive credential stuffing database, and attackers actively trade and use these lists.
+  </p>
+
+  <h3>Password Spraying</h3>
+  <p>
+    Most account lockout mechanisms trigger after N failed attempts for one account — say, 5 failed logins and the account is locked for 30 minutes. Password spraying works around this by trying ONE common password against MANY accounts. Try <code>Summer2024!</code> against every account. If nobody gets locked out, try <code>Password1</code> against every account. You only need one to succeed.
+  </p>
+  <p>
+    This is devastatingly effective against corporate environments where users are forced to include uppercase, lowercase, numbers, and special characters. What does every user do? <code>CompanyName2024!</code> or <code>Season+Year!</code>. Password spraying exploits this human predictability.
+  </p>
+
+  <h2>The Top 20 Worst Passwords</h2>
+  <p>These are consistently found in breach databases year after year. If any of your users have these, they will be compromised:</p>
   <div class="flex flex-wrap gap-sm mb-md">
     <code>123456</code> <code>password</code> <code>123456789</code> <code>12345678</code>
     <code>12345</code> <code>1234567</code> <code>1234567890</code> <code>qwerty</code>
@@ -50,14 +131,79 @@
     <code>monkey</code> <code>dragon</code> <code>master</code> <code>admin</code>
   </div>
 
-  <h2>Defenses</h2>
+  <div class="callout callout-info">
+    <strong>Fun Fact:</strong> The password <code>123456</code> has been the #1 most common password in breach databases every single year since researchers started tracking it. Despite decades of security awareness campaigns, it is still used by millions of people. The second most common? <code>password</code>. Humans are gloriously predictable.
+  </div>
+
+  <h2>Password Storage — How It Goes Wrong</h2>
+  <p>
+    Even if your users choose strong passwords, it all falls apart if you store them incorrectly. Here is the evolution of password storage, from worst to best:
+  </p>
+
+  <h3>Level 0: Plaintext (Please Never Do This)</h3>
+  <pre><code class="language-sql">-- The worst possible approach
+INSERT INTO users (username, password) VALUES ('admin', 'sunshine');</code></pre>
+  <p>If the database is breached, every password is immediately exposed. No cracking needed.</p>
+
+  <h3>Level 1: Simple Hashing (Still Bad)</h3>
+  <pre><code class="language-python"># Better but still breakable
+import hashlib
+hashed = hashlib.sha256(password.encode()).hexdigest()
+# Problem: same password always produces same hash (rainbow tables)</code></pre>
+
+  <h3>Level 2: Salted Hashing (Getting Warmer)</h3>
+  <pre><code class="language-python"># Much better — unique salt per user defeats rainbow tables
+import hashlib, os
+salt = os.urandom(16)
+hashed = hashlib.sha256(salt + password.encode()).hexdigest()
+# Problem: SHA-256 is too fast — GPUs can compute billions per second</code></pre>
+
+  <h3>Level 3: bcrypt/argon2 (The Right Way)</h3>
+  <pre><code class="language-python"># Best practice — intentionally slow hashing
+import bcrypt
+hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
+# Each hash takes ~250ms — makes brute force impractical
+# bcrypt includes the salt in the output automatically</code></pre>
+
+  <div class="callout callout-success">
+    <strong>Real Story:</strong> In 2013, Adobe was breached and 153 million user records were leaked. They did not use plaintext, but they used <strong>3DES encryption in ECB mode</strong> instead of proper hashing. ECB mode encrypts identical inputs to identical outputs, so researchers could see that millions of users had the same password (it was <code>123456</code>) without even cracking the encryption. The password hints (stored in plaintext!) helped crack the rest. It was one of the most instructive examples of how NOT to store passwords.
+  </div>
+
+  <h2>Defenses — Building Authentication Right</h2>
+  <p>
+    After all that doom and gloom, here is how to build authentication that actually works:
+  </p>
+
+  <h3>For Login Forms</h3>
   <ul>
-    <li><strong>Uniform error messages:</strong> Same response for all login failures</li>
-    <li><strong>Rate limiting:</strong> Lock accounts or add delays after failed attempts</li>
-    <li><strong>CAPTCHA:</strong> After several failed attempts</li>
-    <li><strong>MFA:</strong> Require a second authentication factor</li>
-    <li><strong>Constant-time comparison:</strong> Prevent timing side-channels</li>
+    <li><strong>Uniform error messages:</strong> <code>"Invalid username or password"</code> — same text, same HTTP status, same response size, same response time</li>
+    <li><strong>Rate limiting:</strong> After N failed attempts, add exponential delays (1s, 2s, 4s, 8s...)</li>
+    <li><strong>Account lockout:</strong> Lock after 10-20 failed attempts, require email verification to unlock</li>
+    <li><strong>CAPTCHA:</strong> After 3-5 failed attempts, show a CAPTCHA challenge</li>
+    <li><strong>Constant-time comparison:</strong> Use <code>hmac.compare_digest()</code> in Python or <code>crypto.timingSafeEqual()</code> in Node.js to prevent timing attacks</li>
   </ul>
+
+  <h3>For Password Storage</h3>
+  <ul>
+    <li><strong>Use bcrypt, scrypt, or argon2</strong> — never MD5, SHA-1, or even SHA-256 for passwords</li>
+    <li><strong>Set a high work factor</strong> — bcrypt rounds=12+ means each hash takes ~250ms, making brute force impractical</li>
+    <li><strong>Salt automatically</strong> — bcrypt and argon2 handle salting internally</li>
+  </ul>
+
+  <h3>Multi-Factor Authentication (MFA)</h3>
+  <p>
+    Even the best password can be phished, leaked, or guessed. MFA adds a second factor:
+  </p>
+  <ul>
+    <li><strong>TOTP apps</strong> (Google Authenticator, Authy): Time-based one-time passwords. Good security, reasonable usability.</li>
+    <li><strong>Hardware keys</strong> (YubiKey, FIDO2/WebAuthn): Physical device must be present. Best security, phishing-resistant.</li>
+    <li><strong>SMS codes:</strong> Better than nothing, but vulnerable to SIM-swapping attacks where an attacker calls your phone carrier, pretends to be you, and transfers your number to their SIM card.</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <strong>The Bottom Line:</strong> Authentication is the #1 attack surface on any web application. Most breaches start with a compromised credential. Build your login system as if every attacker in the world is going to try to break it — because they will.
+  </div>
+
 </section>
 
 <!-- ========== LABS ========== -->
