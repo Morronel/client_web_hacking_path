@@ -5,8 +5,20 @@
 
 <!-- ============ 8a: HTTP ============ -->
 <section class="theory-section">
+
+  <h2>Speaking the Web's Language</h2>
+  <p>
+    Before you can hack a web application, you need to understand how a web application actually works. And at its core, every web application is just a conversation between two computers — your browser (the client) and a server somewhere in the world. This conversation happens using protocols: agreed-upon languages and rules that both sides understand.
+  </p>
+  <p>
+    If you have ever used Burp Suite or looked at the Network tab in your browser's developer tools, you have already seen these protocols in action. Every time you click a link, submit a form, or load an image, your browser sends an HTTP request and receives an HTTP response. Understanding the anatomy of these requests is not optional for a web hacker — it is <em>the foundation</em> of everything.
+  </p>
+  <p>
+    A penetration tester who does not understand HTTP is like a locksmith who does not understand how locks work. Sure, you might get lucky with a few tools, but you will never truly understand what you are doing or why it works.
+  </p>
+
   <h2>8a. HTTP — HyperText Transfer Protocol</h2>
-  <p>HTTP is a request/response protocol. The client sends a request; the server sends a response.</p>
+  <p>HTTP is a request/response protocol. The client sends a request; the server sends a response. Every web interaction — loading a page, submitting a form, calling an API — follows this pattern.</p>
 
   <h3>Request Anatomy</h3>
   <pre><code class="language-http">GET /api/users?page=1 HTTP/1.1

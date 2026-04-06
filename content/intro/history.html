@@ -5,11 +5,15 @@
      THEORY SECTION
      ============================================ -->
 <section class="theory-section">
-  <h2>The Evolution of Hacking</h2>
+  <h2>Why History Matters</h2>
   <p>
-    Hacking did not begin with computers. The hacker ethos — curiosity, exploration, and pushing systems
-    beyond their intended limits — traces back to early telephone networks. Understanding this history
-    provides context for modern security practices and helps you appreciate how attack techniques evolved.
+    "Those who cannot remember the past are condemned to repeat it." This quote from George Santayana could have been written specifically about cybersecurity. The same vulnerability classes — SQL injection, buffer overflows, weak authentication — keep appearing decade after decade because the same fundamental mistakes keep being made.
+  </p>
+  <p>
+    Studying the history of hacking is not just interesting trivia (though it is genuinely fascinating). It teaches you patterns. You will notice that every major breach follows a recognizable formula: a known vulnerability type, exploited because someone did not patch, did not validate input, did not enforce least privilege, or simply did not know the attack existed. The techniques change; the patterns do not.
+  </p>
+  <p>
+    Hacking did not begin with computers. The hacker ethos — curiosity, exploration, and pushing systems beyond their intended limits — traces back to early telephone networks. Understanding this history provides context for modern security practices and helps you appreciate how attack techniques evolved.
   </p>
 
   <h2>Timeline of Key Events</h2>
@@ -79,13 +83,30 @@
   </div>
 
   <div class="panel">
-    <h3>2010s-Present — Bug Bounty Era</h3>
+    <h3>2013 — Snowden Revelations</h3>
     <p>
-      The launch of platforms like HackerOne (2012) and Bugcrowd (2012) transformed vulnerability research
-      into a legitimate career. Companies began paying researchers for finding bugs instead of prosecuting
-      them. Google's Vulnerability Reward Program has paid out over $40 million. The U.S. Department of
-      Defense launched "Hack the Pentagon" in 2016. Today, thousands of organizations run bug bounty programs,
-      and top researchers earn six-figure incomes from bounties alone.
+      Edward Snowden, a former NSA contractor, leaked thousands of classified documents revealing the scope of government surveillance programs. The revelations showed that the NSA had been collecting phone metadata of millions of Americans, tapping into the data centers of major tech companies (PRISM program), and deliberately weakening encryption standards. The Snowden leaks fundamentally changed public discourse about privacy and security, accelerated the adoption of HTTPS everywhere, and pushed tech companies to implement end-to-end encryption.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2017 — WannaCry &amp; NotPetya</h3>
+    <p>
+      Two ransomware attacks in quick succession demonstrated the devastating impact of leaked nation-state tools. WannaCry, using the NSA's stolen EternalBlue exploit (targeting a Windows SMB vulnerability), infected over 200,000 computers in 150 countries in a single weekend, crippling the UK's National Health Service. NotPetya, initially disguised as ransomware, was actually a destructive wiper attributed to Russian military intelligence. It caused over $10 billion in damages — the most expensive cyberattack in history — hitting Maersk, Merck, FedEx, and many others.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2020 — SolarWinds Supply Chain Attack</h3>
+    <p>
+      Russian intelligence (APT29/Cozy Bear) compromised the build system of SolarWinds, a widely-used IT monitoring tool, and inserted a backdoor into software updates. Over 18,000 organizations installed the malicious update, including multiple U.S. government agencies (Treasury, Commerce, Homeland Security) and major corporations. The attackers had access to these networks for months before detection. It was a watershed moment for supply chain security and demonstrated that even the most security-conscious organizations could be compromised through their vendors.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2012-Present — Bug Bounty Era</h3>
+    <p>
+      The launch of platforms like HackerOne (2012) and Bugcrowd (2012) transformed vulnerability research into a legitimate career. Companies began paying researchers for finding bugs instead of prosecuting them. Google's Vulnerability Reward Program has paid out over $40 million. The U.S. Department of Defense launched "Hack the Pentagon" in 2016. Today, thousands of organizations run bug bounty programs, and top researchers earn six-figure incomes from bounties alone.
     </p>
   </div>
 

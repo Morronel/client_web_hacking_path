@@ -4,8 +4,20 @@
 </section>
 
 <section class="theory-section">
+
+  <h2>Why Cookies Exist — HTTP's Memory Problem</h2>
+  <p>
+    Here is a fundamental truth about HTTP that surprises many people: <strong>HTTP is stateless</strong>. Every single request your browser sends is treated by the server as if it is coming from a complete stranger. The server has no memory of previous requests. It does not know you logged in 2 seconds ago. It does not know you put something in your cart. It does not know you exist.
+  </p>
+  <p>
+    This is obviously a problem. You do not want to type your password on every single page. So in 1994, Lou Montulli — a 23-year-old programmer at Netscape — invented cookies to give HTTP a memory. The idea was simple: the server sends a small piece of data (the cookie) to the browser, and the browser automatically sends it back with every subsequent request to that server. The cookie acts as a "name tag" that says "Hey, it is me again, the person who logged in earlier."
+  </p>
+  <p>
+    Cookies are the reason the modern web works. Without them, there would be no login sessions, no shopping carts, no "remember me" checkboxes, no personalized anything. They are also the reason many web attacks work — because cookies are sent <em>automatically</em> by the browser, and anything that is automatic can be exploited.
+  </p>
+
   <h2>Cookie Anatomy</h2>
-  <p>HTTP cookies carry state between browser and server. Each cookie has these components:</p>
+  <p>Every cookie has a name, a value, and a set of attributes that control its behavior:</p>
 
   <div class="table-wrapper">
     <table>
@@ -65,6 +77,22 @@ btoa('{"user":"guest","role":"admin"}')
     <li>Weak hashes: MD5 of username</li>
   </ul>
   <p>Secure tokens should be cryptographically random with at least 128 bits of entropy.</p>
+
+  <h2>Session Attacks — What Hackers Do With Cookies</h2>
+  <p>
+    Cookies are the keys to the kingdom. If an attacker gets your session cookie, they do not need your password — they ARE you, as far as the server is concerned. Here are the main cookie-based attacks:
+  </p>
+  <ul>
+    <li><strong>Session hijacking (cookie theft):</strong> Stealing a session cookie via XSS (<code>document.cookie</code>), network sniffing (no Secure flag), or malware. With the cookie, the attacker impersonates the victim.</li>
+    <li><strong>Session fixation:</strong> The attacker sets a known session ID before the victim logs in. If the server does not regenerate the session ID after authentication, the attacker's pre-set cookie is now an authenticated session.</li>
+    <li><strong>Cookie tampering:</strong> If session data is stored client-side (in the cookie value itself) without proper signing, the attacker can modify it — changing <code>role:user</code> to <code>role:admin</code>.</li>
+    <li><strong>CSRF:</strong> Because cookies are sent automatically on every request, a malicious site can trigger requests to another site using the victim's session cookie. (We cover this in depth in Module 17.)</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>The Secure Cookie Checklist:</strong> Every session cookie should have: (1) <code>Secure</code> flag (HTTPS only), (2) <code>HttpOnly</code> flag (no JavaScript access), (3) <code>SameSite=Lax</code> or <code>Strict</code> (CSRF protection), (4) a cryptographically random value with at least 128 bits of entropy, (5) an appropriate expiration time, and (6) server-side session storage (do not store sensitive data in the cookie value itself).
+  </div>
+
 </section>
 
 <!-- ========== LABS ========== -->
