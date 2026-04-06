@@ -1,0 +1,208 @@
+<!-- Module: Legal & Ethics -->
+<h1>Правові аспекти та етика тестування безпеки</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Чому закон та етика мають значення</h2>
+  <p>
+    Скажу прямо: <strong>це найважливіший модуль у всьому курсі</strong>. Не тому, що він технічно захопливий — ні, це не так — а тому, що ігнорування цієї теми може зруйнувати тобі життя. Буквально. Люди потрапляли за ґрати за те саме, чому ми навчаємо в цьому курсі, але без дозволу.
+  </p>
+  <p>
+    Межа між пентестером і злочинцем — це <strong>авторизація</strong>. Ось і все. Одна й та сама технічна дія — сканування мережі, експлуатація вразливості, витягування даних — може бути як оплаченою професійною роботою, так і кримінальним злочином, залежно виключно від того, чи маєш ти дозвіл. SQL-ін'єкція не змінюється. Техніка впровадження команд ідентична. Єдина різниця — це підписаний документ (або скоуп баг-баунті програми), який каже: «тобі дозволено це робити».
+  </p>
+  <p>
+    Чимало талановитих дослідників безпеки зламали собі життя, бо «тестували» систему без явного дозволу або вийшли за межі наданого скоупу. Не будь одним із них. Прочитай цей модуль уважно, засвой правила і дотримуйся їх неухильно.
+  </p>
+
+  <h2>Ключові закони про кіберзлочинність</h2>
+
+  <div class="panel">
+    <h3>Computer Fraud and Abuse Act (CFAA) — США</h3>
+    <p>
+      Ухвалений у 1986 році та неодноразово доповнений, CFAA криміналізує «навмисний доступ до комп'ютера
+      без авторизації або з перевищенням наданого доступу». Покарання варіюються від штрафів до 20+ років
+      ув'язнення за повторні правопорушення. CFAA критикують за занадто розпливчасте формулювання — навіть
+      порушення Умов використання вебсайту деякі трактували як порушення CFAA.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Computer Misuse Act (CMA) — Велика Британія</h3>
+    <p>
+      CMA (1990) визначає три основні правопорушення: несанкціонований доступ до комп'ютерних матеріалів (до 2 років),
+      несанкціонований доступ із наміром вчинити подальші злочини (до 5 років) та несанкціонована модифікація
+      комп'ютерних матеріалів (до 10 років). Закон діє незалежно від того, чи знаходиться зловмисник у Великій Британії,
+      головне — щоб цільова система була там.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Будапештська конвенція про кіберзлочинність</h3>
+    <p>
+      Перший міжнародний договір, що стосується кіберзлочинності, підписаний у 2001 році. Він гармонізує
+      національні законодавства, вдосконалює слідчі методи та встановлює механізми міжнародної співпраці.
+      Конвенцію ратифікували понад 65 країн. Вона охоплює незаконний доступ, втручання в дані, втручання
+      в роботу систем, неправомірне використання пристроїв та комп'ютерне шахрайство.
+    </p>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Юрисдикція має значення:</strong> закони про кіберзлочинність відрізняються залежно від країни.
+    Тестування сервера в іншій країні може підпадати під законодавство тієї країни. Завжди знай, де
+    розташована цільова інфраструктура і які закони застосовуються.
+  </div>
+
+  <h2>Типи авторизації</h2>
+
+  <div class="panel">
+    <h3>Письмовий обсяг робіт</h3>
+    <p>
+      Професійні тести на проникнення вимагають підписаного контракту (іноді його називають «Statement of Work» або
+      «Rules of Engagement»), який чітко визначає, що саме тобі дозволено тестувати, які методи дозволені,
+      часове вікно для тестування та що виходить за межі скоупу. Цей документ — твій юридичний щит.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Програми баг-баунті</h3>
+    <p>
+      Такі компанії, як Google, Microsoft та тисячі інших, запускають програми баг-баунті через платформи на кшталт
+      HackerOne та Bugcrowd. Ці програми надають правову основу для дослідників безпеки, щоб шукати та
+      повідомляти про вразливості в обмін на грошову винагороду. Кожна програма має свій скоуп, правила та
+      положення про безпечну гавань (safe harbor).
+    </p>
+    <p>
+      <strong>Ключові елементи політики баг-баунті:</strong> домени/застосунки в скоупі, зони поза скоупом,
+      заборонені дії (наприклад, соціальна інженерія щодо працівників, DoS), терміни розкриття та рівні винагород.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Правила взаємодії (Rules of Engagement)</h3>
+    <p>
+      Правила взаємодії визначають межі оцінки безпеки: години тестування, діапазони IP-адрес,
+      чи дозволена соціальна інженерія, процедури ескалації при виявленні критичних вразливостей
+      та контакти для екстрених випадків. Порушення правил взаємодії може анулювати твою авторизацію і призвести до юридичної відповідальності.
+    </p>
+  </div>
+
+  <h2>Принципи етичного хакінгу</h2>
+  <p>Етичні хакери дотримуються набору основних принципів, які відрізняють їх від зловмисників:</p>
+
+  <div class="panel">
+    <ul>
+      <li><strong>Отримай явний дозвіл</strong> — ніколи не тестуй без письмової авторизації</li>
+      <li><strong>Залишайся в межах скоупу</strong> — тестуй лише те, на що маєш дозвіл</li>
+      <li><strong>Не завдавай шкоди</strong> — уникай дій, які можуть спричинити пошкодження, втрату даних або збій сервісу</li>
+      <li><strong>Захищай дані</strong> — якщо ти отримав доступ до конфіденційних даних під час тестування, стався до них як до конфіденційних</li>
+      <li><strong>Звітуй про все</strong> — документуй і розкривай усі знахідки замовнику</li>
+      <li><strong>Поважай приватність</strong> — не отримуй доступ до персональних даних більше, ніж потрібно для демонстрації вразливості</li>
+    </ul>
+  </div>
+
+  <h2>Моделі розкриття вразливостей</h2>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Модель</th>
+          <th>Опис</th>
+          <th>Переваги</th>
+          <th>Недоліки</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Responsible Disclosure</td>
+          <td>Спочатку повідомити вендора, дати йому час на виправлення (зазвичай 90 днів), потім опублікувати</td>
+          <td>Дає вендору час на патч; користувачі захищені</td>
+          <td>Вендор може проігнорувати або затягнути; дослідник не має важелів впливу</td>
+        </tr>
+        <tr>
+          <td>Full Disclosure</td>
+          <td>Негайно опублікувати деталі вразливості для широкої публіки</td>
+          <td>Тисне на вендора діяти швидко; спільнота може захиститися</td>
+          <td>Зловмисники отримують деталі експлойту до появи патча</td>
+        </tr>
+        <tr>
+          <td>Coordinated Disclosure</td>
+          <td>Працювати з вендором і, можливо, координатором (наприклад, CERT), щоб узгодити розкриття з випуском патча</td>
+          <td>Найкращий баланс між прозорістю та безпекою</td>
+          <td>Потребує співпраці від усіх сторін</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Галузевий стандарт:</strong> більшість платформ баг-баунті дотримуються моделі координованого
+    розкриття з вікном у 90 днів. Google Project Zero популяризував цей таймлайн — через 90 днів вразливість
+    публікується незалежно від статусу патча.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Legal Scenarios Quiz
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Legal Scenarios Quiz
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer all 3 questions correctly to demonstrate your understanding of
+    legal and ethical boundaries in security testing.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you understand the legal boundaries of ethical hacking.</div>
+
+  <div class="lab-body">
+    <!-- Question 1 -->
+    <div class="panel" id="q1-panel">
+      <h3>Question 1</h3>
+      <p>You discover a SQL injection vulnerability on a company's public website. What should you do?</p>
+      <div class="quiz-options" id="q1-options">
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="a">Exploit it to see how much data you can extract</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="b">Report it through their bug bounty program or security contact</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="c">Tell your friends so they can test it too</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="d">Ignore it — it is not your problem</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="panel" id="q2-panel">
+      <h3>Question 2</h3>
+      <p>Which of these activities is legal WITHOUT prior authorization?</p>
+      <div class="quiz-options" id="q2-options">
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="a">Port scanning your own server</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="b">Accessing someone else's database to check for vulnerabilities</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="c">Testing for XSS on a production e-commerce site</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="d">Running SQLMap against a bank's login page</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="panel" id="q3-panel">
+      <h3>Question 3</h3>
+      <p>What does "scope" mean in a penetration testing engagement?</p>
+      <div class="quiz-options" id="q3-options">
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="a">A magnifying tool used for inspecting code</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="b">The defined boundaries and targets of what you are authorized to test</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="c">A programming language used for exploit development</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="d">A type of remote code execution exploit</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+
+    <button class="btn btn-primary" id="lab1-submit">Submit Answers</button>
+    <div id="lab1-result" class="quiz-result"></div>
+  </div>
+</div>

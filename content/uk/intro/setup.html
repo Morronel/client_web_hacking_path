@@ -1,0 +1,189 @@
+<!-- Module 08: Lab Setup -->
+<h1>Модуль 08 — Налаштування лабораторного середовища</h1>
+
+<section class="theory-section">
+
+  <h2>Перш ніж почати хакати: підготовка середовища</h2>
+  <p>
+    Модулі з вразливостями в цьому курсі містять <strong>справжні вразливі вебзастосунки</strong>,
+    які ти можеш зламувати локально на своїй машині. Кожна лабораторна — це Flask (Python) застосунок,
+    упакований у Docker-контейнер. У цьому модулі ми покроково встановимо все необхідне.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Що потрібно встановити:</strong> Git (щоб клонувати репозиторій) та Docker + Docker Compose
+    (щоб запускати лабораторні). Це все. Налаштовувати Python окремо не потрібно — Docker бере це на себе.
+  </div>
+
+  <h2>Крок 1: Встановлення Git</h2>
+  <p>
+    Git — це система контролю версій. Вона потрібна, щоб завантажити (клонувати) репозиторій курсу.
+  </p>
+
+  <div class="panel">
+    <h3>Windows</h3>
+    <p>Завантаж і встанови <strong>Git for Windows</strong> з
+    <code>https://git-scm.com/download/win</code>. Запусти інсталятор із налаштуваннями за замовчуванням.
+    Після встановлення відкрий <strong>Git Bash</strong> або <strong>PowerShell</strong> і перевір:</p>
+    <pre><code class="language-bash">git --version
+# Should output something like: git version 2.43.0</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>macOS</h3>
+    <p>Git входить до складу Xcode Command Line Tools. Відкрий термінал і виконай:</p>
+    <pre><code class="language-bash">xcode-select --install
+# Or install via Homebrew:
+brew install git
+
+git --version</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>Linux (Ubuntu/Debian)</h3>
+    <pre><code class="language-bash">sudo apt update && sudo apt install git -y
+git --version</code></pre>
+  </div>
+
+  <h2>Крок 2: Встановлення Docker &amp; Docker Compose</h2>
+  <p>
+    Docker запускає кожну лабораторну в ізольованому контейнері — як маленька віртуальна машина.
+    Docker Compose дозволяє зібрати й запустити ці контейнери однією командою.
+  </p>
+
+  <div class="panel">
+    <h3>Windows &amp; macOS</h3>
+    <p>Встанови <strong>Docker Desktop</strong> з <code>https://www.docker.com/products/docker-desktop/</code>.
+    Docker Desktop включає і Docker, і Docker Compose. Після встановлення переконайся, що Docker Desktop
+    запущений (ти побачиш іконку кита в системному треї).</p>
+    <pre><code class="language-bash">docker --version
+# Should output: Docker version 24.x or newer
+
+docker compose version
+# Should output: Docker Compose version v2.x</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>Linux (Ubuntu/Debian)</h3>
+    <pre><code class="language-bash"># Install Docker
+curl -fsSL https://get.docker.com | sh
+
+# Add your user to the docker group (so you don't need sudo)
+sudo usermod -aG docker $USER
+
+# Log out and back in, then verify:
+docker --version
+docker compose version</code></pre>
+    <p>Якщо <code>docker compose</code> не знайдено, можливо, потрібно встановити плагін Compose окремо:</p>
+    <pre><code class="language-bash">sudo apt install docker-compose-plugin</code></pre>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Поширена проблема:</strong> Якщо ти отримуєш "permission denied" під час виконання команд Docker на Linux,
+    переконайся, що ти додав свого користувача до групи <code>docker</code> і перелогінився. Або додавай
+    <code>sudo</code> перед командами.
+  </div>
+
+  <h2>Крок 3: Клонування репозиторію</h2>
+  <p>
+    Відкрий термінал і клонуй репозиторій WebHack Academy:
+  </p>
+  <pre><code class="language-bash">git clone https://github.com/morronel/client_web_hacking_path.git
+cd client_web_hacking_path</code></pre>
+  <p>
+    Це завантажить весь курс, включаючи вихідний код усіх лабораторних. Лабораторні знаходяться
+    в директорії <code>labs/</code>:
+  </p>
+  <pre><code class="language-bash">ls labs/
+# sqli/  xss/  ssti/  idor/  auth/  csrf/  ssrf/  traversal/
+# cmdi/  xxe/  race/  deserial/  graphql/</code></pre>
+
+  <h2>Крок 4: Запуск лабораторної</h2>
+  <p>
+    Кожна лабораторна — це окремий Docker-контейнер. Щоб запустити одну з них:
+  </p>
+  <pre><code class="language-bash"># Navigate to a lab directory
+cd labs/sqli
+
+# Build and start the container
+docker compose up --build
+
+# The lab is now running! Visit it in your browser:
+# http://localhost:5001</code></pre>
+  <p>
+    Натисни <code>Ctrl+C</code>, щоб зупинити лабораторну, коли закінчиш.
+  </p>
+
+  <div class="callout callout-success">
+    <strong>Порада:</strong> Додай <code>-d</code>, щоб запустити у фоновому режимі: <code>docker compose up --build -d</code>.
+    Потім використовуй <code>docker compose down</code>, щоб зупинити.
+  </div>
+
+  <h2>Порти лабораторних</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Лабораторна</th><th>Директорія</th><th>Порт</th><th>URL</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>SQL Injection</td><td><code>labs/sqli</code></td><td>5001</td><td><code>http://localhost:5001</code></td></tr>
+        <tr><td>XSS</td><td><code>labs/xss</code></td><td>5002</td><td><code>http://localhost:5002</code></td></tr>
+        <tr><td>SSTI</td><td><code>labs/ssti</code></td><td>5003</td><td><code>http://localhost:5003</code></td></tr>
+        <tr><td>IDOR</td><td><code>labs/idor</code></td><td>5004</td><td><code>http://localhost:5004</code></td></tr>
+        <tr><td>Broken Auth</td><td><code>labs/auth</code></td><td>5005</td><td><code>http://localhost:5005</code></td></tr>
+        <tr><td>CSRF</td><td><code>labs/csrf</code></td><td>5006</td><td><code>http://localhost:5006</code></td></tr>
+        <tr><td>SSRF</td><td><code>labs/ssrf</code></td><td>5008</td><td><code>http://localhost:5008</code></td></tr>
+        <tr><td>Path Traversal</td><td><code>labs/traversal</code></td><td>5009</td><td><code>http://localhost:5009</code></td></tr>
+        <tr><td>Command Injection</td><td><code>labs/cmdi</code></td><td>5011</td><td><code>http://localhost:5011</code></td></tr>
+        <tr><td>XXE</td><td><code>labs/xxe</code></td><td>5012</td><td><code>http://localhost:5012</code></td></tr>
+        <tr><td>Race Conditions</td><td><code>labs/race</code></td><td>5013</td><td><code>http://localhost:5013</code></td></tr>
+        <tr><td>Deserialization</td><td><code>labs/deserial</code></td><td>5014</td><td><code>http://localhost:5014</code></td></tr>
+        <tr><td>GraphQL</td><td><code>labs/graphql</code></td><td>5015</td><td><code>http://localhost:5015</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Корисні інструменти</h2>
+  <p>
+    Більшість завдань можна розв'язати лише за допомогою браузера та <code>curl</code>, але ці інструменти
+    значно полегшать роботу:
+  </p>
+  <ul>
+    <li><strong>curl</strong> — HTTP-клієнт командного рядка (є в Linux/Mac, на Windows встановлюється через Git Bash)</li>
+    <li><strong>Burp Suite Community</strong> — перехоплює та модифікує HTTP-запити між браузером і лабораторною</li>
+    <li><strong>Browser DevTools (F12)</strong> — вкладки Network, Console та Application для роботи з cookies</li>
+    <li><strong>webhook.site</strong> — безкоштовний сервіс, що дає URL для отримання HTTP-колбеків (корисний для крадіжки cookies через XSS та тестування SSRF)</li>
+    <li><strong>Python 3</strong> — для написання експлойт-скриптів (автоматизація blind SQLi, генерація pickle-пейлоадів тощо)</li>
+  </ul>
+
+  <h2>Усунення неполадок</h2>
+
+  <div class="panel">
+    <h3>"Cannot connect to the Docker daemon"</h3>
+    <p>Переконайся, що Docker Desktop запущений (Windows/Mac) або служба Docker працює (Linux):</p>
+    <pre><code class="language-bash"># Linux
+sudo systemctl start docker</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>"Port already in use"</h3>
+    <p>Інша лабораторна (або програма) вже використовує цей порт. Спочатку зупини її:</p>
+    <pre><code class="language-bash">docker compose down   # in the other lab's directory
+# Or stop all containers:
+docker stop $(docker ps -q)</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>"Build fails" або "pip install fails"</h3>
+    <p>Лабораторні використовують попередньо зібрані wheel-файли для офлайн-встановлення, тому
+    проблеми з мережею під час збірки не повинні виникати. Якщо збірка не вдалася, спробуй:</p>
+    <pre><code class="language-bash">docker compose build --no-cache</code></pre>
+  </div>
+
+  <div class="callout callout-success">
+    <strong>Все готово!</strong> Коли Git і Docker встановлені, переходь до першого модуля з вразливостями
+    (SQL Injection) і починай хакати. На сторінці кожного модуля є конкретна
+    команда <code>docker compose</code> для запуску його лабораторної.
+  </div>
+
+</section>
