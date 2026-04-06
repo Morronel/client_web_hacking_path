@@ -10,52 +10,62 @@ window.vulnCsrf = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'What is the primary purpose of a CSRF token?',
+          text_uk: 'Яке основне призначення CSRF-токена?',
           options: [
-            { value: 'a', label: 'Encrypt form data in transit' },
-            { value: 'b', label: 'Prove the request originated from the application\'s own form' },
-            { value: 'c', label: 'Prevent SQL injection in form fields' },
-            { value: 'd', label: 'Authenticate the user\'s identity' }
+            { value: 'a', label: 'Encrypt form data in transit', label_uk: 'Шифрування даних форми під час передачі' },
+            { value: 'b', label: 'Prove the request originated from the application\'s own form', label_uk: 'Підтвердити, що запит надійшов з власної форми додатку' },
+            { value: 'c', label: 'Prevent SQL injection in form fields', label_uk: 'Запобігти SQL injection у полях форми' },
+            { value: 'd', label: 'Authenticate the user\'s identity', label_uk: 'Автентифікувати особу користувача' }
           ],
           answer: 'b',
-          hint: 'CSRF tokens verify the form submission came from the legitimate site, not an attacker\'s page.'
+          hint: 'CSRF tokens verify the form submission came from the legitimate site, not an attacker\'s page.',
+          hint_uk: 'CSRF-токени підтверджують, що форма відправлена з легітимного сайту, а не зі сторінки зловмисника.'
         },
         {
           type: 'mc', id: 'q2',
           text: 'Which SameSite cookie value provides the strongest CSRF protection?',
+          text_uk: 'Яке значення SameSite cookie забезпечує найсильніший захист від CSRF?',
           options: [
-            { value: 'a', label: 'None' },
-            { value: 'b', label: 'Lax' },
-            { value: 'c', label: 'Strict' },
-            { value: 'd', label: 'Secure' }
+            { value: 'a', label: 'None', label_uk: 'None' },
+            { value: 'b', label: 'Lax', label_uk: 'Lax' },
+            { value: 'c', label: 'Strict', label_uk: 'Strict' },
+            { value: 'd', label: 'Secure', label_uk: 'Secure' }
           ],
           answer: 'c',
-          hint: 'This value never sends the cookie on cross-site requests, regardless of the HTTP method.'
+          hint: 'This value never sends the cookie on cross-site requests, regardless of the HTTP method.',
+          hint_uk: 'Це значення ніколи не надсилає cookie при міжсайтових запитах, незалежно від HTTP-методу.'
         },
         {
           type: 'mc', id: 'q3',
           text: 'Which HTTP methods are most commonly targeted in CSRF attacks?',
+          text_uk: 'Які HTTP-методи найчастіше є мішенню CSRF-атак?',
           options: [
-            { value: 'a', label: 'GET and HEAD because they are idempotent' },
-            { value: 'b', label: 'POST, PUT, and DELETE because they cause state changes' },
-            { value: 'c', label: 'OPTIONS and TRACE because they bypass CORS' },
-            { value: 'd', label: 'Only PATCH because it allows partial updates' }
+            { value: 'a', label: 'GET and HEAD because they are idempotent', label_uk: 'GET та HEAD, бо вони ідемпотентні' },
+            { value: 'b', label: 'POST, PUT, and DELETE because they cause state changes', label_uk: 'POST, PUT та DELETE, бо вони змінюють стан' },
+            { value: 'c', label: 'OPTIONS and TRACE because they bypass CORS', label_uk: 'OPTIONS та TRACE, бо вони обходять CORS' },
+            { value: 'd', label: 'Only PATCH because it allows partial updates', label_uk: 'Тільки PATCH, бо він дозволяє часткові оновлення' }
           ],
           answer: 'b',
-          hint: 'CSRF is most dangerous when it triggers actions that modify server-side state.'
+          hint: 'CSRF is most dangerous when it triggers actions that modify server-side state.',
+          hint_uk: 'CSRF найнебезпечніший, коли він запускає дії, що змінюють стан на сервері.'
         },
         {
           type: 'tf', id: 'q4',
           text: 'Modern browsers default cookies to <code>SameSite=Lax</code> when no SameSite attribute is specified, which provides basic CSRF protection for POST-based endpoints.',
+          text_uk: 'Сучасні браузери за замовчуванням встановлюють cookies як <code>SameSite=Lax</code>, коли атрибут SameSite не вказано, що забезпечує базовий захист від CSRF для POST-ендпоінтів.',
           answer: true,
-          hint: 'Since 2020, Chrome, Firefox, and Edge treat cookies without a SameSite attribute as Lax by default.'
+          hint: 'Since 2020, Chrome, Firefox, and Edge treat cookies without a SameSite attribute as Lax by default.',
+          hint_uk: 'З 2020 року Chrome, Firefox та Edge обробляють cookies без атрибуту SameSite як Lax за замовчуванням.'
         },
         {
           type: 'fill', id: 'q5',
           text: 'What cookie attribute (one word, lowercase) controls whether cookies are sent with cross-site requests?',
+          text_uk: 'Який атрибут cookie (одне слово, малими літерами) контролює, чи надсилаються cookies з міжсайтовими запитами?',
           placeholder: 'Type the attribute name...',
           // SHA-256 of "samesite"
           answerHash: '3edbd67a4e33cd9d9d30d7e8e2e915f1557deb987a1e3f5b4dc29fffc67a2a09',
-          hint: 'This attribute can be set to Strict, Lax, or None.'
+          hint: 'This attribute can be set to Strict, Lax, or None.',
+          hint_uk: 'Цей атрибут може мати значення Strict, Lax або None.'
         }
       ],
       flags: [

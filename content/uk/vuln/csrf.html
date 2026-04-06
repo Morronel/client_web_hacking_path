@@ -1,0 +1,180 @@
+<!-- Module 17: Cross-Site Request Forgery -->
+<section class="module-header">
+  <h1>Модуль 17 — Cross-Site Request Forgery (CSRF)</h1>
+  <p>Розберися, як атакуючі змушують автентифікованих користувачів виконувати небажані дії, експлуатуючи автоматичне прикріплення кук браузером.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Збитий з пантелику помічник</h2>
+  <p>
+    CSRF — одна з найелегантніших атак у веб-безпеці, бо вона експлуатує не баг у коді, а <strong>фундаментальний принцип роботи браузерів</strong>. Суть проблеми: коли твій браузер робить запит до <code>bank.com</code>, він автоматично прикріплює всі куки для <code>bank.com</code>, включаючи твою сесійну куку. Браузер робить це <em>незалежно від того, звідки прийшов запит</em>.
+  </p>
+  <p>
+    Тобто якщо ти залогінений у свій банк і заходиш на зловмисний сайт, цей сайт може змусити твій браузер відправити запит на <code>bank.com/transfer?to=attacker&amount=10000</code> — і браузер люб'язно прикріпить твою сесійну куку, зробивши запит нерозрізненним від легітимного.
+  </p>
+  <p>
+    Сервер банку бачить валідну сесійну куку і обробляє переказ. Він не може дізнатися, що запит прийшов з <code>evil.com</code>, а не зі сторінки самого банку. Браузер виступає "збитим з пантелику помічником" — він має повноваження діяти від твого імені (через сесійну куку), але його обманом змушують використовувати ці повноваження на користь атакуючого.
+  </p>
+
+  <h3>Хід атаки, крок за кроком</h3>
+  <ol>
+    <li>Жертва логіниться на <code>bank.com</code> і отримує сесійну куку (<code>session=abc123</code>).</li>
+    <li>Жертва заходить на <code>evil.com</code> (за посиланням з листа, поста на форумі, реклами тощо), залишаючись залогіненою в банку.</li>
+    <li><code>evil.com</code> містить приховану форму, що автоматично відправляється POST-запитом на <code>bank.com/transfer</code>.</li>
+    <li>Браузер жертви відправляє форму. Оскільки ціль — <code>bank.com</code>, браузер прикріплює куку <code>session=abc123</code>.</li>
+    <li>Сервер банку бачить валідну сесію та валідний запит на переказ. Він обробляє переказ. Жертва нічого не бачить — відправка форми відбулася автоматично і непомітно.</li>
+  </ol>
+
+  <pre><code class="language-html">&lt;!-- The attacker's page (evil.com) --&gt;
+&lt;html&gt;
+&lt;body onload="document.forms[0].submit()"&gt;
+  &lt;form method="POST" action="https://bank.com/transfer"&gt;
+    &lt;input type="hidden" name="to" value="attacker-account"&gt;
+    &lt;input type="hidden" name="amount" value="10000"&gt;
+  &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+  <div class="callout callout-info">
+    <strong>Чому це працює?</strong> Same-Origin Policy не дозволяє JavaScript на <code>evil.com</code> <em>читати</em> відповіді з <code>bank.com</code>. Але вона НЕ забороняє міжсайтові відправки форм, завантаження зображень чи скриптів. Атакуючому не потрібно читати відповідь — <em>побічний ефект</em> (переказ грошей) і є метою.
+  </div>
+
+  <h2>Вразливий код</h2>
+  <pre><code class="language-python"># Flask — VULNERABLE: no CSRF token validation
+@app.route('/transfer', methods=['POST'])
+@login_required
+def transfer():
+    to_account = request.form['to']
+    amount = request.form['amount']
+    # The server trusts the request because the session cookie is valid
+    # But it never verifies that the request came from the bank's own page
+    db.execute("UPDATE accounts SET balance = balance - ? WHERE user_id = ?",
+               (amount, current_user.id))
+    db.execute("UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
+               (amount, to_account))
+    db.commit()
+    return redirect('/dashboard')</code></pre>
+
+  <h2>Захист #1: CSRF-токени</h2>
+  <p>
+    Найпоширеніший захист. Сервер генерує випадковий, непередбачуваний токен і вставляє його в кожну форму як приховане поле. При відправці форми сервер перевіряє, що токен присутній і правильний. Оскільки атакуючий не може прочитати сторінки банку (SOP це блокує), він не може отримати токен, тому його підроблена форма буде без токена і буде відхилена.
+  </p>
+
+  <pre><code class="language-python"># Flask — SAFE: CSRF token required
+from flask_wtf import FlaskForm, CSRFProtect
+from wtforms import StringField, DecimalField
+
+csrf = CSRFProtect(app)
+
+class TransferForm(FlaskForm):
+    to = StringField('Recipient')
+    amount = DecimalField('Amount')
+
+@app.route('/transfer', methods=['POST'])
+@login_required
+def transfer():
+    form = TransferForm()
+    if form.validate_on_submit():  # validates CSRF token automatically
+        # process transfer — token is valid, request is genuine
+        pass
+    return redirect('/dashboard')</code></pre>
+
+  <pre><code class="language-html">&lt;!-- Template includes hidden CSRF token --&gt;
+&lt;form method="POST" action="/transfer"&gt;
+  {{ form.hidden_tag() }}  &lt;!-- renders: &lt;input type="hidden" name="csrf_token" value="random-token-here"&gt; --&gt;
+  &lt;input name="to" placeholder="Recipient"&gt;
+  &lt;input name="amount" placeholder="Amount"&gt;
+  &lt;button type="submit"&gt;Transfer&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+  <h2>Захист #2: SameSite куки</h2>
+  <p>
+    Атрибут <code>SameSite</code> для кук — це захист на рівні браузера, що контролює, чи відправляються куки з міжсайтовими запитами. Це, мабуть, найбільше покращення у захисті від CSRF за останнє десятиліття.
+  </p>
+  <ul>
+    <li><strong>Strict:</strong> кука НІКОЛИ не відправляється з міжсайтовими запитами. Максимальний захист, але може зламати легітимні сценарії (наприклад, перехід за посиланням на сайт з листа — сесійна кука не буде відправлена, і користувач виглядатиме як незалогінений).</li>
+    <li><strong>Lax:</strong> кука відправляється при навігації верхнього рівня через GET (клік по посиланню), але НЕ при POST-формах, iframe чи AJAX-запитах з інших сайтів. Це <strong>дефолт у сучасних браузерах</strong> (Chrome, Firefox, Edge) і забезпечує непоганий захист від CSRF для ендпоінтів, що змінюють стан через POST.</li>
+    <li><strong>None:</strong> кука завжди відправляється міжсайтово (вимагає прапорець <code>Secure</code>). Жодного захисту від CSRF. Використовуй лише для кук, які явно мають працювати міжсайтово (наприклад, OAuth, вбудовані віджети).</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>Хороші новини:</strong> З 2020 року Chrome, Firefox та Edge за замовчуванням встановлюють кукам <code>SameSite=Lax</code>, якщо атрибут SameSite не вказано. Це означає, що більшість нових веб-додатків отримують базовий захист від CSRF "безкоштовно". Проте все одно варто реалізувати CSRF-токени як додатковий рівень захисту, бо Lax не захищає від зміни стану через GET, а старіші браузери можуть не підтримувати SameSite.
+  </div>
+
+  <h2>Захист #3: Валідація Origin/Referer</h2>
+  <p>
+    Сервер може перевіряти HTTP-заголовки <code>Origin</code> або <code>Referer</code>, щоб переконатися, що запит прийшов з того самого сайту. Це корисний допоміжний захист, але він не повинен бути єдиним, бо:
+  </p>
+  <ul>
+    <li>Розширення для приватності можуть видаляти заголовок Referer</li>
+    <li>Деякі проксі та фаєрволи змінюють або видаляють заголовки Origin</li>
+    <li>Редиректи через meta-refresh можуть обійти перевірку Referer</li>
+  </ul>
+
+  <h2>JSON API та CSRF</h2>
+  <p>
+    Поширена помилка: "Мій API приймає тільки JSON, тому він не вразливий до CSRF, бо HTML-форми не можуть відправляти JSON." Це <em>переважно</em> правда в сучасних браузерах з SameSite=Lax, але є нюанси:
+  </p>
+  <ul>
+    <li>Якщо сервер приймає <code>Content-Type: text/plain</code> і парсить тіло як JSON, форма може відправити <code>enctype="text/plain"</code> зі спеціально сформованим тілом</li>
+    <li><code>navigator.sendBeacon()</code> може відправляти довільні content types у деяких конфігураціях</li>
+    <li>Якщо на сесійній куці встановлено <code>SameSite=None</code>, <code>fetch()</code> з <code>credentials: 'include'</code> може відправляти JSON міжсайтово (хоча сервер також повинен мати дозвільні CORS-заголовки)</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Найкраща практика:</strong> Для JSON API вимагай кастомний заголовок, наприклад <code>X-Requested-With: XMLHttpRequest</code>. Кастомні заголовки не можуть бути встановлені HTML-формами, тому їхня наявність доводить, що запит прийшов від JavaScript на твоєму сайті (або сайті, дозволеному твоєю CORS-політикою). Іноді це називають патерном "double-submit" для API.
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>Вплив CSRF:</strong> Захоплення акаунта (зміна email або пароля жертви), несанкціоновані грошові перекази, ескалація привілеїв (жертва додає атакуючого як адміна), зміна даних (видалення ресурсів, зміна налаштувань) та посилення соціальної інженерії (жертва публікує контент, який не писала).
+  </div>
+
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What is the primary purpose of a CSRF token?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">Encrypt form data in transit</button>
+        <button class="quiz-opt" data-q="1" data-val="b">Prove the request originated from the application's own form</button>
+        <button class="quiz-opt" data-q="1" data-val="c">Prevent SQL injection in form fields</button>
+        <button class="quiz-opt" data-q="1" data-val="d">Authenticate the user's identity</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>Which SameSite cookie value provides the strongest CSRF protection?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">None</button>
+        <button class="quiz-opt" data-q="2" data-val="b">Lax</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Strict</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Secure</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Which HTTP methods are most commonly targeted in CSRF attacks?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">GET and HEAD because they are idempotent</button>
+        <button class="quiz-opt" data-q="3" data-val="b">POST, PUT, and DELETE because they cause state changes</button>
+        <button class="quiz-opt" data-q="3" data-val="c">OPTIONS and TRACE because they bypass CORS</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Only PATCH because it allows partial updates</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab</h2>
+  <p>Practice CSRF vulnerabilities in a real Flask application:</p>
+  <div class="code-block">cd labs/csrf && docker compose up --build<br>Visit http://localhost:5006/</div>
+  <p class="text-muted">The lab contains 5 challenges covering token bypass, SameSite cookie abuse, JSON CSRF, Referer validation flaws, and login CSRF.</p>
+</section>

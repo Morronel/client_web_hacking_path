@@ -170,50 +170,60 @@ ${bodyHtml}
         {
           type: 'mc', id: 'q1',
           text: 'Which type of XSS is permanently stored on the server and affects every user who views the page?',
+          text_uk: 'Який тип XSS постійно зберігається на сервері та впливає на кожного користувача, що переглядає сторінку?',
           options: [
-            { value: 'a', label: 'Reflected XSS' },
-            { value: 'b', label: 'Stored XSS' },
-            { value: 'c', label: 'DOM-based XSS' },
-            { value: 'd', label: 'Self-XSS' }
+            { value: 'a', label: 'Reflected XSS', label_uk: 'Reflected XSS' },
+            { value: 'b', label: 'Stored XSS', label_uk: 'Stored XSS' },
+            { value: 'c', label: 'DOM-based XSS', label_uk: 'DOM-based XSS' },
+            { value: 'd', label: 'Self-XSS', label_uk: 'Self-XSS' }
           ],
           answer: 'b',
-          hint: 'The payload persists in the database and renders for all visitors.'
+          hint: 'The payload persists in the database and renders for all visitors.',
+          hint_uk: 'Пейлоад зберігається в базі даних та рендериться для всіх відвідувачів.'
         },
         {
           type: 'mc', id: 'q2',
           text: 'Which defense prevents JavaScript from reading session cookies?',
+          text_uk: 'Який захист запобігає читанню сесійних cookies через JavaScript?',
           options: [
-            { value: 'a', label: '<code>Secure</code> flag' },
-            { value: 'b', label: '<code>SameSite</code> attribute' },
-            { value: 'c', label: '<code>HttpOnly</code> flag' },
-            { value: 'd', label: 'Content-Security-Policy' }
+            { value: 'a', label: '<code>Secure</code> flag', label_uk: 'Прапорець <code>Secure</code>' },
+            { value: 'b', label: '<code>SameSite</code> attribute', label_uk: 'Атрибут <code>SameSite</code>' },
+            { value: 'c', label: '<code>HttpOnly</code> flag', label_uk: 'Прапорець <code>HttpOnly</code>' },
+            { value: 'd', label: 'Content-Security-Policy', label_uk: 'Content-Security-Policy' }
           ],
           answer: 'c',
-          hint: 'This flag makes the cookie invisible to document.cookie.'
+          hint: 'This flag makes the cookie invisible to document.cookie.',
+          hint_uk: 'Цей прапорець робить cookie невидимим для document.cookie.'
         },
         {
           type: 'mc', id: 'q3',
           text: 'In which context does the payload <code>" onfocus=alert(1) autofocus="</code> work?',
+          text_uk: 'В якому контексті працює пейлоад <code>" onfocus=alert(1) autofocus="</code>?',
           options: [
-            { value: 'a', label: 'HTML body context' },
-            { value: 'b', label: 'HTML attribute context' },
-            { value: 'c', label: 'JavaScript string context' },
-            { value: 'd', label: 'URL context' }
+            { value: 'a', label: 'HTML body context', label_uk: 'Контекст тіла HTML' },
+            { value: 'b', label: 'HTML attribute context', label_uk: 'Контекст HTML-атрибуту' },
+            { value: 'c', label: 'JavaScript string context', label_uk: 'Контекст рядка JavaScript' },
+            { value: 'd', label: 'URL context', label_uk: 'Контекст URL' }
           ],
           answer: 'b',
-          hint: 'The double-quote breaks out of an attribute value.'
+          hint: 'The double-quote breaks out of an attribute value.',
+          hint_uk: 'Подвійна лапка виривається зі значення атрибуту.'
         },
         {
           type: 'tf', id: 'q4',
           text: 'A Content Security Policy with <code>unsafe-inline</code> in the <code>script-src</code> directive effectively prevents XSS.',
+          text_uk: 'Content Security Policy з <code>unsafe-inline</code> у директиві <code>script-src</code> ефективно запобігає XSS.',
           answer: false,
-          hint: 'unsafe-inline is the opposite — it allows inline scripts, defeating CSP\'s purpose.'
+          hint: 'unsafe-inline is the opposite — it allows inline scripts, defeating CSP\'s purpose.',
+          hint_uk: 'unsafe-inline — це протилежність: він дозволяє інлайн-скрипти, зводячи нанівець призначення CSP.'
         },
         {
           type: 'tf', id: 'q5',
           text: 'DOM-based XSS can occur even when the malicious input never reaches the server.',
+          text_uk: 'DOM-based XSS може виникнути навіть коли шкідливе введення ніколи не потрапляє на сервер.',
           answer: true,
-          hint: 'DOM XSS happens entirely in client-side JavaScript (e.g., location.hash → innerHTML).'
+          hint: 'DOM XSS happens entirely in client-side JavaScript (e.g., location.hash → innerHTML).',
+          hint_uk: 'DOM XSS відбувається повністю в клієнтському JavaScript (наприклад, location.hash → innerHTML).'
         }
       ],
       flags: [

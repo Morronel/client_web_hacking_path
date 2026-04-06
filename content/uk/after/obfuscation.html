@@ -1,0 +1,211 @@
+<!-- Module: Obfuscation & WAF Evasion -->
+<h1>Обфускація та обхід WAF</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Гра в кота і мишку</h2>
+  <p>
+    Уяви: ти знайшов SQL injection вразливість. Формуєш пейлоад, відправляєш запит, і... сервер повертає <code>403 Forbidden</code>. Твій пейлоад заблоковано. Не самим додатком, а <strong>Web Application Firewall (WAF)</strong>, який стоїть перед ним і перевіряє кожен запит на наявність чогось підозрілого.
+  </p>
+  <p>
+    Обхід WAF — один із найкреативніших аспектів наступальної безпеки. Це постійна гонка озброєнь: вендори WAF додають нові правила виявлення, дослідники знаходять способи їх обійти, вендори оновлюють правила, дослідники знаходять нові обходи. Розуміння обходу WAF є критично важливим для пентестерів (бо реальні цілі мають WAF) та для захисників (бо знання того, як WAF можна обійти, допомагає не покладатися на нього як єдиний засіб захисту).
+  </p>
+
+  <h2>Що таке WAF?</h2>
+  <p>
+    <strong>Web Application Firewall (WAF)</strong> — це рівень безпеки, який стоїть між користувачами
+    та веб-додатком, перевіряючи HTTP-трафік і блокуючи запити, які відповідають відомим шаблонам атак.
+    Організації розгортають WAF, щоб додати рівень захисту від поширених веб-атак на кшталт SQL injection,
+    XSS та command injection.
+  </p>
+  <p>
+    Серед популярних WAF — Cloudflare, AWS WAF, ModSecurity, Imperva та Akamai. Хоча вони є цінними
+    інструментами захисту, <strong>вони не замінюють написання безпечного коду</strong>. WAF — це пластир, а не ліки. Якщо основна вразливість існує, достатньо кваліфікований зловмисник знайде спосіб обійти WAF.
+  </p>
+
+  <h2>Виявлення на основі сигнатур</h2>
+  <p>
+    Більшість WAF значною мірою покладаються на <strong>виявлення на основі сигнатур</strong> — вони підтримують
+    базу даних шаблонів (регулярні вирази, збіги рядків), що відповідають відомим пейлоадам атак. Коли
+    вхідний запит збігається із сигнатурою, WAF його блокує.
+  </p>
+
+  <pre><code class="language-plaintext">Example WAF rules (simplified):
+  Block if request contains: &lt;script
+  Block if request contains: ' OR 1=1
+  Block if request contains: UNION SELECT
+  Block if request contains: /etc/passwd</code></pre>
+
+  <p>
+    Фундаментальна слабкість виявлення на основі сигнатур полягає в тому, що воно може зловити лише те, про що знає.
+    Трансформуючи синтаксис пейлоаду без зміни його семантики, зловмисник може обійти сигнатури.
+  </p>
+
+  <h2>Поширені техніки обходу</h2>
+
+  <h3>1. Варіація регістру</h3>
+  <p>
+    Багато фільтрів відповідають конкретному регістру. Оскільки HTML та SQL здебільшого нечутливі
+    до регістру, змішування регістру може обійти примітивні фільтри:
+  </p>
+  <pre><code class="language-plaintext">Blocked:  &lt;script&gt;alert(1)&lt;/script&gt;
+Bypass:   &lt;ScRiPt&gt;alert(1)&lt;/ScRiPt&gt;
+
+Blocked:  UNION SELECT
+Bypass:   uNiOn SeLeCt</code></pre>
+
+  <h3>2. URL-кодування</h3>
+  <p>
+    Кодування символів у їх відсоткові еквіваленти. Якщо WAF перевіряє до того, як сервер декодує,
+    пейлоад проскакує:
+  </p>
+  <pre><code class="language-plaintext">Blocked:  &lt;script&gt;
+Encoded:  %3Cscript%3E</code></pre>
+
+  <h3>3. Кодування HTML-сутностями</h3>
+  <p>
+    У HTML-контексті символи, закодовані сутностями, декодуються браузером:
+  </p>
+  <pre><code class="language-plaintext">Blocked:  &lt;img src=x onerror=alert(1)&gt;
+Encoded:  &lt;img src=x onerror=&#97;&#108;&#101;&#114;&#116;(1)&gt;</code></pre>
+
+  <h3>4. Вставка SQL-коментарів</h3>
+  <p>
+    SQL дозволяє вбудовані коментарі (<code>/*...*/</code>) всюди, де допустимі пробіли. Вставка коментарів
+    розбиває ключові слова, які шукає WAF:
+  </p>
+  <pre><code class="language-sql">Blocked:  UNION SELECT * FROM users
+Bypass:   UN/**/ION SEL/**/ECT * FROM users</code></pre>
+
+  <h3>5. Подвійне кодування</h3>
+  <p>
+    Якщо WAF декодує один раз, а потім передає запит додатку, який декодує повторно,
+    подвійне кодування може обійти фільтр:
+  </p>
+  <pre><code class="language-plaintext">Original:        &lt;
+Single encoded:  %3C
+Double encoded:  %253C  (the % is encoded as %25)</code></pre>
+
+  <h3>6. Нормалізація Unicode</h3>
+  <p>
+    Деякі додатки нормалізують символи Unicode до їх ASCII-еквівалентів після перевірки WAF.
+    Використання Unicode-двійників може обійти фільтри:
+  </p>
+  <pre><code class="language-plaintext">Normal:    &lt;script&gt;
+Unicode:   ＜script＞  (using fullwidth characters)</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Етичний контекст:</strong> Техніки обходу WAF слід використовувати лише під час <strong>авторизованого
+    pentest</strong> або bug bounty програм, де ти маєш явний дозвіл. Використання цих
+    технік проти систем, які тобі не належать і на тестування яких у тебе немає дозволу, є незаконним та неетичним.
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Перспектива захисту:</strong> Розуміння технік обходу є критично важливим для побудови кращого
+    захисту. Розробники не повинні покладатися лише на WAF — завжди валідуй та санітизуй вхідні дані на
+    рівні додатку, використовуй параметризовані запити та впроваджуй Content Security Policy.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Payload Obfuscator Workbench
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Payload Obfuscator Workbench
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Enter a payload and apply 3 different obfuscation techniques to see how each
+    one transforms the input. This demonstrates how the same payload can look completely different
+    to a signature-based WAF.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you applied 3 different obfuscation techniques!</div>
+
+  <div class="input-group">
+    <label>Payload Input</label>
+    <input class="input-field" type="text" id="obf-input" placeholder="e.g. <script>alert(1)</script> or ' OR 1=1--" />
+  </div>
+
+  <div class="input-group">
+    <label>Obfuscation Technique</label>
+    <div class="encoder-toggle" id="obf-toggles">
+      <button class="btn btn-secondary active" data-tech="case">Case Variation</button>
+      <button class="btn btn-secondary" data-tech="url">URL Encode</button>
+      <button class="btn btn-secondary" data-tech="html">HTML Entities</button>
+      <button class="btn btn-secondary" data-tech="sqlcomment">SQL Comment Insertion</button>
+      <button class="btn btn-secondary" data-tech="double">Double Encode</button>
+    </div>
+  </div>
+
+  <div class="flex gap-sm" style="margin-top:0.5rem;">
+    <button class="btn btn-primary" id="obf-apply">Apply Technique</button>
+  </div>
+
+  <div class="input-group" style="margin-top:1rem;">
+    <label>Obfuscated Output</label>
+    <textarea class="query-input" id="obf-output" rows="3" readonly placeholder="Transformed payload will appear here..."></textarea>
+  </div>
+
+  <div id="obf-progress" class="text-muted" style="margin-top:0.5rem;">Techniques applied: 0 / 3</div>
+</div>
+
+<!-- ============================================
+     LAB 2: WAF Evasion Knowledge Quiz
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> WAF Evasion Knowledge Quiz
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 2 out of 3 questions correctly about WAF evasion concepts.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Lab complete — you understand WAF evasion concepts!</div>
+
+  <div id="quiz2-container">
+    <!-- Question 1 -->
+    <div class="quiz-question" id="waf-q1">
+      <p><strong>1. Why does case variation bypass some WAFs?</strong></p>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="a"> Because HTML and SQL are case-insensitive but some filters match exact case</label>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="b"> Because browsers ignore uppercase letters</label>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="c"> Because servers cannot process mixed case</label>
+      <label class="quiz-option"><input type="radio" name="waf-q1" value="d"> Because WAFs only scan lowercase traffic</label>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question" id="waf-q2">
+      <p><strong>2. What does double encoding exploit?</strong></p>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="a"> A buffer overflow in the WAF</label>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="b"> The WAF decoding once while the application decodes again</label>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="c"> The browser rendering HTML twice</label>
+      <label class="quiz-option"><input type="radio" name="waf-q2" value="d"> DNS resolution timing differences</label>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question" id="waf-q3">
+      <p><strong>3. How do SQL inline comments help bypass WAFs?</strong></p>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="a"> They encrypt the SQL query</label>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="b"> They break up keywords so signature patterns no longer match</label>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="c"> They make the query run faster</label>
+      <label class="quiz-option"><input type="radio" name="waf-q3" value="d"> They hide the query from the database</label>
+    </div>
+  </div>
+
+  <div id="quiz2-result" class="quiz-result" style="display:none;"></div>
+
+  <div class="flex gap-sm" style="margin-top:1rem;">
+    <button class="btn btn-primary" id="quiz2-submit">Submit Answers</button>
+    <button class="btn btn-secondary" id="quiz2-reset" style="display:none;">Try Again</button>
+  </div>
+</div>

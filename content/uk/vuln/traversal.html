@@ -1,0 +1,161 @@
+<section class="module-header">
+  <h1>Модуль 19 — Path Traversal</h1>
+  <p>Дізнайся, як атакуючі виходять за межі дозволених директорій, щоб читати довільні файли на сервері.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Втеча з пісочниці</h2>
+  <p>
+    Path traversal — це красиво у своїй простоті. Додаток віддає файли з певної директорії — скажімо, <code>/app/documents/public/</code>. Користувачі запитують файли за назвою: <code>/view?file=report.pdf</code>. Сервер конкатенує ім'я файлу до базового шляху і відкриває файл. Просто, так?
+  </p>
+  <p>
+    А що станеться, коли користувач запросить <code>/view?file=../../../etc/passwd</code>? Сервер побудує шлях <code>/app/documents/public/../../../etc/passwd</code>. Операційна система обробить послідовності <code>../</code>, піднімаючись на три рівні директорій вгору, і опиниться на <code>/etc/passwd</code>. Атакуючий щойно прочитав файл, до якого ніколи не повинен був мати доступ.
+  </p>
+  <p>
+    Це і є path traversal (також відомий як directory traversal або dot-dot-slash атаки). Він експлуатує простий факт: <code>../</code> означає "піднятися на одну директорію вгору" у будь-якій операційній системі, і багато додатків не перевіряють, що підсумковий шлях залишається в межах дозволеної директорії.
+  </p>
+
+  <h2>Вразливий патерн</h2>
+  <h3 class="text-red">Вразливий код</h3>
+  <pre><code class="language-python">@app.route('/view')
+def view():
+    filename = request.args.get('file')
+    # DANGEROUS: user controls the filename, can use ../ to escape
+    with open(f'documents/public/{filename}') as f:
+        return f.read()
+
+# Normal:  /view?file=report.pdf  → opens documents/public/report.pdf
+# Attack:  /view?file=../../../etc/passwd → opens /etc/passwd</code></pre>
+
+  <h3 class="text-green">Безпечний код</h3>
+  <pre><code class="language-python">import os
+
+@app.route('/view')
+def view():
+    filename = request.args.get('file')
+    # Step 1: Strip any path components — only keep the filename
+    safe_name = os.path.basename(filename)
+    # Step 2: Construct the full path
+    full_path = os.path.join('documents/public', safe_name)
+    # Step 3: Resolve symlinks and verify the path is still within bounds
+    real_path = os.path.realpath(full_path)
+    if not real_path.startswith(os.path.realpath('documents/public')):
+        abort(403)
+    with open(real_path) as f:
+        return f.read()</code></pre>
+
+  <p>
+    Безпечна версія робить три речі: (1) <code>os.path.basename()</code> відкидає всі компоненти шляху — <code>../../../etc/passwd</code> стає просто <code>passwd</code>. (2) <code>os.path.realpath()</code> резолвить будь-які символічні посилання або залишкові послідовності <code>../</code>. (3) Перевірка <code>startswith()</code> підтверджує, що фінальний шлях все ще знаходиться в дозволеній директорії.
+  </p>
+
+  <h2>Техніки обходу traversal-фільтрів</h2>
+  <p>
+    Розробники часто намагаються блокувати <code>../</code> простою заміною рядка. Це майже завжди можна обійти:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Пейлоад</th><th>Як це працює</th><th>Що обходить</th></tr></thead>
+      <tbody>
+        <tr><td><code>../</code></td><td>Базовий підйом на рівень вгору</td><td>Без фільтрів</td></tr>
+        <tr><td><code>....//</code></td><td>Після одноразового видалення <code>../</code> стає <code>../</code></td><td>Однопрохідна заміна рядка</td></tr>
+        <tr><td><code>..././</code></td><td>Той самий трюк, інше розташування</td><td>Однопрохідна заміна</td></tr>
+        <tr><td><code>%2e%2e%2f</code></td><td>URL-закодований <code>../</code></td><td>Валідація до URL-декодування</td></tr>
+        <tr><td><code>..%252f</code></td><td>Подвійне URL-кодування (<code>%25</code> = <code>%</code>)</td><td>Одноразове декодування + перевірка</td></tr>
+        <tr><td><code>%00</code></td><td>Null byte — обрізає рядок у C-мовах</td><td>Додавання розширення (<code>.pdf</code>)</td></tr>
+        <tr><td><code>..\/</code></td><td>Зворотний слеш — Windows трактує і <code>/</code>, і <code>\</code> як роздільники</td><td>Фільтри, що перевіряють лише <code>/</code></td></tr>
+        <tr><td><code>..%5c</code></td><td>URL-закодований зворотний слеш</td><td>Windows + URL-декодування</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Трюк з Null Byte:</strong> У старіших версіях PHP, Java та інших рантаймах на базі C, null byte (<code>%00</code>) обрізав рядок. Тобто якщо сервер додає <code>.pdf</code> до імені файлу: <code>../../../etc/passwd%00.pdf</code> → ОС бачить <code>../../../etc/passwd</code> (null byte відрізає решту). Сучасні рантайми це здебільшого виправили, але трюк все ще зустрічається у CTF та старих системах.
+  </div>
+
+  <h2>Цільові файли високої цінності</h2>
+  <p>Коли ти підтвердив path traversal, ось файли, за якими варто йти:</p>
+
+  <pre><code class="language-bash"># === Linux ===
+/etc/passwd              # User accounts (always readable, confirms traversal)
+/etc/shadow              # Password hashes (requires root)
+/proc/self/environ       # Environment variables — often contains API keys, secrets
+/proc/self/cmdline       # How the process was started
+/app/.env                # Application secrets (DB credentials, API keys)
+/app/config/database.yml # Rails database config
+~/.ssh/id_rsa            # SSH private key
+~/.bash_history          # Command history
+
+# === Windows ===
+C:\Windows\win.ini       # Always exists, confirms traversal
+C:\Windows\system.ini
+C:\inetpub\wwwroot\web.config   # IIS configuration with connection strings
+C:\Users\Administrator\.ssh\id_rsa</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Порада профі:</strong> <code>/proc/self/environ</code> — це золота жила на Linux. Він містить усі змінні оточення поточного процесу, які в сучасних деплоях часто включають паролі баз даних, API-ключі, JWT-секрети та хмарні креденшали. Якщо ти можеш прочитати цей файл, у тебе, ймовірно, достатньо для повної компрометації додатка.
+  </div>
+
+  <h2>Path Traversal за межами читання файлів</h2>
+  <p>
+    Читання файлів — це найпоширеніший вплив, але path traversal може бути ще небезпечнішим у поєднанні з іншими функціями:
+  </p>
+  <ul>
+    <li><strong>Запис файлів + traversal:</strong> якщо додаток дозволяє завантажувати/записувати файли і має вразливість traversal, ти можеш записати вебшелл у кореневу директорію веб-сервера</li>
+    <li><strong>Отруєння логів:</strong> впровадь PHP-код у лог-файл через спеціально сформований заголовок User-Agent, потім використай traversal для підключення лог-файлу через вразливість Local File Inclusion (LFI)</li>
+    <li><strong>Розкриття вихідного коду:</strong> прочитай вихідний код додатка, щоб знайти захардкоджені креденшали, інші вразливості або вади бізнес-логіки</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <strong>Вплив:</strong> Path traversal розкриває вихідний код, конфігураційні файли, креденшали, API-ключі, SSH-ключі та секрети оточення. У поєднанні з завантаженням файлів або ін'єкцією у логи може ескалюватися до Remote Code Execution. OWASP оцінює це як вразливість високої серйозності.
+  </div>
+
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What is the primary sequence used in path traversal attacks?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a"><code>./</code> (current directory)</button>
+        <button class="quiz-opt" data-q="1" data-val="b"><code>../</code> (parent directory)</button>
+        <button class="quiz-opt" data-q="1" data-val="c"><code>~/</code> (home directory)</button>
+        <button class="quiz-opt" data-q="1" data-val="d"><code>*</code> (glob wildcard)</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>How did null byte injection (<code>%00</code>) historically bypass file extension appending?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">It corrupted the file header</button>
+        <button class="quiz-opt" data-q="2" data-val="b">It changed the Content-Type</button>
+        <button class="quiz-opt" data-q="2" data-val="c">C string functions treated it as the end of the string, truncating the appended extension</button>
+        <button class="quiz-opt" data-q="2" data-val="d">It encoded the extension in base64</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>Which Python approach best prevents path traversal?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Removing <code>../</code> with <code>str.replace()</code></button>
+        <button class="quiz-opt" data-q="3" data-val="b">Checking if the path contains <code>..</code></button>
+        <button class="quiz-opt" data-q="3" data-val="c">Blocking <code>/</code> characters</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Using <code>os.path.basename()</code> + <code>os.path.realpath()</code> with a directory whitelist check</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonDocs</h2>
+  <p>Practice path traversal in a corporate document viewer with 5 challenges:</p>
+  <div class="code-block">cd labs/traversal && docker compose up --build<br>Visit http://localhost:5009/</div>
+  <p class="text-muted">Challenges cover basic traversal, null byte bypass, double-encoding, filter evasion, and whitelist bypass.</p>
+</section>

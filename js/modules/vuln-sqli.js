@@ -421,48 +421,57 @@ window.vulnSqli = (() => {
         {
           type: 'mc', id: 'q1',
           text: 'What is the root cause of SQL injection?',
+          text_uk: 'Яка основна причина SQL injection?',
           options: [
-            { value: 'a', label: 'Using SQL databases instead of NoSQL' },
-            { value: 'b', label: 'User input concatenated directly into SQL query strings' },
-            { value: 'c', label: 'Not using HTTPS' },
-            { value: 'd', label: 'Running the database on the same server as the application' }
+            { value: 'a', label: 'Using SQL databases instead of NoSQL', label_uk: 'Використання SQL баз даних замість NoSQL' },
+            { value: 'b', label: 'User input concatenated directly into SQL query strings', label_uk: 'Введення користувача конкатенується напряму в рядки SQL-запитів' },
+            { value: 'c', label: 'Not using HTTPS', label_uk: 'Невикористання HTTPS' },
+            { value: 'd', label: 'Running the database on the same server as the application', label_uk: 'Запуск бази даних на тому ж сервері, що й додаток' }
           ],
           answer: 'b',
-          hint: 'The database cannot distinguish code from data when they are mixed together.'
+          hint: 'The database cannot distinguish code from data when they are mixed together.',
+          hint_uk: 'База даних не може відрізнити код від даних, коли вони змішані.'
         },
         {
           type: 'mc', id: 'q2',
           text: 'In a UNION-based attack, what must match between the original and injected SELECT?',
+          text_uk: 'В атаці на базі UNION, що повинно збігатися між оригінальним та впровадженим SELECT?',
           options: [
-            { value: 'a', label: 'The table names' },
-            { value: 'b', label: 'The number of columns' },
-            { value: 'c', label: 'The database user' },
-            { value: 'd', label: 'The WHERE clause' }
+            { value: 'a', label: 'The table names', label_uk: 'Назви таблиць' },
+            { value: 'b', label: 'The number of columns', label_uk: 'Кількість стовпців' },
+            { value: 'c', label: 'The database user', label_uk: 'Користувач бази даних' },
+            { value: 'd', label: 'The WHERE clause', label_uk: 'Умова WHERE' }
           ],
           answer: 'b',
-          hint: 'UNION requires both queries to return the same number of columns.'
+          hint: 'UNION requires both queries to return the same number of columns.',
+          hint_uk: 'UNION вимагає, щоб обидва запити повертали однакову кількість стовпців.'
         },
         {
           type: 'mc', id: 'q3',
           text: 'Which SQLite table reveals all table names in the database?',
+          text_uk: 'Яка таблиця SQLite розкриває всі назви таблиць у базі даних?',
           options: [
-            { value: 'a', label: '<code>information_schema.tables</code>' },
-            { value: 'b', label: '<code>sys.tables</code>' },
-            { value: 'c', label: '<code>sqlite_master</code>' },
-            { value: 'd', label: '<code>pg_catalog.pg_tables</code>' }
+            { value: 'a', label: '<code>information_schema.tables</code>', label_uk: '<code>information_schema.tables</code>' },
+            { value: 'b', label: '<code>sys.tables</code>', label_uk: '<code>sys.tables</code>' },
+            { value: 'c', label: '<code>sqlite_master</code>', label_uk: '<code>sqlite_master</code>' },
+            { value: 'd', label: '<code>pg_catalog.pg_tables</code>', label_uk: '<code>pg_catalog.pg_tables</code>' }
           ],
           answer: 'c',
-          hint: 'This is specific to SQLite — other databases use information_schema.'
+          hint: 'This is specific to SQLite — other databases use information_schema.',
+          hint_uk: 'Це специфічно для SQLite — інші бази даних використовують information_schema.'
         },
         {
           type: 'tf', id: 'q4',
           text: 'Blind SQL injection is useless because you cannot see the query results.',
+          text_uk: 'Blind SQL injection є марною, бо ти не бачиш результатів запиту.',
           answer: false,
-          hint: 'Blind SQLi extracts data one bit at a time through boolean or timing side channels.'
+          hint: 'Blind SQLi extracts data one bit at a time through boolean or timing side channels.',
+          hint_uk: 'Blind SQLi витягує дані по одному біту через boolean або часові побічні канали.'
         },
         {
           type: 'tf', id: 'q5',
           text: 'Parameterized queries (prepared statements) prevent SQL injection by separating SQL structure from user data.',
+          text_uk: 'Параметризовані запити (prepared statements) запобігають SQL injection, розділяючи структуру SQL та дані користувача.',
           answer: true
         }
       ],

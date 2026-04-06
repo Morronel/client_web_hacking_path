@@ -1,0 +1,219 @@
+<!-- Module: Web Reconnaissance & Bug Bounty -->
+<h1>Веб-розвідка та Bug Bounty</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Перш ніж хакати — потрібно зрозуміти</h2>
+  <p>
+    Розвідка — це найважливіша фаза будь-якої оцінки безпеки, і саме цю фазу більшість початківців пропускає. Вони одразу кидаються запускати сканери вразливостей і закидати пейлоадами форми логіну. Досвідчені тестувальники витрачають <strong>50–70% свого часу на розвідку</strong>, перш ніж спробувати хоча б один експлойт. Чому? Тому що чим більше ти знаєш про свою ціль, тим більше поверхні атаки знаходиш, і тим точнішими (та успішнішими) стають твої атаки.
+  </p>
+  <p>
+    У bug bounty програмах розвідка часто є різницею між знаходженням дублікатів відомих проблем та відкриттям унікальних вразливостей високої критичності. Баги, що ховаються на забутих субдоменах, старих версіях API та неправильно сконфігурованих сервісах — це ті, що приносять найкращі баунті — і знайти їх можна лише через ретельну розвідку.
+  </p>
+
+  <h2>Пасивна розвідка</h2>
+  <p>
+    Пасивна розвідка збирає інформацію про ціль <strong>без прямої взаємодії</strong> з їхніми
+    системами. Це робить її невиявленою, і вона завжди є першою фазою будь-якої оцінки безпеки.
+  </p>
+
+  <h3>WHOIS-запити</h3>
+  <p>
+    Записи WHOIS розкривають деталі реєстрації домену, включаючи організацію-реєстранта, дату реєстрації,
+    серверів імен та іноді контактну інформацію. Використовуй <code>whois example.com</code> або онлайн-інструменти.
+  </p>
+
+  <h3>DNS-записи</h3>
+  <p>
+    DNS-записи відображають інфраструктуру цілі. Основні типи записів:
+  </p>
+  <div class="panel">
+    <table>
+      <thead>
+        <tr><th>Запис</th><th>Призначення</th><th>Значення для безпеки</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>A / AAAA</strong></td><td>Прив'язує домен до IP</td><td>Розкриває хостинг-провайдера, сусідні сайти</td></tr>
+        <tr><td><strong>MX</strong></td><td>Поштовий сервер</td><td>Поштова інфраструктура, потенційні цілі для фішингу</td></tr>
+        <tr><td><strong>TXT</strong></td><td>Верифікація, SPF, DKIM</td><td>Може розкрити сторонні сервіси</td></tr>
+        <tr><td><strong>CNAME</strong></td><td>Аліас на інший домен</td><td>Можливості для subdomain takeover</td></tr>
+        <tr><td><strong>NS</strong></td><td>Сервери імен</td><td>DNS-провайдер, потенціал zone transfer</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Wayback Machine</h3>
+  <p>
+    Wayback Machine від Internet Archive (<code>web.archive.org</code>) зберігає історичні знімки вебсайтів.
+    Старі версії можуть розкрити ендпоінти, облікові дані у JavaScript-файлах або застарілу функціональність,
+    яка все ще доступна на живому сайті.
+  </p>
+
+  <h3>Google Dorks</h3>
+  <p>
+    Google dorking використовує розширені оператори пошуку для знаходження конфіденційної інформації, проіндексованої Google:
+  </p>
+  <pre><code class="language-plaintext">site:example.com filetype:pdf          — PDF files on the target
+site:example.com inurl:admin            — Admin pages
+site:example.com intitle:"index of"     — Directory listings
+site:example.com ext:sql | ext:env      — Database dumps or env files
+inurl:"/wp-content/debug.log"           — WordPress debug logs</code></pre>
+
+  <h3>Certificate Transparency</h3>
+  <p>
+    Логи Certificate Transparency (CT) записують кожен виданий SSL/TLS-сертифікат. Інструменти на кшталт
+    <code>crt.sh</code> дозволяють шукати у CT-логах, щоб виявити субдомени, для яких були видані сертифікати,
+    навіть якщо вони ніде публічно не згадуються.
+  </p>
+
+  <h2>Активна розвідка</h2>
+  <p>
+    Активна розвідка передбачає пряму взаємодію з ціллю. Вона піддається виявленню і має виконуватися
+    лише в межах авторизованого scope.
+  </p>
+
+  <h3>Перелічення субдоменів</h3>
+  <p>
+    Виявлення субдоменів розкриває поверхню атаки цілі. Техніки включають DNS brute-forcing
+    (перебір поширених імен субдоменів), скрапінг результатів пошукових систем та запити до CT-логів. Інструменти:
+    <code>subfinder</code>, <code>amass</code>, <code>knockpy</code>.
+  </p>
+
+  <h3>Brute-force директорій</h3>
+  <p>
+    Виявлення прихованих шляхів і файлів на веб-сервері шляхом перебору поширених імен файлів та директорій.
+    Інструменти: <code>gobuster</code>, <code>feroxbuster</code>, <code>dirsearch</code>.
+  </p>
+
+  <h3>Фінгерпринтинг технологій</h3>
+  <p>
+    Ідентифікація технологій, що працюють на цілі (веб-сервер, фреймворк, CMS, JavaScript-бібліотеки),
+    допомагає звузити коло потенційних вразливостей. Інструменти: <code>Wappalyzer</code>, <code>WhatWeb</code>,
+    <code>BuiltWith</code>.
+  </p>
+
+  <h2>Методологія Bug Bounty</h2>
+
+  <h3>Аналіз Scope</h3>
+  <p>
+    Завжди починай із уважного читання scope програми. Розберися, які домени, субдомени та
+    типи вразливостей входять до scope. Тестування поза scope може призвести до юридичних наслідків та бану в програмі.
+  </p>
+
+  <h3>Пріоритизація цілей</h3>
+  <p>
+    Зосередь свої зусилля на найцінніших цілях:
+  </p>
+  <ul>
+    <li><strong>Нещодавно доданий scope</strong> — менша ймовірність, що його вже протестували інші</li>
+    <li><strong>Старі/legacy-додатки</strong> — можуть мати слабші засоби захисту</li>
+    <li><strong>Функції з великою кількістю вводу</strong> — пошук, форми, завантаження файлів, API</li>
+    <li><strong>Потоки автентифікації та авторизації</strong> — логін, скидання пароля, рольовий доступ</li>
+    <li><strong>Сторонні інтеграції</strong> — часто забувають перевіряти під час аудитів безпеки</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <strong>Порада щодо bug bounty:</strong> Найкращі мисливці за баунті не просто запускають автоматичні сканери.
+    Вони розуміють бізнес-логіку додатку і шукають помилки у тому, як функції взаємодіють між собою.
+    Ручне тестування з глибоким розумінням додатку майже завжди дає знахідки з вищим впливом.
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Юридичне нагадування:</strong> Проводь розвідку лише проти цілей, де ти маєш явний
+    дозвіл. Bug bounty програми визначають, що входить до scope — поважай ці межі.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Google Dork Builder
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Google Dork Builder
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Build 3 valid Google dork queries by selecting operators and filling in values.
+    Each dork must use at least one operator with a non-empty value.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you built 3 Google dork queries!</div>
+
+  <div class="input-group">
+    <label>Select Operator</label>
+    <div class="encoder-toggle" id="dork-toggles">
+      <button class="btn btn-secondary active" data-op="site:">site:</button>
+      <button class="btn btn-secondary" data-op="inurl:">inurl:</button>
+      <button class="btn btn-secondary" data-op="filetype:">filetype:</button>
+      <button class="btn btn-secondary" data-op="intitle:">intitle:</button>
+      <button class="btn btn-secondary" data-op="intext:">intext:</button>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label>Value</label>
+    <input class="input-field" type="text" id="dork-value" placeholder='e.g. example.com, admin, pdf, "login page"' />
+  </div>
+
+  <div class="flex gap-sm">
+    <button class="btn btn-secondary" id="dork-add">Add to Query</button>
+    <button class="btn btn-primary" id="dork-save">Save Dork</button>
+    <button class="btn btn-secondary" id="dork-clear">Clear</button>
+  </div>
+
+  <div class="input-group" style="margin-top:1rem;">
+    <label>Current Query</label>
+    <input class="input-field" type="text" id="dork-query" readonly placeholder="Your dork query will build here..." />
+  </div>
+
+  <div style="margin-top:1rem;">
+    <label><strong>Saved Dorks</strong></label>
+    <div id="dork-list" class="panel" style="min-height:60px;">
+      <p class="text-muted">No dorks saved yet.</p>
+    </div>
+  </div>
+
+  <div id="dork-progress" class="text-muted" style="margin-top:0.5rem;">Dorks saved: 0 / 3</div>
+</div>
+
+<!-- ============================================
+     LAB 2: Subdomain Enumeration Simulator
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> Subdomain Enumeration Simulator
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Enumerate subdomains of <code>example.com</code>. Type subdomain guesses
+    and the simulated server will respond with whether each one exists. Find at least 4 out of
+    8 hidden valid subdomains to complete.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Lab complete — you discovered enough subdomains!</div>
+
+  <div class="input-group">
+    <label>Enter subdomain (without .example.com)</label>
+    <div class="flex gap-sm">
+      <input class="input-field" type="text" id="subdomain-input" placeholder="e.g. admin, dev, staging..." />
+      <button class="btn btn-primary" id="subdomain-check">Check</button>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;">
+    <label><strong>Enumeration Results</strong></label>
+    <div id="subdomain-results" class="panel" style="min-height:80px; max-height:300px; overflow-y:auto;">
+      <p class="text-muted">No subdomains checked yet.</p>
+    </div>
+  </div>
+
+  <div id="subdomain-progress" class="text-muted" style="margin-top:0.5rem;">Valid subdomains found: 0 / 4</div>
+</div>

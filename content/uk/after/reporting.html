@@ -1,0 +1,251 @@
+<!-- Module: Reporting & Responsible Disclosure -->
+<h1>Звітування та відповідальне розкриття</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Навичка, якій ніхто не вчить (але яка потрібна кожному)</h2>
+  <p>
+    Ось незручна правда: <strong>знайти вразливість — це лише половина справи</strong>. Друга половина — і, мабуть, навіть важливіша — це описати знахідку настільки зрозуміло, щоб хтось міг її зрозуміти, відтворити та виправити. Блискучий експлойт із поганою документацією — це даремно витрачені зусилля.
+  </p>
+  <p>
+    У bug bounty програмах якість звіту напряму впливає на твою виплату. Команди тріажу на HackerOne та Bugcrowd обробляють сотні звітів щодня. Чіткий, добре структурований звіт із покроковою інструкцією для відтворення проходить тріаж за кілька годин і приносить баунті. Розпливчастий звіт на кшталт "Я знайшов SQLi на вашому сайті" без доказів отримує позначку "Потрібна додаткова інформація" або його просто закривають. Та сама вразливість — зовсім різні результати.
+  </p>
+  <p>
+    У професійному pentest твій звіт І Є кінцевим продуктом. Клієнт платить не за те, щоб ти зламав його систему — він платить за документ, який пояснює, що зламано і як це виправити. Якщо твій звіт заплутаний або неповний, проєкт провалений незалежно від того, скільки вразливостей ти знайшов.
+  </p>
+
+  <h2>Написання звітів про вразливості</h2>
+  <p>
+    Добре написаний звіт про вразливість — це різниця між тим, чи проблему безпеки виправлять швидко,
+    чи вона буде роками пилитися у беклозі. Незалежно від того, подаєш ти звіт у bug bounty програму чи
+    координуєшся безпосередньо з вендором, якість твого звіту визначає його вплив.
+  </p>
+
+  <h3>Обов'язкові компоненти звіту</h3>
+  <p>Кожен звіт про вразливість повинен містити такі ключові розділи:</p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Розділ</th>
+          <th>Опис</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Назва</strong></td>
+          <td>Стисла, описова назва, що визначає тип вразливості та уражений компонент (наприклад, "Stored XSS in User Profile Bio Field")</td>
+        </tr>
+        <tr>
+          <td><strong>Критичність</strong></td>
+          <td>Оцінка рівня критичності за CVSS або системою рейтингу програми</td>
+        </tr>
+        <tr>
+          <td><strong>Опис</strong></td>
+          <td>Зрозуміле пояснення того, що це за вразливість, де вона знаходиться та чому це важливо</td>
+        </tr>
+        <tr>
+          <td><strong>Кроки для відтворення</strong></td>
+          <td>Пронумеровані, точні кроки, які дозволяють будь-кому відтворити проблему — це найважливіший розділ</td>
+        </tr>
+        <tr>
+          <td><strong>Вплив</strong></td>
+          <td>Що зловмисник може отримати, експлуатуючи цю вразливість (крадіжка даних, захоплення акаунту тощо)</td>
+        </tr>
+        <tr>
+          <td><strong>Рекомендації щодо виправлення</strong></td>
+          <td>Запропоновані виправлення або пом'якшення (валідація вводу, параметризовані запити, CSP заголовки тощо)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Порада:</strong> Завжди додавай скриншоти, пари HTTP-запит/відповідь або відеозаписи,
+    коли це можливо. Візуальні докази роблять твій звіт значно переконливішим і простішим для тріажу.
+  </div>
+
+  <h2>Основи оцінки CVSS</h2>
+  <p>
+    <strong>Common Vulnerability Scoring System (CVSS)</strong> — це галузевий стандарт для
+    оцінки критичності вразливостей. Він дає оцінку від 0.0 до 10.0 на основі кількох метрик:
+  </p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Діапазон оцінок</th>
+          <th>Рейтинг</th>
+          <th>Приклад</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0.0</td>
+          <td>None</td>
+          <td>Інформаційна знахідка</td>
+        </tr>
+        <tr>
+          <td>0.1 – 3.9</td>
+          <td>Low</td>
+          <td>Розкриття інформації з обмеженим впливом</td>
+        </tr>
+        <tr>
+          <td>4.0 – 6.9</td>
+          <td>Medium</td>
+          <td>Reflected XSS, що потребує взаємодії користувача</td>
+        </tr>
+        <tr>
+          <td>7.0 – 8.9</td>
+          <td>High</td>
+          <td>SQL injection з ексфільтрацією даних</td>
+        </tr>
+        <tr>
+          <td>9.0 – 10.0</td>
+          <td>Critical</td>
+          <td>Віддалене виконання коду без автентифікації</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    CVSS враховує такі фактори, як <strong>Attack Vector</strong> (мережа, суміжний, локальний, фізичний),
+    <strong>Attack Complexity</strong> (низька, висока), <strong>Privileges Required</strong> (немає, низькі, високі),
+    <strong>User Interaction</strong> (немає, потрібна), а також вплив на <strong>конфіденційність</strong>,
+    <strong>цілісність</strong> та <strong>доступність</strong>.
+  </p>
+
+  <div class="callout callout-warning">
+    <strong>Важливо:</strong> Не плутай CVSS з CVE та CWE. <strong>CVE</strong> (Common Vulnerabilities
+    and Exposures) — це система ідентифікаторів відомих вразливостей. <strong>CWE</strong> (Common Weakness
+    Enumeration) категоризує типи програмних слабкостей. <strong>CVSS</strong> — це система оцінки критичності.
+  </div>
+
+  <h2>Відповідальне розкриття</h2>
+  <p>
+    Відповідальне розкриття (також називають координоване розкриття) — це практика приватного повідомлення
+    про вразливості ураженому вендору з наданням розумного терміну для розробки та випуску виправлення
+    перед будь-яким публічним розкриттям.
+  </p>
+
+  <h3>90-денний стандарт</h3>
+  <p>
+    Загальноприйнятий стандарт, популяризований Google Project Zero, — це <strong>90-денний дедлайн
+    розкриття</strong>. Після повідомлення вендору про вразливість:
+  </p>
+  <ul>
+    <li>Вендор має 90 днів на розробку, тестування та випуск патчу</li>
+    <li>Якщо вендор випускає патч вчасно, розкриття відбувається після виходу патчу</li>
+    <li>Якщо вендор не встигає випустити патч за 90 днів, дослідник може публічно розкрити вразливість</li>
+    <li>Продовження терміну (зазвичай на 14 днів) може бути надано, якщо патч ось-ось вийде</li>
+  </ul>
+
+  <h3>Процес координованого розкриття</h3>
+  <ol>
+    <li><strong>Виявлення:</strong> Ти знаходиш вразливість під час авторизованого тестування</li>
+    <li><strong>Звіт:</strong> Ти приватно повідомляєш вендора через їхній контакт безпеки або bug bounty програму</li>
+    <li><strong>Підтвердження:</strong> Вендор підтверджує отримання (в ідеалі протягом 1–3 робочих днів)</li>
+    <li><strong>Виправлення:</strong> Вендор розробляє та тестує виправлення</li>
+    <li><strong>Розкриття:</strong> Після розгортання виправлення (або закінчення дедлайну) деталі можуть бути опубліковані</li>
+  </ol>
+
+  <h2>Найкращі практики звітів у Bug Bounty</h2>
+  <p>
+    Bug bounty програми мають специфічні очікування. Дотримання цих практик призведе до швидшого тріажу,
+    вищих виплат і кращої репутації:
+  </p>
+  <ul>
+    <li><strong>Уважно читай scope</strong> — тестуй лише ті ресурси, що входять до scope</li>
+    <li><strong>Один звіт на одну вразливість</strong> — не об'єднуй кілька проблем в один звіт</li>
+    <li><strong>Надавай proof of concept</strong> — демонструй реальний вплив, а не теоретичний ризик</li>
+    <li><strong>Не скидай результати автоматичних сканерів</strong> — тріажери відхиляють звіти, що є просто вивантаженням сканера</li>
+    <li><strong>Будь професійним і терплячим</strong> — тріаж потребує часу; ввічливо нагадай через 1–2 тижні</li>
+    <li><strong>Вказуй деталі середовища</strong> — версія браузера, ОС, будь-яка спеціальна конфігурація</li>
+  </ul>
+
+  <h3>Хороший vs поганий звіт</h3>
+  <div class="panel">
+    <p><strong class="text-green">Хороший звіт:</strong> "Stored XSS у полі біо користувача за адресою /settings/profile.
+    Зловмисник може впровадити <code>&lt;img src=x onerror=alert(document.cookie)&gt;</code>, який виконується,
+    коли будь-який користувач переглядає профіль. Це дозволяє перехопити сесію будь-якого відвідувача. Кроки: 1. Увійти як будь-який користувач.
+    2. Перейти на /settings/profile. 3. Ввести пейлоад у поле біо. 4. Зберегти та переглянути профіль."</p>
+  </div>
+  <div class="panel">
+    <p><strong class="text-red">Поганий звіт:</strong> "Знайшов XSS на вашому сайті. Треба виправити. Можу впроваджувати
+    скрипти. Напишіть, якщо хочете більше деталей."</p>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Запам'ятай:</strong> Ніколи не експлуатуй вразливість більше, ніж необхідно для демонстрації проблеми.
+    Не отримуй доступ до даних інших користувачів, не ексфільтруй реальні дані та не порушуй роботу сервісів.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: Reporting Knowledge Quiz
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Reporting Knowledge Quiz
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 3 out of 4 questions correctly to demonstrate your understanding
+    of vulnerability reporting and responsible disclosure practices.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you understand reporting best practices!</div>
+
+  <div id="quiz1-container">
+    <!-- Question 1 -->
+    <div class="quiz-question" id="q1">
+      <p><strong>1. What should a vulnerability report include first and foremost?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q1" value="a"> Steps to reproduce</label>
+      <label class="quiz-option"><input type="radio" name="q1" value="b"> Your resume</label>
+      <label class="quiz-option"><input type="radio" name="q1" value="c"> The full exploit code</label>
+      <label class="quiz-option"><input type="radio" name="q1" value="d"> A threat to disclose publicly</label>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz-question" id="q2">
+      <p><strong>2. What is the standard responsible disclosure timeline?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q2" value="a"> 24 hours</label>
+      <label class="quiz-option"><input type="radio" name="q2" value="b"> 90 days</label>
+      <label class="quiz-option"><input type="radio" name="q2" value="c"> 1 year</label>
+      <label class="quiz-option"><input type="radio" name="q2" value="d"> No deadline</label>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz-question" id="q3">
+      <p><strong>3. What severity rating system is most commonly used for vulnerabilities?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q3" value="a"> CVSS</label>
+      <label class="quiz-option"><input type="radio" name="q3" value="b"> CVE</label>
+      <label class="quiz-option"><input type="radio" name="q3" value="c"> CWE</label>
+      <label class="quiz-option"><input type="radio" name="q3" value="d"> CPE</label>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz-question" id="q4">
+      <p><strong>4. When should you publicly disclose a vulnerability?</strong></p>
+      <label class="quiz-option"><input type="radio" name="q4" value="a"> Immediately after finding it</label>
+      <label class="quiz-option"><input type="radio" name="q4" value="b"> After the vendor patches or the disclosure deadline passes</label>
+      <label class="quiz-option"><input type="radio" name="q4" value="c"> Never</label>
+      <label class="quiz-option"><input type="radio" name="q4" value="d"> Only if you are paid</label>
+    </div>
+  </div>
+
+  <div id="quiz1-result" class="quiz-result" style="display:none;"></div>
+
+  <div class="flex gap-sm" style="margin-top:1rem;">
+    <button class="btn btn-primary" id="quiz1-submit">Submit Answers</button>
+    <button class="btn btn-secondary" id="quiz1-reset" style="display:none;">Try Again</button>
+  </div>
+</div>

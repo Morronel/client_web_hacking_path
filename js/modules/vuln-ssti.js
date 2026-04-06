@@ -232,50 +232,60 @@ result
         {
           type: 'mc', id: 'q1',
           text: 'What makes SSTI different from XSS?',
+          text_uk: 'Чим SSTI відрізняється від XSS?',
           options: [
-            { value: 'a', label: 'SSTI only affects the client-side browser' },
-            { value: 'b', label: 'SSTI executes code on the server via the template engine, not in the browser' },
-            { value: 'c', label: 'SSTI requires authentication to exploit' },
-            { value: 'd', label: 'SSTI only works with Python applications' }
+            { value: 'a', label: 'SSTI only affects the client-side browser', label_uk: 'SSTI впливає тільки на клієнтський браузер' },
+            { value: 'b', label: 'SSTI executes code on the server via the template engine, not in the browser', label_uk: 'SSTI виконує код на сервері через шаблонізатор, а не в браузері' },
+            { value: 'c', label: 'SSTI requires authentication to exploit', label_uk: 'SSTI вимагає автентифікації для експлуатації' },
+            { value: 'd', label: 'SSTI only works with Python applications', label_uk: 'SSTI працює тільки з Python-додатками' }
           ],
           answer: 'b',
-          hint: 'The "Server-Side" in SSTI means code runs on the server.'
+          hint: 'The "Server-Side" in SSTI means code runs on the server.',
+          hint_uk: '"Server-Side" в SSTI означає, що код виконується на сервері.'
         },
         {
           type: 'mc', id: 'q2',
           text: 'Which probe confirms Jinja2 SSTI specifically (not Twig)?',
+          text_uk: 'Який зонд підтверджує саме Jinja2 SSTI (а не Twig)?',
           options: [
-            { value: 'a', label: '<code>{{7*7}}</code> returns 49' },
-            { value: 'b', label: '<code>{{7*\'7\'}}</code> returns 7777777' },
-            { value: 'c', label: '<code>${7*7}</code> returns 49' },
-            { value: 'd', label: '<code>&lt;%= 7*7 %&gt;</code> returns 49' }
+            { value: 'a', label: '<code>{{7*7}}</code> returns 49', label_uk: '<code>{{7*7}}</code> повертає 49' },
+            { value: 'b', label: '<code>{{7*\'7\'}}</code> returns 7777777', label_uk: '<code>{{7*\'7\'}}</code> повертає 7777777' },
+            { value: 'c', label: '<code>${7*7}</code> returns 49', label_uk: '<code>${7*7}</code> повертає 49' },
+            { value: 'd', label: '<code>&lt;%= 7*7 %&gt;</code> returns 49', label_uk: '<code>&lt;%= 7*7 %&gt;</code> повертає 49' }
           ],
           answer: 'b',
-          hint: 'String multiplication (7*\'7\') is a Python-specific behavior.'
+          hint: 'String multiplication (7*\'7\') is a Python-specific behavior.',
+          hint_uk: 'Множення рядків (7*\'7\') — це поведінка, специфічна для Python.'
         },
         {
           type: 'tf', id: 'q3',
           text: 'Passing user input as a template variable (e.g., <code>render_template_string("Hello {{ name }}!", name=name)</code>) is safe from SSTI.',
+          text_uk: 'Передача введення користувача як змінної шаблону (наприклад, <code>render_template_string("Hello {{ name }}!", name=name)</code>) є безпечною від SSTI.',
           answer: true,
-          hint: 'When input is a variable, the template engine treats it as data, not code.'
+          hint: 'When input is a variable, the template engine treats it as data, not code.',
+          hint_uk: 'Коли введення є змінною, шаблонізатор обробляє його як дані, а не як код.'
         },
         {
           type: 'mc', id: 'q4',
           text: 'In Jinja2 exploitation, why do attackers access <code>__mro__</code> and <code>__subclasses__()</code>?',
+          text_uk: 'Чому при експлуатації Jinja2 зловмисники звертаються до <code>__mro__</code> та <code>__subclasses__()</code>?',
           options: [
-            { value: 'a', label: 'To encrypt the payload' },
-            { value: 'b', label: 'To traverse the Python class hierarchy and find classes that can execute OS commands' },
-            { value: 'c', label: 'To bypass the Same-Origin Policy' },
-            { value: 'd', label: 'To inject SQL into the template' }
+            { value: 'a', label: 'To encrypt the payload', label_uk: 'Щоб зашифрувати пейлоад' },
+            { value: 'b', label: 'To traverse the Python class hierarchy and find classes that can execute OS commands', label_uk: 'Щоб пройти ієрархією класів Python та знайти класи, які можуть виконувати команди ОС' },
+            { value: 'c', label: 'To bypass the Same-Origin Policy', label_uk: 'Щоб обійти Same-Origin Policy' },
+            { value: 'd', label: 'To inject SQL into the template', label_uk: 'Щоб впровадити SQL у шаблон' }
           ],
           answer: 'b',
-          hint: 'The goal is to find subprocess.Popen or os._wrap_close in the subclass list.'
+          hint: 'The goal is to find subprocess.Popen or os._wrap_close in the subclass list.',
+          hint_uk: 'Мета — знайти subprocess.Popen або os._wrap_close у списку підкласів.'
         },
         {
           type: 'tf', id: 'q5',
           text: 'Jinja2\'s SandboxedEnvironment is a fully reliable defense that makes SSTI exploitation impossible.',
+          text_uk: 'SandboxedEnvironment у Jinja2 є повністю надійним захистом, що унеможливлює експлуатацію SSTI.',
           answer: false,
-          hint: 'Sandbox escapes have been found multiple times — the real fix is never putting user input in the template string.'
+          hint: 'Sandbox escapes have been found multiple times — the real fix is never putting user input in the template string.',
+          hint_uk: 'Обходи пісочниці знаходили неодноразово — справжнє рішення — ніколи не поміщати введення користувача в рядок шаблону.'
         }
       ],
       flags: [

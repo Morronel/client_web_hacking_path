@@ -1,0 +1,175 @@
+<!-- Module 18: Server-Side Request Forgery -->
+<section class="module-header">
+  <h1>Модуль 18 — Server-Side Request Forgery (SSRF)</h1>
+  <p>Дізнайся, як атакуючі зловживають серверними HTTP-запитами для доступу до внутрішніх сервісів, хмарних метаданих та обходу мережевих фаєрволів.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Перетворюємо сервер на свій проксі</h2>
+  <p>
+    Уяви, що ти стоїш біля корпоративного офісу. Далі вестибюля тебе не пустять. Але є привітна секретарка, яка принесе тобі будь-який документ на твоє прохання — з будь-якого відділу, будь-якого поверху, будь-якої шафи. Вона тобі довіряє, бо ти робиш "звичайний" запит через приймальню. Ця секретарка — веб-сервер, а атака — SSRF.
+  </p>
+  <p>
+    Server-Side Request Forgery виникає, коли додаток приймає URL від користувача і робить HTTP-запит за цим URL <strong>від імені самого сервера</strong>. Атакуючий не звертається до цілі напряму — він обманом змушує сервер звернутися замість нього. А оскільки сервер знаходиться всередині довіреної мережі, він може дістатися до речей, які атакуючий ніколи б не зміг: внутрішніх сервісів, хмарних метаданих, адмінпанелей, баз даних та іншої інфраструктури, прихованої за фаєрволом.
+  </p>
+
+  <div class="callout callout-success">
+    <strong>Реальна історія — Capital One (2019):</strong> Вразливість SSRF у веб-додатку фаєрвола дозволила атакуючому отримати доступ до ендпоінта метаданих AWS (<code>169.254.169.254</code>) і вкрасти IAM-креденшали. З цими креденшалами атакуючий отримав доступ до S3-бакетів, що містили <strong>106 мільйонів записів клієнтів</strong>, включаючи номери соціального страхування та банківських рахунків. Capital One оштрафували на $80 мільйонів. Ця єдина вразливість SSRF стала першопричиною одного з найбільших витоків даних в історії фінансового сектору.
+  </div>
+
+  <h2>Вразливий код</h2>
+  <pre><code class="language-python"># Flask — VULNERABLE: user controls the URL
+import urllib.request
+
+@app.route('/fetch')
+def fetch_url():
+    url = request.args.get('url')
+    response = urllib.request.urlopen(url)  # attacker controls destination
+    return response.read()
+
+# Normal use: /fetch?url=https://api.example.com/data
+# Attack:     /fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/
+# Attack:     /fetch?url=http://localhost:6379/  (Redis)
+# Attack:     /fetch?url=file:///etc/passwd</code></pre>
+
+  <p>
+    Цей патерн зустрічається часто: "завантажити URL", "попередній перегляд посилання", "імпорт за URL", "перевірити, чи URL доступний", "завантажити аватарку за URL". Будь-яка функція, де сервер робить HTTP-запит за адресою, наданою користувачем — потенційна SSRF.
+  </p>
+
+  <h2>До чого може дістатися SSRF?</h2>
+
+  <h3>Хмарні метадані — найцінніший скарб</h3>
+  <p>
+    Кожен великий хмарний провайдер надає сервіс метаданих інстансу за адресою <code>http://169.254.169.254/</code>. Це link-local адреса, доступна тільки зсередини хмарного інстансу. Вона повертає IAM-креденшали, конфігурацію інстансу, скрипти user data та багато іншого. Через SSRF атакуючий може до неї дістатися:
+  </p>
+  <ul>
+    <li><strong>AWS:</strong> <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/[role-name]</code> — повертає тимчасові AWS-креденшали (access key, secret key, session token)</li>
+    <li><strong>GCP:</strong> <code>http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token</code> (вимагає заголовок <code>Metadata-Flavor: Google</code>)</li>
+    <li><strong>Azure:</strong> <code>http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/</code></li>
+  </ul>
+
+  <h3>Внутрішні сервіси</h3>
+  <ul>
+    <li><strong>Бази даних:</strong> Redis (<code>:6379</code>), Memcached (<code>:11211</code>), Elasticsearch (<code>:9200</code>), MongoDB (<code>:27017</code>)</li>
+    <li><strong>Адмінпанелі:</strong> Kubernetes API (<code>:6443</code>), Docker API (<code>:2375</code>), Jenkins (<code>:8080</code>)</li>
+    <li><strong>Внутрішні мікросервіси:</strong> міжсервісні API на приватних IP, які вважають увесь трафік довіреним</li>
+  </ul>
+
+  <h2>Обхід фільтрів SSRF</h2>
+  <p>
+    Перший інстинкт більшості розробників — заблокувати <code>127.0.0.1</code> та <code>169.254.169.254</code> у вхідних даних. Але існують десятки способів записати ті самі адреси:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Техніка обходу</th><th>Приклад</th><th>Резолвиться в</th></tr></thead>
+      <tbody>
+        <tr><td>Десятковий IP</td><td><code>http://2130706433/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>Шістнадцятковий IP</td><td><code>http://0x7f000001/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>Вісімковий IP</td><td><code>http://0177.0.0.1/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>IPv6 loopback</td><td><code>http://[::1]/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>IPv6 mapped</td><td><code>http://[::ffff:127.0.0.1]/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>DNS rebinding</td><td>Домен, що чергує публічну та приватну IP</td><td>127.0.0.1 (при повторному резолвінгу)</td></tr>
+        <tr><td>Обхід через редирект</td><td><code>http://evil.com/redirect?to=http://169.254.169.254/</code></td><td>169.254.169.254</td></tr>
+        <tr><td>URL authority</td><td><code>http://evil.com@127.0.0.1/</code></td><td>127.0.0.1 (деякі парсери)</td></tr>
+        <tr><td>Скорочений URL</td><td>Скорочене посилання, що редиректить на внутрішню адресу</td><td>Будь-яка ціль</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>DNS Rebinding — як це працює:</strong> Атакуючий реєструє домен, що по черзі повертає публічну IP (проходить валідацію сервера) та приватну IP типу 127.0.0.1 (коли сервер реально робить запит). Сервер перевіряє хостнейм → отримує безпечну IP → схвалює запит → робить HTTP-виклик → DNS повертає іншу (внутрішню) IP. Інструмент <code>rebind.network</code> демонструє цю атаку.
+  </div>
+
+  <h3>Blind SSRF</h3>
+  <p>
+    Коли відповідь сервера не повертається атакуючому, вразливість все одно існує. Blind SSRF підтверджується за допомогою:
+  </p>
+  <ul>
+    <li><strong>DNS-запити:</strong> вкажи URL на свій домен Burp Collaborator/Interactsh і стеж за DNS-запитами</li>
+    <li><strong>Таймінг:</strong> внутрішні хости відповідають швидше, ніж неіснуючі (корисно для сканування портів)</li>
+    <li><strong>Різниця в помилках:</strong> "Connection refused" vs "Connection timeout" показує, чи відкритий порт</li>
+  </ul>
+
+  <h2>Безпечний код: білий список URL</h2>
+  <pre><code class="language-python"># Flask — SAFE: strict URL validation + DNS resolution check
+from urllib.parse import urlparse
+import socket
+
+ALLOWED_HOSTS = {'api.example.com', 'cdn.example.com'}
+BLOCKED_RANGES = [
+    '127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12',
+    '192.168.0.0/16', '169.254.0.0/16', '::1/128'
+]
+
+@app.route('/fetch')
+def fetch_url():
+    url = request.args.get('url')
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ('http', 'https'):
+        return 'Only HTTP(S) allowed', 400
+    if parsed.hostname not in ALLOWED_HOSTS:
+        return 'Host not allowed', 403
+
+    # Resolve hostname BEFORE making the request to prevent DNS rebinding
+    ip = socket.getaddrinfo(parsed.hostname, None)[0][4][0]
+    if is_private_ip(ip):
+        return 'Internal addresses blocked', 403
+
+    response = urllib.request.urlopen(url)
+    return response.read()</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>Захист у глибину:</strong> Жоден окремий захист не є достатнім проти SSRF. Комбінуй: (1) білий список URL на рівні додатка, (2) валідацію DNS-резолвінгу перед запитами, (3) мережеву сегментацію (веб-сервер не повинен мати доступ до хмарних метаданих), (4) IMDSv2 на AWS (вимагає сесійний токен, що значно ускладнює крадіжку метаданих через SSRF), (5) вимкнення непотрібних URL-схем, таких як <code>file://</code>, <code>gopher://</code>, <code>dict://</code>.
+  </div>
+
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>Which IP address is commonly used to access cloud instance metadata in AWS?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">10.0.0.1</button>
+        <button class="quiz-opt" data-q="1" data-val="b">169.254.169.254</button>
+        <button class="quiz-opt" data-q="1" data-val="c">192.168.1.1</button>
+        <button class="quiz-opt" data-q="1" data-val="d">172.16.0.1</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>How does DNS rebinding bypass SSRF hostname filters?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">It encrypts the DNS request to avoid detection</button>
+        <button class="quiz-opt" data-q="2" data-val="b">It returns a public IP during validation but an internal IP when the actual request is made</button>
+        <button class="quiz-opt" data-q="2" data-val="c">It uses DNSSEC to spoof DNS records</button>
+        <button class="quiz-opt" data-q="2" data-val="d">It blocks the DNS response so the server times out</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>What is the most effective server-side defense against SSRF?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Blocking the string "127.0.0.1" in user input</button>
+        <button class="quiz-opt" data-q="3" data-val="b">Using an allowlist of permitted hostnames and validating the resolved IP before making the request</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Requiring HTTPS for all outgoing requests</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Rate limiting outgoing requests to 10 per minute</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab</h2>
+  <p>Practice SSRF vulnerabilities in a real Flask application:</p>
+  <div class="code-block">cd labs/ssrf && docker compose up --build<br>Visit http://localhost:5008/</div>
+  <p class="text-muted">The lab contains 6 challenges covering basic SSRF, cloud metadata access, protocol smuggling, DNS rebinding, redirect bypass, and blind SSRF detection.</p>
+</section>
