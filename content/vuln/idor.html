@@ -1,62 +1,132 @@
 <section class="module-header">
-  <h1>Module 11 — Insecure Direct Object Reference</h1>
+  <h1>Module 10 — Insecure Direct Object Reference (IDOR)</h1>
   <p>Learn how broken access controls allow attackers to access unauthorized data by manipulating object identifiers.</p>
 </section>
 
 <section class="theory-section">
-  <h2>Authorization vs Authentication</h2>
-  <p><strong>Authentication</strong> verifies <em>who you are</em> (login credentials). <strong>Authorization</strong> determines <em>what you can access</em> (permissions). IDOR is an authorization failure — the app knows who you are but doesn't check if you're allowed to access a specific resource.</p>
 
-  <h2>What is IDOR?</h2>
-  <p>Insecure Direct Object Reference occurs when an application uses user-supplied input to directly access objects (database records, files, etc.) without verifying the user is authorized to access that specific object.</p>
+  <h2>The Most Common Vulnerability You Have Never Heard Of</h2>
+  <p>
+    If you ask most people about web vulnerabilities, they will mention SQL injection and XSS. But in bug bounty programs, <strong>IDOR is consistently the #1 most reported vulnerability class</strong>. It accounts for more valid reports than any other bug type, and it is often the easiest to find and exploit.
+  </p>
+  <p>
+    Why? Because IDOR is not a clever technical trick. It is the <em>absence</em> of a check. The developer simply forgot to verify that the logged-in user is allowed to access the resource they are requesting. That is it. No complex payload, no encoding tricks, no special tools. Just... change a number in the URL.
+  </p>
 
-  <pre><code class="language-python"># Vulnerable endpoint — no authorization check
-@app.route('/api/user/&lt;id&gt;')
+  <h2>Authentication vs. Authorization — The Critical Distinction</h2>
+  <p>
+    In the previous module, we covered <strong>authentication</strong>: proving who you are. IDOR is a failure of <strong>authorization</strong>: checking what you are allowed to do. These are completely different security controls, and confusing them is one of the most common mistakes in web development.
+  </p>
+  <p>
+    Think of it like a hotel. Authentication is the front desk verifying your identity and giving you a keycard. Authorization is making sure your keycard only opens YOUR room, not every room on the floor. An IDOR vulnerability is like a hotel where every keycard opens every door — they know who you are, they just do not care which room you try to enter.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Mental Model:</strong> Every time an application uses an identifier from the user's request (URL parameter, POST body, cookie, header) to look up a resource, ask yourself: <em>"Does the server verify that THIS user is allowed to access THIS specific resource?"</em> If the answer is no, you have found an IDOR.
+  </div>
+
+  <h2>How IDOR Works</h2>
+  <p>
+    The pattern is almost always the same. An application exposes an endpoint that takes an object identifier as input and returns the corresponding data. The identifier might be in the URL path, a query parameter, a POST body, or even a cookie.
+  </p>
+
+  <pre><code class="language-python"># VULNERABLE — no authorization check
+@app.route('/api/user/&lt;int:id&gt;')
+@login_required
 def get_user(id):
-    return db.query("SELECT * FROM users WHERE id = ?", id)
+    # The user is authenticated (login_required), but we never check
+    # if they are AUTHORIZED to view this specific user's data
+    user = db.query("SELECT * FROM users WHERE id = ?", id)
+    return jsonify(user)
 
-# Safe endpoint — checks authorization
-@app.route('/api/user/&lt;id&gt;')
+# An attacker logged in as user 3 can simply request:
+# GET /api/user/1  → gets admin's data
+# GET /api/user/2  → gets another user's data
+# GET /api/user/4  → gets yet another user's data</code></pre>
+
+  <pre><code class="language-python"># SAFE — proper authorization check
+@app.route('/api/user/&lt;int:id&gt;')
 @login_required
 def get_user(id):
     if current_user.id != id and not current_user.is_admin:
-        return {"error": "Forbidden"}, 403
-    return db.query("SELECT * FROM users WHERE id = ?", id)</code></pre>
+        return jsonify({"error": "Forbidden"}), 403
+    user = db.query("SELECT * FROM users WHERE id = ?", id)
+    return jsonify(user)</code></pre>
 
-  <h2>Horizontal vs Vertical Privilege Escalation</h2>
+  <p>
+    Notice how the fix is just two lines of code. That is the infuriating thing about IDOR — it is trivially easy to fix, yet it remains one of the most common vulnerabilities in the wild because developers simply forget to add the check. When you are building a feature, you are thinking about making it work, not about who should not be able to use it.
+  </p>
+
+  <h2>Horizontal vs. Vertical Privilege Escalation</h2>
+  <p>IDORs come in two flavors, and understanding the difference matters for understanding impact:</p>
   <ul>
-    <li><strong>Horizontal:</strong> Accessing another user's data at the same privilege level (user A reads user B's profile)</li>
-    <li><strong>Vertical:</strong> Accessing resources requiring higher privileges (regular user accesses admin panel)</li>
+    <li><strong>Horizontal privilege escalation:</strong> Accessing data belonging to another user <em>at the same privilege level</em>. User A reads User B's profile, invoices, or messages. The attacker does not gain admin powers, but they can access data that is not theirs.</li>
+    <li><strong>Vertical privilege escalation:</strong> Accessing data or functionality reserved for <em>a higher privilege level</em>. A regular user accesses the admin dashboard, modifies another user's permissions, or deletes resources they should not be able to touch.</li>
+  </ul>
+  <p>
+    Vertical escalation is obviously more severe, but do not underestimate horizontal escalation. Accessing another user's medical records, financial data, or private messages can be devastating even without admin access.
+  </p>
+
+  <h2>Where IDORs Hide</h2>
+  <p>
+    IDORs are everywhere. Every place an application uses an identifier to reference a specific resource is a potential IDOR. Here are the most common locations:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Location</th><th>Example</th><th>What to Try</th></tr></thead>
+      <tbody>
+        <tr><td>URL path</td><td><code>/api/user/123/profile</code></td><td>Change <code>123</code> to <code>1</code>, <code>2</code>, etc.</td></tr>
+        <tr><td>Query parameter</td><td><code>/invoice?id=456</code></td><td>Change <code>456</code> to nearby values</td></tr>
+        <tr><td>POST/PUT body</td><td><code>{"userId": 123, "action": "delete"}</code></td><td>Change <code>userId</code> to another user's ID</td></tr>
+        <tr><td>Cookie</td><td><code>user_id=123</code></td><td>Change cookie value</td></tr>
+        <tr><td>Custom header</td><td><code>X-User-Id: 123</code></td><td>Change header value</td></tr>
+        <tr><td>File path</td><td><code>/download?file=report_123.pdf</code></td><td>Change filename to other users' reports</td></tr>
+        <tr><td>API response leaks</td><td>Response contains IDs of other resources</td><td>Use leaked IDs in subsequent requests</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Identifier Types and Predictability</h2>
+  <p>
+    The type of identifier an application uses affects how easy the IDOR is to exploit:
+  </p>
+  <ul>
+    <li><strong>Sequential integers</strong> (1, 2, 3...): The easiest to exploit. Just increment or decrement. You can enumerate every object in the system.</li>
+    <li><strong>Base64-encoded IDs</strong>: Security through obscurity. <code>MTIz</code> is just base64 for <code>123</code>. Decode it, change it, re-encode it.</li>
+    <li><strong>UUIDs</strong> (e.g., <code>550e8400-e29b-41d4-a716-446655440000</code>): Much harder to guess, but still vulnerable if IDs are leaked elsewhere in the application (in URLs, API responses, HTML source, etc.).</li>
+    <li><strong>Hashed IDs</strong> (e.g., MD5 of sequential ID): If the hash input is predictable, you can compute the hash for any ID you want.</li>
   </ul>
 
-  <h2>Where IDORs Appear</h2>
-  <ul>
-    <li><strong>URL parameters:</strong> <code>/api/user/123</code>, <code>/invoice?id=456</code></li>
-    <li><strong>POST body:</strong> <code>{"userId": 123, "action": "delete"}</code></li>
-    <li><strong>API responses:</strong> IDs leaked in responses enable further enumeration</li>
-    <li><strong>Headers:</strong> Custom headers like <code>X-User-Id</code></li>
-    <li><strong>Cookies:</strong> User ID embedded in session cookies</li>
-  </ul>
-
-  <h2>Predictable Identifiers</h2>
-  <ul>
-    <li><strong>Sequential integers:</strong> 1, 2, 3... — easiest to enumerate</li>
-    <li><strong>Encoded IDs:</strong> Base64-encoded integers — security through obscurity</li>
-    <li><strong>UUIDs:</strong> Harder to guess but still vulnerable if leaked</li>
-  </ul>
+  <div class="callout callout-warning">
+    <strong>UUIDs Are Not a Security Control:</strong> Using UUIDs instead of sequential integers makes enumeration harder, but it does not fix the underlying vulnerability. If a UUID is leaked anywhere — in an email link, a shared URL, an API response, or even a Referer header — the IDOR is still exploitable. <strong>Always implement proper authorization checks</strong>, regardless of identifier type.
+  </div>
 
   <h2>Testing Methodology</h2>
+  <p>Here is a systematic approach to finding IDORs in any application:</p>
   <ol>
-    <li>Identify all endpoints that reference objects by ID</li>
-    <li>Note your own valid IDs from legitimate requests</li>
-    <li>Modify the ID parameter to another value (increment, decrement, etc.)</li>
-    <li>Observe if the application returns data for the modified ID</li>
-    <li>Check both the response body and status codes</li>
+    <li><strong>Map all endpoints:</strong> Use Burp Suite or your browser's developer tools to identify every request that references an object by ID.</li>
+    <li><strong>Create two test accounts:</strong> Account A and Account B. Log into Account A and note all the IDs associated with your resources (profile ID, order IDs, file IDs, etc.).</li>
+    <li><strong>Cross-reference:</strong> While logged in as Account B, try to access Account A's resources by using A's IDs.</li>
+    <li><strong>Check all HTTP methods:</strong> An endpoint might properly check authorization on GET but forget to check on PUT or DELETE.</li>
+    <li><strong>Check state-changing operations:</strong> Reading data is bad, but modifying or deleting another user's data is critical severity.</li>
   </ol>
 
-  <div class="callout callout-danger">
-    <strong>Real-world impact:</strong> IDOR vulnerabilities have led to massive data breaches. In 2019, a major airline exposed 9 million customer records through an IDOR in their API. Always implement server-side authorization checks.
+  <h2>Real-World IDOR Stories</h2>
+  <ul>
+    <li><strong>First American Financial (2019):</strong> An IDOR in their document portal exposed <strong>885 million sensitive records</strong> including Social Security numbers, bank statements, and mortgage records. Anyone could access any document by changing the sequential ID in the URL. No authentication was even required.</li>
+    <li><strong>Facebook (2015):</strong> A bug bounty hunter found that changing the <code>photo_id</code> parameter in the "View as" feature allowed viewing any user's private photos. Facebook paid a $12,500 bounty.</li>
+    <li><strong>Uber (2019):</strong> An IDOR allowed any driver to view any other driver's earnings and trip history by modifying the driver UUID in the API request.</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>The Fix:</strong> Every endpoint that accesses a resource by ID must verify that the current user is authorized to access that specific resource. This check should happen server-side, on every request, regardless of the identifier type. Use your framework's authorization middleware — do not roll your own. In Rails, use <code>current_user.orders.find(params[:id])</code> instead of <code>Order.find(params[:id])</code>. In Django, use <code>get_object_or_404(Order, id=pk, user=request.user)</code>.
   </div>
+
+  <div class="callout callout-danger">
+    <strong>Defense in Depth:</strong> The best IDOR defense combines: (1) proper authorization checks on every endpoint, (2) unpredictable identifiers (UUIDs) to make enumeration harder, (3) rate limiting to slow down automated scanning, and (4) logging and monitoring to detect suspicious access patterns.
+  </div>
+
 </section>
 
 <!-- ========== LABS ========== -->

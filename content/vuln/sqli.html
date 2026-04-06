@@ -1,46 +1,63 @@
-<!-- Module 2: SQL Injection -->
-<h1>Module 08 — SQL Injection</h1>
+<!-- Module 11: SQL Injection -->
+<h1>Module 11 — SQL Injection</h1>
 
 <!-- ============================================
      THEORY SECTION
      ============================================ -->
 <section class="theory-section">
+
+  <h2>The Grandfather of Web Vulnerabilities</h2>
+  <p>
+    SQL injection has been around since the late 1990s. It was first publicly documented by Jeff Forristal (writing as "rain.forest.puppy") in Phrack Magazine in 1998. That is over 25 years ago. And yet, in 2024, SQLi <strong>still appears in the OWASP Top 10</strong> and still causes massive data breaches. Why? Because the fundamental mistake — mixing code and data — is incredibly easy to make and remarkably hard to stamp out across large codebases.
+  </p>
+  <p>
+    Here is the thing that makes SQL injection so dangerous: it gives the attacker direct access to your database. Not filtered access. Not read-only access. <strong>Full access to every table, every row, every column.</strong> And in many configurations, it can go beyond the database — reading files from the server's filesystem, executing operating system commands, or pivoting to other systems on the network.
+  </p>
+  <p>
+    If XSS is picking someone's pocket, SQL injection is walking into the bank vault.
+  </p>
+
   <h2>Why SQL Injection Exists</h2>
   <p>
-    SQL injection occurs when user-supplied input is concatenated directly into a SQL query string
-    instead of being passed as a parameterized value. The database engine cannot distinguish between
-    code and data, so attacker-controlled input becomes part of the query logic.
+    Every SQL injection vulnerability has the same root cause: <strong>user-supplied input is concatenated directly into a SQL query string</strong>. The database engine receives the complete query as one string and has no way to distinguish between the parts that are "code" (the SQL structure the developer wrote) and the parts that are "data" (the values the user provided).
+  </p>
+  <p>
+    Let me show you exactly how this works. Imagine a login form that checks credentials against a database:
   </p>
 
   <h3>Vulnerable Code: String Concatenation</h3>
-  <pre><code class="language-php">// PHP — VULNERABLE
-$username = $_POST['username'];
-$password = $_POST['password'];
-$query = "SELECT * FROM users WHERE username='$username' AND password_hash='$password'";
-$result = mysqli_query($conn, $query);</code></pre>
-
   <pre><code class="language-python"># Python — VULNERABLE
 username = request.form['username']
 password = request.form['password']
 query = f"SELECT * FROM users WHERE username='{username}' AND password_hash='{password}'"
 cursor.execute(query)</code></pre>
 
-  <p>
-    If an attacker submits <code>' OR '1'='1</code> as the username, the resulting query becomes:
-  </p>
+  <pre><code class="language-php">// PHP — VULNERABLE
+$username = $_POST['username'];
+$password = $_POST['password'];
+$query = "SELECT * FROM users WHERE username='$username' AND password_hash='$password'";
+$result = mysqli_query($conn, $query);</code></pre>
 
+  <p>
+    When a normal user types <code>alice</code> and <code>mypassword</code>, the query becomes:
+  </p>
+  <pre><code class="language-sql">SELECT * FROM users WHERE username='alice' AND password_hash='mypassword'</code></pre>
+  <p>
+    Perfectly fine. But what happens when an attacker types <code>' OR '1'='1</code> as the username?
+  </p>
   <pre><code class="language-sql">SELECT * FROM users WHERE username='' OR '1'='1' AND password_hash='anything'</code></pre>
-
   <p>
-    Because <code>'1'='1'</code> is always true, the WHERE clause matches every row and
-    authentication is bypassed.
+    The attacker's single quote <strong>closes the username string</strong>, and then <code>OR '1'='1'</code> is interpreted as SQL code, not data. Because <code>'1'='1'</code> is always true, the WHERE clause matches every row, and the attacker is logged in — usually as the first user in the table, which is often the admin.
   </p>
 
-  <h3>Safe Code: Parameterized Queries</h3>
-  <pre><code class="language-php">// PHP — SAFE (prepared statement)
-$stmt = $conn->prepare("SELECT * FROM users WHERE username=? AND password_hash=?");
-$stmt->bind_param("ss", $username, $password);
-$stmt->execute();</code></pre>
+  <div class="callout callout-danger">
+    <strong>The fundamental problem:</strong> When you concatenate strings into a query, the database cannot tell where the developer's SQL ends and the user's data begins. The single quote character serves double duty — it is both a string delimiter in SQL and a perfectly valid character in user input. This ambiguity is the root of all SQL injection.
+  </div>
+
+  <h3>The Fix: Parameterized Queries</h3>
+  <p>
+    Parameterized queries (also called prepared statements) solve this completely by <strong>separating the SQL structure from the data values</strong>. The SQL template is sent to the database first, and the user values are sent separately. The database knows exactly which parts are code and which are data — injection becomes impossible.
+  </p>
 
   <pre><code class="language-python"># Python — SAFE (parameterized)
 cursor.execute(
@@ -48,122 +65,183 @@ cursor.execute(
     (username, password)
 )</code></pre>
 
-  <div class="callout callout-danger">
-    <strong>Root cause:</strong> The query is built by concatenating untrusted strings. Parameterized
-    queries solve this by separating the SQL structure from the data values, making injection impossible.
+  <pre><code class="language-php">// PHP — SAFE (prepared statement)
+$stmt = $conn->prepare("SELECT * FROM users WHERE username=? AND password_hash=?");
+$stmt->bind_param("ss", $username, $password);
+$stmt->execute();</code></pre>
+
+  <p>
+    Even if the attacker types <code>' OR '1'='1</code>, the database treats the entire string as a literal username value. It searches for a user whose username is literally the text <code>' OR '1'='1</code> — which does not exist. No injection. No bypass.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Analogy:</strong> Imagine filling out a paper form. String concatenation is like letting the user write on the form itself — they could write outside the boxes and change the form's instructions. Parameterized queries are like having the user write on sticky notes that go INTO the boxes — no matter what they write, it stays inside the designated area and cannot modify the form structure.
   </div>
 
   <h2>UNION-Based SQL Injection</h2>
   <p>
-    A <code>UNION SELECT</code> attack appends a second query to the original, letting the attacker
-    read data from arbitrary tables. Two requirements must be met:
+    Authentication bypass is just the beginning. The real power of SQL injection is <strong>data extraction</strong>. A <code>UNION SELECT</code> attack appends a second query to the original, letting the attacker read data from ANY table in the database. It is like being able to photocopy any file in a filing cabinet — not just the one someone handed you.
+  </p>
+  <p>
+    There are two requirements for a UNION attack to work:
   </p>
   <ol>
-    <li>The number of columns in the injected <code>SELECT</code> must match the original query.</li>
-    <li>The data types of corresponding columns must be compatible (or NULL).</li>
+    <li>The number of columns in the injected <code>SELECT</code> must <strong>exactly match</strong> the original query.</li>
+    <li>The data types of corresponding columns must be compatible (or use <code>NULL</code>, which is compatible with everything).</li>
   </ol>
 
   <h3>Step 1 — Discover the Column Count</h3>
   <p>
-    Use the <code>ORDER BY</code> technique: increment the column index until an error occurs.
-    The last successful index equals the number of columns.
+    Before you can use UNION, you need to know how many columns the original query returns. There are two reliable techniques:
+  </p>
+  <p>
+    <strong>Technique A — ORDER BY probing:</strong> Increment the column index until an error occurs. The last successful index tells you the column count.
   </p>
 
   <pre><code class="language-sql">-- If the query has 4 columns:
-' ORDER BY 1--    (OK)
-' ORDER BY 2--    (OK)
-' ORDER BY 3--    (OK)
-' ORDER BY 4--    (OK)
-' ORDER BY 5--    (ERROR — column 5 does not exist, so there are 4 columns)</code></pre>
+' ORDER BY 1--    (OK — column 1 exists)
+' ORDER BY 2--    (OK — column 2 exists)
+' ORDER BY 3--    (OK — column 3 exists)
+' ORDER BY 4--    (OK — column 4 exists)
+' ORDER BY 5--    (ERROR! — column 5 does not exist → table has 4 columns)</code></pre>
 
   <p>
-    Alternatively, use <code>UNION SELECT NULL</code> with increasing NULLs:
+    <strong>Technique B — UNION SELECT NULL probing:</strong> Add NULLs until the query succeeds.
   </p>
 
-  <pre><code class="language-sql">' UNION SELECT NULL--              (error — wrong column count)
-' UNION SELECT NULL,NULL--         (error)
-' UNION SELECT NULL,NULL,NULL--    (error)
-' UNION SELECT NULL,NULL,NULL,NULL--  (success — 4 columns!)</code></pre>
+  <pre><code class="language-sql">' UNION SELECT NULL--                     (error — wrong column count)
+' UNION SELECT NULL,NULL--                (error)
+' UNION SELECT NULL,NULL,NULL--           (error)
+' UNION SELECT NULL,NULL,NULL,NULL--      (success! — 4 columns)</code></pre>
 
-  <h3>Step 2 — NULL Padding</h3>
+  <h3>Step 2 — Identify Output Columns</h3>
   <p>
-    Once you know the column count, use <code>NULL</code> as a placeholder for columns you do not
-    need. NULLs are compatible with every data type:
+    Not all columns may be displayed on the page. Replace NULLs with test values to see which columns appear in the output:
   </p>
-
-  <pre><code class="language-sql">' UNION SELECT username, password_hash, NULL, NULL FROM users--</code></pre>
+  <pre><code class="language-sql">' UNION SELECT 'col1','col2','col3','col4'--</code></pre>
+  <p>
+    If you see "col2" and "col3" in the page but not "col1" and "col4", you know to put your extracted data in columns 2 and 3.
+  </p>
 
   <h3>Step 3 — Extract Data</h3>
   <p>
-    With the column count known, you can pull data from any table. Use
-    <code>group_concat()</code> to merge multiple rows into a single value when only one output
-    column is available:
+    Now you can pull data from any table. Use <code>group_concat()</code> to merge multiple rows into a single value when only one output column is available:
   </p>
 
-  <pre><code class="language-sql">-- Single-column extraction trick
-' UNION SELECT group_concat(username || ':' || password_hash, '&lt;br&gt;'), NULL, NULL, NULL FROM users--</code></pre>
+  <pre><code class="language-sql">-- Extract all usernames and password hashes
+' UNION SELECT NULL, group_concat(username || ':' || password_hash, '&lt;br&gt;'), NULL, NULL FROM users--</code></pre>
 
-  <h2>Schema Enumeration (SQLite)</h2>
+  <h2>Schema Enumeration — Finding What to Steal</h2>
   <p>
-    In SQLite, the <code>sqlite_master</code> table lists every table and its schema:
+    Before you can extract data, you need to know what tables and columns exist. Every database has a way to query its own structure:
   </p>
 
-  <pre><code class="language-sql">-- List all table names
-SELECT name FROM sqlite_master WHERE type='table';
-
--- Get the CREATE TABLE statement
-SELECT sql FROM sqlite_master WHERE type='table' AND name='secret_table';</code></pre>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Database</th><th>List Tables</th><th>List Columns</th></tr></thead>
+      <tbody>
+        <tr><td>SQLite</td><td><code>SELECT name FROM sqlite_master WHERE type='table'</code></td><td><code>SELECT sql FROM sqlite_master WHERE name='tablename'</code></td></tr>
+        <tr><td>MySQL</td><td><code>SELECT table_name FROM information_schema.tables</code></td><td><code>SELECT column_name FROM information_schema.columns WHERE table_name='...'</code></td></tr>
+        <tr><td>PostgreSQL</td><td><code>SELECT tablename FROM pg_catalog.pg_tables</code></td><td><code>SELECT column_name FROM information_schema.columns WHERE table_name='...'</code></td></tr>
+        <tr><td>SQL Server</td><td><code>SELECT name FROM sys.tables</code></td><td><code>SELECT name FROM sys.columns WHERE object_id=OBJECT_ID('...')</code></td></tr>
+      </tbody>
+    </table>
+  </div>
 
   <p>
-    In other databases, equivalent catalog tables exist:
+    In a UNION attack, you would first enumerate tables, then enumerate columns for interesting tables, then extract the actual data. It is a methodical, three-step process.
   </p>
-  <ul>
-    <li><strong>MySQL:</strong> <code>information_schema.tables</code>, <code>information_schema.columns</code></li>
-    <li><strong>PostgreSQL:</strong> <code>information_schema.tables</code>, <code>pg_catalog.pg_tables</code></li>
-    <li><strong>SQL Server:</strong> <code>INFORMATION_SCHEMA.TABLES</code>, <code>sys.tables</code></li>
-  </ul>
 
-  <h2>Other SQL Injection Techniques</h2>
+  <h2>Blind SQL Injection — When You Cannot See the Output</h2>
+  <p>
+    What if the application does not display query results on the page? What if it just shows "Login successful" or "Login failed" with no data? You might think SQL injection is useless in this case. You would be wrong.
+  </p>
+  <p>
+    <strong>Blind SQL injection</strong> lets you extract data one bit at a time by asking the database yes/no questions and observing how the application behaves differently.
+  </p>
+
+  <h3>Boolean-Based Blind</h3>
+  <p>
+    If the application behaves differently for true vs false conditions (different page content, different HTTP status code, different response size), you can extract data character by character:
+  </p>
+  <pre><code class="language-sql">-- Is the first character of the admin password 'a'?
+' AND SUBSTRING((SELECT password FROM users WHERE username='admin'),1,1)='a'--
+-- If the page loads normally → 'a' is correct
+-- If the page shows an error → 'a' is wrong, try 'b', 'c', etc.</code></pre>
+
+  <p>
+    This is painfully slow by hand — extracting a 32-character password hash requires up to 32 x 36 = 1,152 requests (for each position, try each possible character). But tools like <code>sqlmap</code> automate this process with binary search optimizations and can extract entire databases in minutes.
+  </p>
+
+  <h3>Time-Based Blind</h3>
+  <p>
+    What if the application gives the EXACT same response regardless of the query result? No different content, no different status code, nothing. In this case, you can use the database's sleep function to create an observable timing difference:
+  </p>
+  <pre><code class="language-sql">-- MySQL: if the first char of the DB name is 'a', wait 5 seconds
+' AND IF(SUBSTRING(database(),1,1)='a', SLEEP(5), 0)--
+
+-- PostgreSQL equivalent
+'; SELECT CASE WHEN SUBSTRING(current_database(),1,1)='a' THEN pg_sleep(5) END--
+
+-- SQLite (uses heavy computation instead of sleep)
+' AND CASE WHEN SUBSTRING((SELECT password FROM users LIMIT 1),1,1)='a'
+  THEN LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(100000000)))) END--</code></pre>
+
+  <p>
+    If the response takes 5 seconds, the condition was true. If it returns immediately, the condition was false. Slow? Extremely. But it works, and when you have no other option, slow extraction is infinitely better than no extraction.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>sqlmap — The Swiss Army Knife:</strong> In real-world pentesting, nobody does blind SQLi by hand. The tool <code>sqlmap</code> automates detection and exploitation of all SQL injection types. Give it a URL with a suspected injection point, and it will identify the database type, enumerate tables, and dump data. But understanding the techniques manually is essential — automated tools fail on edge cases, and you need to know what to do when they do.
+  </div>
 
   <h3>Error-Based Injection</h3>
   <p>
-    When the application displays database error messages, an attacker can craft queries that
-    deliberately cause errors containing data. For example, in MySQL:
+    When the application displays database error messages (a misconfiguration, but a common one), attackers can craft queries that cause the extracted data to appear inside the error message itself:
   </p>
-  <pre><code class="language-sql">-- MySQL error-based extraction
-' AND (SELECT 1 FROM (SELECT COUNT(*),CONCAT((SELECT user()),FLOOR(RAND(0)*2))x
-  FROM information_schema.tables GROUP BY x)a)--</code></pre>
+  <pre><code class="language-sql">-- MySQL error-based extraction (EXTRACTVALUE technique)
+' AND EXTRACTVALUE(1, CONCAT(0x7e, (SELECT version()), 0x7e))--
+-- Error: "XPATH syntax error: '~5.7.44~'"
+-- The database version is right there in the error message!</code></pre>
 
-  <h3>Blind SQL Injection</h3>
+  <h2>Beyond Data Theft — Advanced SQLi Impact</h2>
   <p>
-    When no data or errors are displayed, attackers infer information one bit at a time by observing
-    application behavior differences (Boolean-based) or response timing (time-based):
-  </p>
-  <pre><code class="language-sql">-- Boolean-based blind
-' AND SUBSTRING((SELECT password FROM users WHERE username='admin'),1,1)='a'--
-
--- Time-based blind (MySQL)
-' AND IF(SUBSTRING(database(),1,1)='a', SLEEP(5), 0)--</code></pre>
-
-  <div class="callout callout-info">
-    <strong>Blind injection is slow</strong> but powerful. Tools like <code>sqlmap</code> automate
-    the process of extracting entire databases character by character.
-  </div>
-
-  <h2>Real-World Impact</h2>
-  <p>
-    SQL injection consistently ranks in the OWASP Top 10. Notable breaches include:
+    Extracting data is the most common goal, but SQL injection can go much further depending on the database configuration:
   </p>
   <ul>
-    <li><strong>Heartland Payment Systems (2008):</strong> 130 million credit card numbers stolen via SQLi.</li>
-    <li><strong>Sony Pictures (2011):</strong> Unparameterized queries led to full database exfiltration.</li>
-    <li><strong>TalkTalk (2015):</strong> Personal details of 157,000 customers accessed through SQLi.</li>
+    <li><strong>Reading files from the server:</strong> MySQL's <code>LOAD_FILE('/etc/passwd')</code> reads arbitrary files</li>
+    <li><strong>Writing files to the server:</strong> <code>INTO OUTFILE '/var/www/shell.php'</code> can write a webshell</li>
+    <li><strong>OS command execution:</strong> SQL Server's <code>xp_cmdshell</code> executes operating system commands directly</li>
+    <li><strong>Stacked queries:</strong> If the driver supports it, you can execute entirely separate statements: <code>'; DROP TABLE users;--</code></li>
   </ul>
 
   <div class="callout callout-warning">
-    <strong>Defense in depth:</strong> Beyond parameterized queries, use least-privilege DB accounts,
-    web application firewalls, input validation, and avoid exposing raw error messages to users.
+    <strong>Stacked queries caveat:</strong> Not all database drivers support multiple statements in one call. PHP's <code>mysqli_query()</code> does not by default. Python's <code>sqlite3.execute()</code> does not. But <code>executescript()</code> does, and SQL Server's default drivers do. Always test whether stacked queries work before assuming they do not.
   </div>
+
+  <h2>Real-World SQL Injection Breaches</h2>
+  <p>
+    SQL injection has been responsible for some of the largest data breaches in history:
+  </p>
+  <ul>
+    <li><strong>Heartland Payment Systems (2008):</strong> Albert Gonzalez used SQL injection to steal <strong>130 million credit card numbers</strong>. He was sentenced to 20 years in federal prison — the longest sentence ever for a computer crime at the time.</li>
+    <li><strong>Sony Pictures (2011):</strong> LulzSec exploited a trivially simple SQL injection in Sony's website to exfiltrate <strong>1 million user accounts</strong>. They publicly mocked Sony for using unparameterized queries.</li>
+    <li><strong>TalkTalk (2015):</strong> A 15-year-old exploited SQL injection to access personal details of <strong>157,000 customers</strong>. TalkTalk was fined £400,000 — the largest fine by the UK ICO at the time.</li>
+    <li><strong>MOVEit Transfer (2023):</strong> A SQL injection in the file transfer product was exploited by the Cl0p ransomware group, affecting <strong>over 2,600 organizations and 77 million people</strong>.</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>The Complete Defense Stack:</strong>
+    <ul>
+      <li><strong>Parameterized queries everywhere</strong> — this alone prevents 99% of SQLi</li>
+      <li><strong>Least-privilege DB accounts</strong> — the web app's DB user should not be <code>root</code></li>
+      <li><strong>Web Application Firewall (WAF)</strong> — catches obvious payloads, but is bypassable</li>
+      <li><strong>Input validation</strong> — reject inputs with unexpected characters as a defense-in-depth layer</li>
+      <li><strong>Error handling</strong> — never show raw database errors to users</li>
+      <li><strong>ORM usage</strong> — Django ORM, SQLAlchemy, ActiveRecord all use parameterized queries by default</li>
+    </ul>
+  </div>
+
 </section>
 
 <!-- ============================================
