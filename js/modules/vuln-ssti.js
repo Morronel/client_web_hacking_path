@@ -226,11 +226,69 @@ result
   function init(container) {
     initLab1(container);
     initLab2(container);
+
+    QuizEngine.init(container, 'vuln-ssti', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'What makes SSTI different from XSS?',
+          options: [
+            { value: 'a', label: 'SSTI only affects the client-side browser' },
+            { value: 'b', label: 'SSTI executes code on the server via the template engine, not in the browser' },
+            { value: 'c', label: 'SSTI requires authentication to exploit' },
+            { value: 'd', label: 'SSTI only works with Python applications' }
+          ],
+          answer: 'b',
+          hint: 'The "Server-Side" in SSTI means code runs on the server.'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'Which probe confirms Jinja2 SSTI specifically (not Twig)?',
+          options: [
+            { value: 'a', label: '<code>{{7*7}}</code> returns 49' },
+            { value: 'b', label: '<code>{{7*\'7\'}}</code> returns 7777777' },
+            { value: 'c', label: '<code>${7*7}</code> returns 49' },
+            { value: 'd', label: '<code>&lt;%= 7*7 %&gt;</code> returns 49' }
+          ],
+          answer: 'b',
+          hint: 'String multiplication (7*\'7\') is a Python-specific behavior.'
+        },
+        {
+          type: 'tf', id: 'q3',
+          text: 'Passing user input as a template variable (e.g., <code>render_template_string("Hello {{ name }}!", name=name)</code>) is safe from SSTI.',
+          answer: true,
+          hint: 'When input is a variable, the template engine treats it as data, not code.'
+        },
+        {
+          type: 'mc', id: 'q4',
+          text: 'In Jinja2 exploitation, why do attackers access <code>__mro__</code> and <code>__subclasses__()</code>?',
+          options: [
+            { value: 'a', label: 'To encrypt the payload' },
+            { value: 'b', label: 'To traverse the Python class hierarchy and find classes that can execute OS commands' },
+            { value: 'c', label: 'To bypass the Same-Origin Policy' },
+            { value: 'd', label: 'To inject SQL into the template' }
+          ],
+          answer: 'b',
+          hint: 'The goal is to find subprocess.Popen or os._wrap_close in the subclass list.'
+        },
+        {
+          type: 'tf', id: 'q5',
+          text: 'Jinja2\'s SandboxedEnvironment is a fully reliable defense that makes SSTI exploitation impossible.',
+          answer: false,
+          hint: 'Sandbox escapes have been found multiple times — the real fix is never putting user input in the template string.'
+        }
+      ],
+      flags: [
+        { id: 'f1', label: 'Flask Lab — Template Detection', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10 },
+        { id: 'f2', label: 'Flask Lab — RCE via SSTI', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 20 }
+      ]
+    });
   }
 
   function cleanup() {
     listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
     listeners = [];
+    QuizEngine.cleanup('vuln-ssti');
   }
 
   return { init, cleanup };

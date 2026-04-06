@@ -169,11 +169,69 @@ const vulnAuth = (() => {
   function init(container) {
     initLab1(container);
     initLab2(container);
+
+    QuizEngine.init(container, 'vuln-auth', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'What is the primary risk of returning different error messages for valid vs invalid usernames?',
+          options: [
+            { value: 'a', label: 'It makes the site slower' },
+            { value: 'b', label: 'It allows username enumeration — attackers can determine which accounts exist' },
+            { value: 'c', label: 'It violates GDPR' },
+            { value: 'd', label: 'It causes SQL injection' }
+          ],
+          answer: 'b',
+          hint: 'Knowing which usernames exist is the first step to a targeted password attack.'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'Which password attack tries ONE common password against MANY accounts to avoid lockouts?',
+          options: [
+            { value: 'a', label: 'Brute force' },
+            { value: 'b', label: 'Credential stuffing' },
+            { value: 'c', label: 'Password spraying' },
+            { value: 'd', label: 'Dictionary attack' }
+          ],
+          answer: 'c',
+          hint: 'This technique stays under the per-account lockout threshold.'
+        },
+        {
+          type: 'tf', id: 'q3',
+          text: 'bcrypt is preferred over SHA-256 for password hashing because bcrypt is intentionally slow.',
+          answer: true,
+          hint: 'Slow hashing makes brute force impractical — each guess takes ~250ms instead of nanoseconds.'
+        },
+        {
+          type: 'mc', id: 'q4',
+          text: 'Which MFA method is most resistant to phishing attacks?',
+          options: [
+            { value: 'a', label: 'SMS codes' },
+            { value: 'b', label: 'Email codes' },
+            { value: 'c', label: 'TOTP (Google Authenticator)' },
+            { value: 'd', label: 'FIDO2/WebAuthn hardware keys' }
+          ],
+          answer: 'd',
+          hint: 'Hardware keys use cryptographic challenge-response bound to the domain — they cannot be phished.'
+        },
+        {
+          type: 'tf', id: 'q5',
+          text: 'A timing side-channel in login can reveal valid usernames even when error messages are identical.',
+          answer: true,
+          hint: 'If valid usernames trigger a bcrypt hash check (~500ms) but invalid ones return quickly (~10ms), the timing difference leaks information.'
+        }
+      ],
+      flags: [
+        { id: 'f1', label: 'Flask Lab — Username Enumeration', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10 },
+        { id: 'f2', label: 'Flask Lab — Password Reset Poisoning', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 15 }
+      ]
+    });
   }
 
   function cleanup() {
     listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
     listeners = [];
+    QuizEngine.cleanup('vuln-auth');
   }
 
   return { init, cleanup };

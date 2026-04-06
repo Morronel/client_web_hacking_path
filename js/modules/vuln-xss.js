@@ -163,6 +163,65 @@ ${bodyHtml}
         if (e.key === 'Enter') btnEl.click();
       });
     }
+
+    // Unified quiz
+    QuizEngine.init(container, 'vuln-xss', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'Which type of XSS is permanently stored on the server and affects every user who views the page?',
+          options: [
+            { value: 'a', label: 'Reflected XSS' },
+            { value: 'b', label: 'Stored XSS' },
+            { value: 'c', label: 'DOM-based XSS' },
+            { value: 'd', label: 'Self-XSS' }
+          ],
+          answer: 'b',
+          hint: 'The payload persists in the database and renders for all visitors.'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'Which defense prevents JavaScript from reading session cookies?',
+          options: [
+            { value: 'a', label: '<code>Secure</code> flag' },
+            { value: 'b', label: '<code>SameSite</code> attribute' },
+            { value: 'c', label: '<code>HttpOnly</code> flag' },
+            { value: 'd', label: 'Content-Security-Policy' }
+          ],
+          answer: 'c',
+          hint: 'This flag makes the cookie invisible to document.cookie.'
+        },
+        {
+          type: 'mc', id: 'q3',
+          text: 'In which context does the payload <code>" onfocus=alert(1) autofocus="</code> work?',
+          options: [
+            { value: 'a', label: 'HTML body context' },
+            { value: 'b', label: 'HTML attribute context' },
+            { value: 'c', label: 'JavaScript string context' },
+            { value: 'd', label: 'URL context' }
+          ],
+          answer: 'b',
+          hint: 'The double-quote breaks out of an attribute value.'
+        },
+        {
+          type: 'tf', id: 'q4',
+          text: 'A Content Security Policy with <code>unsafe-inline</code> in the <code>script-src</code> directive effectively prevents XSS.',
+          answer: false,
+          hint: 'unsafe-inline is the opposite — it allows inline scripts, defeating CSP\'s purpose.'
+        },
+        {
+          type: 'tf', id: 'q5',
+          text: 'DOM-based XSS can occur even when the malicious input never reaches the server.',
+          answer: true,
+          hint: 'DOM XSS happens entirely in client-side JavaScript (e.g., location.hash → innerHTML).'
+        }
+      ],
+      flags: [
+        { id: 'f1', label: 'Flask Lab — Reflected XSS', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10 },
+        { id: 'f2', label: 'Flask Lab — Stored XSS', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 15 },
+        { id: 'f3', label: 'Flask Lab — CSP Bypass', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 20 }
+      ]
+    });
   }
 
   function cleanup() {
@@ -172,6 +231,7 @@ ${bodyHtml}
       window.removeEventListener('message', messageHandler);
       messageHandler = null;
     }
+    QuizEngine.cleanup('vuln-xss');
   }
 
   return { init, cleanup };

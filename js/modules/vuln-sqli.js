@@ -414,6 +414,64 @@ window.vulnSqli = (() => {
     initLab2();
     initLab3();
     initLab4();
+
+    // Unified quiz + flag inputs
+    QuizEngine.init(container, 'vuln-sqli', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'What is the root cause of SQL injection?',
+          options: [
+            { value: 'a', label: 'Using SQL databases instead of NoSQL' },
+            { value: 'b', label: 'User input concatenated directly into SQL query strings' },
+            { value: 'c', label: 'Not using HTTPS' },
+            { value: 'd', label: 'Running the database on the same server as the application' }
+          ],
+          answer: 'b',
+          hint: 'The database cannot distinguish code from data when they are mixed together.'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'In a UNION-based attack, what must match between the original and injected SELECT?',
+          options: [
+            { value: 'a', label: 'The table names' },
+            { value: 'b', label: 'The number of columns' },
+            { value: 'c', label: 'The database user' },
+            { value: 'd', label: 'The WHERE clause' }
+          ],
+          answer: 'b',
+          hint: 'UNION requires both queries to return the same number of columns.'
+        },
+        {
+          type: 'mc', id: 'q3',
+          text: 'Which SQLite table reveals all table names in the database?',
+          options: [
+            { value: 'a', label: '<code>information_schema.tables</code>' },
+            { value: 'b', label: '<code>sys.tables</code>' },
+            { value: 'c', label: '<code>sqlite_master</code>' },
+            { value: 'd', label: '<code>pg_catalog.pg_tables</code>' }
+          ],
+          answer: 'c',
+          hint: 'This is specific to SQLite — other databases use information_schema.'
+        },
+        {
+          type: 'tf', id: 'q4',
+          text: 'Blind SQL injection is useless because you cannot see the query results.',
+          answer: false,
+          hint: 'Blind SQLi extracts data one bit at a time through boolean or timing side channels.'
+        },
+        {
+          type: 'tf', id: 'q5',
+          text: 'Parameterized queries (prepared statements) prevent SQL injection by separating SQL structure from user data.',
+          answer: true
+        }
+      ],
+      flags: [
+        { id: 'f1', label: 'Flask Lab — Auth Bypass', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10 },
+        { id: 'f2', label: 'Flask Lab — UNION Extraction', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 15 },
+        { id: 'f3', label: 'Flask Lab — Blind SQLi', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 20 }
+      ]
+    });
   }
 
   function cleanup() {
@@ -426,6 +484,7 @@ window.vulnSqli = (() => {
     queryLogs.lab3 = [];
     queryLogs.lab4 = [];
     container = null;
+    QuizEngine.cleanup('vuln-sqli');
   }
 
   return { init, cleanup };

@@ -114,11 +114,69 @@ const vulnIdor = (() => {
   function init(container) {
     initLab1(container);
     initLab2(container);
+
+    QuizEngine.init(container, 'vuln-idor', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'What is the difference between authentication and authorization?',
+          options: [
+            { value: 'a', label: 'Authentication checks permissions; authorization verifies identity' },
+            { value: 'b', label: 'Authentication verifies identity; authorization checks what you can access' },
+            { value: 'c', label: 'They are the same thing' },
+            { value: 'd', label: 'Authentication uses cookies; authorization uses tokens' }
+          ],
+          answer: 'b',
+          hint: 'AuthN = who are you? AuthZ = what can you do?'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'A regular user accessing another regular user\'s profile is an example of:',
+          options: [
+            { value: 'a', label: 'Vertical privilege escalation' },
+            { value: 'b', label: 'Horizontal privilege escalation' },
+            { value: 'c', label: 'SQL injection' },
+            { value: 'd', label: 'Cross-site scripting' }
+          ],
+          answer: 'b',
+          hint: 'Same privilege level, different user\'s data.'
+        },
+        {
+          type: 'tf', id: 'q3',
+          text: 'Using UUIDs instead of sequential integers fully prevents IDOR vulnerabilities.',
+          answer: false,
+          hint: 'UUIDs make enumeration harder but don\'t fix the root cause — missing authorization checks.'
+        },
+        {
+          type: 'mc', id: 'q4',
+          text: 'Which testing approach is most effective for finding IDORs?',
+          options: [
+            { value: 'a', label: 'Run an automated vulnerability scanner' },
+            { value: 'b', label: 'Create two accounts, note the IDs, and try accessing each other\'s resources' },
+            { value: 'c', label: 'Check if the site uses HTTPS' },
+            { value: 'd', label: 'Review the HTML source code' }
+          ],
+          answer: 'b',
+          hint: 'The two-account cross-reference technique is the standard IDOR testing methodology.'
+        },
+        {
+          type: 'tf', id: 'q5',
+          text: 'An endpoint that properly checks authorization on GET requests is guaranteed to also check it on PUT and DELETE.',
+          answer: false,
+          hint: 'Authorization must be checked on EVERY HTTP method separately — developers often forget non-GET methods.'
+        }
+      ],
+      flags: [
+        { id: 'f1', label: 'Flask Lab — User Profile IDOR', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10 },
+        { id: 'f2', label: 'Flask Lab — Order IDOR', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 15 }
+      ]
+    });
   }
 
   function cleanup() {
     listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
     listeners = [];
+    QuizEngine.cleanup('vuln-idor');
   }
 
   return { init, cleanup };
