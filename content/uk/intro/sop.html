@@ -1,0 +1,314 @@
+<!-- Module: Same-Origin Policy & CORS -->
+<h1>Same-Origin Policy та CORS</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Що таке Same-Origin Policy?</h2>
+  <p>
+    Same-Origin Policy (SOP) — найфундаментальніший механізм безпеки у веб-браузерах. Він обмежує
+    спосіб, яким скрипти, завантажені з одного джерела (origin), можуть взаємодіяти з ресурсами іншого
+    джерела. Без SOP будь-який сайт, який ти відвідуєш, міг би читати твою пошту, отримати доступ
+    до банківського рахунку та вкрасти session cookies з кожного іншого сайту, де ти залогінений.
+  </p>
+
+  <h2>Визначення "Origin"</h2>
+  <p>
+    Origin визначається трьома компонентами: <strong>схема</strong> (протокол), <strong>хост</strong>
+    (домен) та <strong>порт</strong>. Два URL мають однаковий origin тоді й тільки тоді, коли всі три
+    компоненти точно збігаються.
+  </p>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>URL A</th>
+          <th>URL B</th>
+          <th>Однаковий Origin?</th>
+          <th>Причина</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>https://example.com/page1</code></td>
+          <td><code>https://example.com/page2</code></td>
+          <td><span class="text-green">Так</span></td>
+          <td>Однакові схема, хост і порт (443)</td>
+        </tr>
+        <tr>
+          <td><code>https://example.com</code></td>
+          <td><code>http://example.com</code></td>
+          <td><span class="text-red">Ні</span></td>
+          <td>Різна схема (https vs http)</td>
+        </tr>
+        <tr>
+          <td><code>https://example.com</code></td>
+          <td><code>https://api.example.com</code></td>
+          <td><span class="text-red">Ні</span></td>
+          <td>Різний хост (піддомен враховується)</td>
+        </tr>
+        <tr>
+          <td><code>https://example.com</code></td>
+          <td><code>https://example.com:8443</code></td>
+          <td><span class="text-red">Ні</span></td>
+          <td>Різний порт (443 vs 8443)</td>
+        </tr>
+        <tr>
+          <td><code>http://example.com:80</code></td>
+          <td><code>http://example.com</code></td>
+          <td><span class="text-green">Так</span></td>
+          <td>Порт 80 — типовий для http</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Що SOP блокує, а що дозволяє</h2>
+
+  <div class="panel">
+    <h3>Cross-origin читання (ЗАБЛОКОВАНО за замовчуванням)</h3>
+    <p>
+      JavaScript на <code>evil.com</code> не може прочитати відповідь від <code>fetch()</code> або
+      <code>XMLHttpRequest</code> до <code>bank.com</code>. Браузер надсилає запит, але блокує
+      скрипту доступ до читання відповіді. Це запобігає крадіжці даних.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Cross-origin запис (ДОЗВОЛЕНО)</h3>
+    <p>
+      Форми можуть надсилати POST-запити на будь-який origin. Посилання переходять на будь-який origin.
+      Саме тому можливі атаки CSRF (Cross-Site Request Forgery) — браузер охоче надсилає запит разом
+      з cookies; він просто не дає зловмиснику прочитати відповідь.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>Cross-origin вбудовування (ДОЗВОЛЕНО)</h3>
+    <p>
+      Ресурси на кшталт <code>&lt;img&gt;</code>, <code>&lt;script&gt;</code>, <code>&lt;link&gt;</code>,
+      <code>&lt;iframe&gt;</code> та <code>&lt;video&gt;</code> можна завантажувати з будь-якого origin. Саме так
+      працюють CDN — ти завантажуєш jQuery з <code>cdn.jsdelivr.net</code>, хоча твій сайт на іншому
+      origin. Однак сторінка, що вбудовує ресурс, не може прочитати піксельні дані cross-origin зображення
+      на canvas (tainted canvas).
+    </p>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>SOP не запобігає запитам — він запобігає читанню відповідей.</strong> Сервер все одно
+    отримує та обробляє cross-origin запит. Ця різниця є ключовою для розуміння CSRF
+    та причин створення CORS.
+  </div>
+
+  <h2>CORS — Cross-Origin Resource Sharing</h2>
+  <p>
+    CORS — це механізм, який дозволяє серверам вибірково послаблювати Same-Origin Policy. Коли веб-додаток
+    на <code>frontend.com</code> потребує викликати API на <code>api.backend.com</code>, сервер може
+    включити CORS-заголовки, щоб повідомити браузеру: «дозволь цьому origin читати мою відповідь».
+  </p>
+
+  <div class="panel">
+    <h3>Прості запити</h3>
+    <p>
+      Для простих запитів (GET, HEAD, POST зі стандартними типами контенту) браузер надсилає запит
+      напряму та перевіряє заголовки відповіді:
+    </p>
+    <pre><code class="language-http">Access-Control-Allow-Origin: https://frontend.com</code></pre>
+    <p>Якщо заголовок відповідає origin запиту, браузер дозволяє скрипту прочитати відповідь.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Preflight-запити</h3>
+    <p>
+      Для «непростих» запитів (PUT, DELETE, кастомні заголовки, JSON content type) браузер спочатку
+      надсилає OPTIONS-запит (preflight), щоб запитати дозвіл:
+    </p>
+    <pre><code class="language-http">OPTIONS /api/data HTTP/1.1
+Host: api.backend.com
+Origin: https://frontend.com
+Access-Control-Request-Method: PUT
+Access-Control-Request-Headers: Content-Type, Authorization</code></pre>
+    <p>Сервер відповідає дозволеними методами та заголовками:</p>
+    <pre><code class="language-http">Access-Control-Allow-Origin: https://frontend.com
+Access-Control-Allow-Methods: GET, PUT, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Max-Age: 86400</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>Облікові дані та CORS</h3>
+    <p>
+      За замовчуванням cross-origin запити не включають cookies або HTTP-автентифікацію. Щоб їх включити,
+      клієнт повинен встановити <code>credentials: 'include'</code> (fetch) або <code>withCredentials = true</code>
+      (XHR), а сервер повинен відповісти:
+    </p>
+    <pre><code class="language-http">Access-Control-Allow-Credentials: true</code></pre>
+    <p>
+      <strong>Критичне правило:</strong> Коли <code>Allow-Credentials: true</code>, заголовок
+      <code>Access-Control-Allow-Origin</code> НЕ МОЖЕ бути підстановочним знаком <code>*</code>. Він повинен
+      вказувати точний origin. Браузери це перевіряють.
+    </p>
+  </div>
+
+  <h2>Помилки конфігурації CORS</h2>
+  <p>
+    Помилки конфігурації CORS — поширене джерело вразливостей. Ось найнебезпечніші патерни:
+  </p>
+
+  <div class="panel">
+    <h3>1. Відображення Origin</h3>
+    <p>
+      Сервер сліпо відображає заголовок <code>Origin</code> у <code>Access-Control-Allow-Origin</code>.
+      Тепер будь-який сайт може читати автентифіковані відповіді:
+    </p>
+    <pre><code class="language-http">// Request from evil.com
+Origin: https://evil.com
+
+// Server response (vulnerable)
+Access-Control-Allow-Origin: https://evil.com
+Access-Control-Allow-Credentials: true</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>2. Дозволений Null Origin</h3>
+    <p>
+      Деякі сервери дозволяють origin <code>null</code>, вважаючи це безпечним. Але ізольовані iframe
+      та локальні файлові сторінки надсилають <code>Origin: null</code>, що робить експлуатацію тривіальною:
+    </p>
+    <pre><code class="language-http">Access-Control-Allow-Origin: null
+Access-Control-Allow-Credentials: true</code></pre>
+  </div>
+
+  <div class="panel">
+    <h3>3. Wildcard з обліковими даними (блокується браузерами)</h3>
+    <p>
+      Хоча <code>Access-Control-Allow-Origin: *</code> з <code>Access-Control-Allow-Credentials: true</code>
+      відхиляється браузерами, деякі розробники обходять це, відображаючи origin — створюючи
+      вразливість, описану вище.
+    </p>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Тестування на помилки конфігурації CORS:</strong> Надішли запит з довільним
+    заголовком <code>Origin</code> і перевір, чи він відображається в <code>Access-Control-Allow-Origin</code>.
+    Також протестуй з <code>Origin: null</code>. Якщо будь-який із них відображається з
+    <code>Allow-Credentials: true</code>, додаток вразливий.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: SOP Checker
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> Same-Origin Policy Checker
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Enter two URLs and determine if they share the same origin.
+    Correctly evaluate 5 pairs to complete this lab.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you understand origin comparison!</div>
+
+  <div class="lab-body">
+    <div class="panel">
+      <div class="input-group">
+        <label for="sop-url1">URL 1</label>
+        <input type="text" id="sop-url1" class="query-input" placeholder="https://example.com/page1" />
+      </div>
+      <div class="input-group">
+        <label for="sop-url2">URL 2</label>
+        <input type="text" id="sop-url2" class="query-input" placeholder="https://example.com:8443/page2" />
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-primary" id="sop-same">Same Origin</button>
+        <button class="btn btn-secondary" id="sop-diff">Different Origin</button>
+      </div>
+    </div>
+
+    <div id="sop-feedback" class="quiz-feedback" style="margin-top:12px;"></div>
+    <div id="sop-progress" class="text-muted" style="margin-top:8px;">Correct answers: 0 / 5</div>
+  </div>
+</div>
+
+<!-- ============================================
+     LAB 2: CORS Misconfiguration Quiz
+     ============================================ -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 2</span> CORS Misconfiguration Quiz
+    </div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 3 out of 4 questions correctly about CORS headers
+    and misconfigurations.
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">Lab complete — you understand CORS security!</div>
+
+  <div class="lab-body">
+    <!-- Question 1 -->
+    <div class="panel" id="cors-q1-panel">
+      <h3>Question 1</h3>
+      <p>Which CORS header tells the browser it is safe to include cookies in cross-origin requests?</p>
+      <div class="quiz-options" id="cors-q1-options">
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="a">Access-Control-Allow-Origin</button>
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="b">Access-Control-Allow-Credentials</button>
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="c">Access-Control-Allow-Methods</button>
+        <button class="btn btn-secondary quiz-option" data-q="c1" data-val="d">Access-Control-Expose-Headers</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q1-feedback"></div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="panel" id="cors-q2-panel">
+      <h3>Question 2</h3>
+      <p>Is <code>Access-Control-Allow-Origin: *</code> combined with <code>Access-Control-Allow-Credentials: true</code> safe?</p>
+      <div class="quiz-options" id="cors-q2-options">
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="a">Yes, it allows all origins securely</button>
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="b">No, but browsers block this combination anyway</button>
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="c">Yes, the wildcard overrides credential checks</button>
+        <button class="btn btn-secondary quiz-option" data-q="c2" data-val="d">It depends on the HTTP method used</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q2-feedback"></div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="panel" id="cors-q3-panel">
+      <h3>Question 3</h3>
+      <p>A server reflects any <code>Origin</code> header value in <code>Access-Control-Allow-Origin</code> with <code>Allow-Credentials: true</code>. What is the risk?</p>
+      <div class="quiz-options" id="cors-q3-options">
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="a">No risk — browsers verify the origin independently</button>
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="b">Any website can read authenticated responses from the server</button>
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="c">Only the performance is affected</button>
+        <button class="btn btn-secondary quiz-option" data-q="c3" data-val="d">The server will crash from too many preflight requests</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q3-feedback"></div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="panel" id="cors-q4-panel">
+      <h3>Question 4</h3>
+      <p>What type of HTTP request does the browser send as a CORS "preflight"?</p>
+      <div class="quiz-options" id="cors-q4-options">
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="a">GET</button>
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="b">HEAD</button>
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="c">OPTIONS</button>
+        <button class="btn btn-secondary quiz-option" data-q="c4" data-val="d">TRACE</button>
+      </div>
+      <div class="quiz-feedback" id="cors-q4-feedback"></div>
+    </div>
+
+    <button class="btn btn-primary" id="lab2-submit">Submit Answers</button>
+    <div id="lab2-result" class="quiz-result"></div>
+  </div>
+</div>

