@@ -1,14 +1,37 @@
 <section class="module-header">
-  <h1>Module 21 — Insecure Deserialization</h1>
+  <h1>Module 16 — Insecure Deserialization</h1>
   <p>Understand how untrusted serialized data can lead to remote code execution through Python pickle, YAML, and custom object injection.</p>
 </section>
 
 <section class="theory-section">
-  <h2>What Is Deserialization?</h2>
-  <p>Serialization converts objects to a transportable format (bytes, strings). Deserialization reverses this. When an application deserializes untrusted data using unsafe formats like Python's <code>pickle</code> or <code>yaml.unsafe_load()</code>, attackers can inject malicious objects that execute arbitrary code during the deserialization process.</p>
 
-  <h2>Python Pickle — The Classic RCE</h2>
-  <p>Python's <code>pickle</code> module can serialize/deserialize arbitrary objects. The <code>__reduce__</code> method controls how an object is reconstructed — and it can call any function:</p>
+  <h2>The Most Underrated Vulnerability</h2>
+  <p>
+    Deserialization vulnerabilities are weird because they do not look like other vulnerabilities. There is no injection point in a form field. There is no URL parameter to tamper with. Instead, the attack vector is a blob of binary or encoded data — a cookie, an API parameter, a file upload — that the application deserializes (converts from bytes back into an object) using an unsafe method.
+  </p>
+  <p>
+    The consequence? <strong>Remote Code Execution</strong>. Not "maybe" or "under certain conditions." Just straight RCE. The attacker crafts a serialized object that, when deserialized, executes arbitrary commands on the server. No authentication needed, no SQL query involved, no browser interaction — just send the payload and get a shell.
+  </p>
+  <p>
+    This is why insecure deserialization has been in the OWASP Top 10 since 2017. It is not the most common vulnerability, but when you find it, the impact is almost always critical.
+  </p>
+
+  <h2>Serialization 101</h2>
+  <p>
+    Let us start with the basics. <strong>Serialization</strong> converts an in-memory object into a format that can be stored or transmitted (bytes, strings, JSON). <strong>Deserialization</strong> reverses this — it takes the stored format and reconstructs the original object.
+  </p>
+  <p>
+    Every programming language has serialization mechanisms. Some are safe (JSON — only handles basic data types). Some are <strong>incredibly dangerous</strong> (Python's pickle, Java's ObjectInputStream, PHP's unserialize) because they can reconstruct <em>arbitrary objects</em>, including objects that execute code as part of their construction.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Analogy:</strong> Imagine receiving a package in the mail. JSON serialization is like receiving a box of LEGO bricks — harmless data that you assemble yourself. Pickle serialization is like receiving a fully assembled device that plugs itself in and starts running the moment you open the box. If someone mailed you a bomb, you would not want a package format that auto-detonates on opening.
+  </div>
+
+  <h2>Python Pickle — The Classic Example</h2>
+  <p>
+    Python's <code>pickle</code> module is the textbook example of dangerous deserialization. It can serialize and deserialize <em>any</em> Python object, and it uses a special method called <code>__reduce__</code> to control how objects are reconstructed. The key insight: <code>__reduce__</code> can return <strong>any callable</strong>, and that callable is invoked during deserialization.
+  </p>
 
   <h3 class="text-red">Vulnerable Code</h3>
   <pre><code class="language-python">import pickle, base64
@@ -17,18 +40,29 @@
 def load_data():
     data = request.form.get('data')
     # DANGEROUS: deserializes untrusted data
+    # pickle.loads() will execute ANY code embedded in the payload
     obj = pickle.loads(base64.b64decode(data))
     return str(obj)</code></pre>
 
-  <h3>Exploit Payload</h3>
+  <h3>The Exploit</h3>
   <pre><code class="language-python">import pickle, base64, os
 
 class Exploit:
     def __reduce__(self):
+        # This method is called during deserialization
+        # It returns a tuple: (callable, args)
+        # pickle will call: os.popen('cat /etc/passwd')
         return (os.popen, ('cat /etc/passwd',))
 
 payload = base64.b64encode(pickle.dumps(Exploit())).decode()
-print(payload)  # Send this to the vulnerable endpoint</code></pre>
+print(payload)  # Send this to the vulnerable endpoint
+
+# When the server runs pickle.loads() on this payload,
+# it calls os.popen('cat /etc/passwd') — RCE achieved.</code></pre>
+
+  <p>
+    That is it. Five lines of exploit code. The attacker creates an object whose <code>__reduce__</code> method returns <code>(os.popen, ('cat /etc/passwd',))</code>. When <code>pickle.loads()</code> deserializes this object, it calls <code>os.popen('cat /etc/passwd')</code>. The server faithfully executes the command and returns the output. Game over.
+  </p>
 
   <h3 class="text-green">Safe Alternative</h3>
   <pre><code class="language-python">import json
@@ -36,39 +70,74 @@ print(payload)  # Send this to the vulnerable endpoint</code></pre>
 @app.route('/load', methods=['POST'])
 def load_data():
     data = request.form.get('data')
-    # SAFE: JSON cannot execute code during parsing
+    # SAFE: JSON only handles basic types (strings, numbers, lists, dicts)
+    # It CANNOT execute code during parsing — there is no __reduce__ equivalent
     obj = json.loads(data)
     return str(obj)</code></pre>
 
+  <div class="callout callout-danger">
+    <strong>The Python docs literally warn you:</strong> The official Python documentation says: <em>"Warning: The pickle module is not secure. Only unpickle data you trust."</em> Despite this warning, developers regularly use pickle to deserialize user-supplied data — in cookies, API parameters, message queues, and cache stores.
+  </div>
+
   <h2>YAML Deserialization</h2>
-  <pre><code class="language-python"># DANGEROUS: yaml.unsafe_load() / yaml.load(data, Loader=yaml.UnsafeLoader)
+  <p>
+    Python's YAML library has the same problem. The <code>yaml.unsafe_load()</code> function (and <code>yaml.load()</code> with certain loaders) can instantiate arbitrary Python objects from YAML syntax:
+  </p>
+  <pre><code class="language-python"># DANGEROUS: yaml.unsafe_load() can execute code
 import yaml
 data = yaml.unsafe_load(user_input)
-# Payload: !!python/object/apply:os.popen ['cat /etc/passwd']
+# Attack payload: !!python/object/apply:os.popen ['cat /etc/passwd']
+# The !! syntax tells YAML to construct a Python object
 
-# SAFE: yaml.safe_load() only allows basic types
+# SAFE: yaml.safe_load() only allows basic types (strings, numbers, lists, dicts)
 data = yaml.safe_load(user_input)</code></pre>
 
-  <h2>Cookie Forgery</h2>
-  <p>Applications that store serialized data in cookies with weak HMAC keys are vulnerable. If the signing key is guessable (e.g., <code>"secret"</code>), attackers can forge cookies with modified data.</p>
+  <h2>Java Deserialization — The Enterprise Nightmare</h2>
+  <p>
+    Java's <code>ObjectInputStream</code> has the same fundamental problem as Python's pickle, but the impact has been far larger because Java is used extensively in enterprise software. In 2015, researchers from Foxglove Security published a paper showing that nearly every major Java framework (Apache Commons Collections, Spring, WebSphere, JBoss, WebLogic) contained "gadget chains" — sequences of objects that, when deserialized, would chain together to execute arbitrary commands.
+  </p>
+  <p>
+    The tool <strong>ysoserial</strong> automates the generation of these payloads. You specify the target library and the command you want to run, and it generates a serialized Java object that achieves RCE when deserialized.
+  </p>
 
-  <h2>Dangerous Serialization Formats</h2>
+  <div class="callout callout-success">
+    <strong>Real Story — Equifax Breach (2017):</strong> The Equifax breach that exposed <strong>147 million Americans' personal data</strong> (including Social Security numbers) was caused by a deserialization vulnerability in Apache Struts (CVE-2017-5638). An attacker sent a crafted Content-Type header containing an OGNL expression that was deserialized and executed on the server. Equifax had not patched a known vulnerability for over two months.
+  </div>
+
+  <h2>Dangerous Serialization Formats — The Cheat Sheet</h2>
   <div class="table-wrapper">
     <table>
       <thead><tr><th>Format</th><th>Language</th><th>Risk Level</th><th>Safe Alternative</th></tr></thead>
       <tbody>
         <tr><td>pickle</td><td>Python</td><td class="text-red">Critical (RCE)</td><td>JSON, MessagePack</td></tr>
         <tr><td>yaml.unsafe_load</td><td>Python</td><td class="text-red">Critical (RCE)</td><td>yaml.safe_load()</td></tr>
-        <tr><td>Java ObjectInputStream</td><td>Java</td><td class="text-red">Critical (RCE)</td><td>JSON with Jackson</td></tr>
-        <tr><td>PHP unserialize</td><td>PHP</td><td class="text-red">High (Object Injection)</td><td>json_decode()</td></tr>
-        <tr><td>JSON</td><td>Any</td><td class="text-green">Safe</td><td>—</td></tr>
+        <tr><td>Java ObjectInputStream</td><td>Java</td><td class="text-red">Critical (RCE)</td><td>JSON with Jackson/Gson</td></tr>
+        <tr><td>PHP unserialize()</td><td>PHP</td><td class="text-red">High (Object Injection, RCE)</td><td>json_decode()</td></tr>
+        <tr><td>.NET BinaryFormatter</td><td>C#</td><td class="text-red">Critical (RCE)</td><td>System.Text.Json</td></tr>
+        <tr><td>Ruby Marshal.load</td><td>Ruby</td><td class="text-red">Critical (RCE)</td><td>JSON.parse()</td></tr>
+        <tr><td>JSON</td><td>Any</td><td class="text-green">Safe</td><td>— (already safe)</td></tr>
       </tbody>
     </table>
   </div>
 
-  <div class="callout callout-danger">
-    <strong>Impact:</strong> Insecure deserialization consistently appears in the OWASP Top 10. It can lead to remote code execution, authentication bypass, privilege escalation, and complete server compromise.
+  <h2>Cookie-Based Deserialization</h2>
+  <p>
+    A common pattern: the application stores user state in a signed cookie. The cookie contains serialized data (often base64-encoded pickle or PHP serialized objects). The server signs the cookie with an HMAC to prevent tampering. Sounds safe, right?
+  </p>
+  <p>
+    The problem: if the signing key is weak or leaked, the attacker can <strong>forge the cookie</strong>. Flask uses a session cookie signed with the application's <code>SECRET_KEY</code>. If that key is something like <code>"secret"</code> or <code>"development"</code> or left as the framework default, tools like <code>flask-unsign</code> can crack it and forge cookies with arbitrary data — including pickle payloads.
+  </p>
+
+  <pre><code class="language-bash"># Crack a Flask session cookie's signing key
+flask-unsign --unsign --cookie "eyJ..." --wordlist rockyou.txt
+
+# Forge a new cookie with a malicious payload
+flask-unsign --sign --cookie '{"admin": true}' --secret 'cracked-key'</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Defense:</strong> The rules are simple: (1) <strong>Never deserialize untrusted data</strong> with pickle, yaml.unsafe_load, Java ObjectInputStream, PHP unserialize, or any format that can instantiate arbitrary objects. (2) Use JSON for data interchange — it only handles primitive types and cannot execute code. (3) If you must use signed cookies, use a strong, random SECRET_KEY (at least 32 bytes of entropy). (4) Keep your frameworks patched — deserialization gadget chains are discovered regularly.
   </div>
+
 </section>
 
 <section class="quiz-section">

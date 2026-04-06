@@ -1,41 +1,54 @@
-<!-- Module 13: Cross-Site Request Forgery -->
+<!-- Module 17: Cross-Site Request Forgery -->
 <section class="module-header">
-  <h1>Module 13 — Cross-Site Request Forgery (CSRF)</h1>
+  <h1>Module 17 — Cross-Site Request Forgery (CSRF)</h1>
   <p>Understand how attackers trick authenticated users into performing unintended actions by exploiting the browser's automatic cookie attachment behavior.</p>
 </section>
 
 <section class="theory-section">
-  <h2>How CSRF Works</h2>
+
+  <h2>The Confused Deputy</h2>
   <p>
-    When a browser makes a request to a site, it automatically attaches all cookies for that domain,
-    including session cookies. CSRF exploits this by tricking an authenticated user into submitting a
-    request to the target application from a malicious page. The server cannot distinguish the forged
-    request from a legitimate one because the session cookie is present.
+    CSRF is one of the most elegant attacks in web security because it does not exploit a bug in the code — it exploits <strong>how browsers fundamentally work</strong>. Here is the core issue: when your browser makes a request to <code>bank.com</code>, it automatically attaches all cookies for <code>bank.com</code>, including your session cookie. The browser does this <em>regardless of where the request originated</em>.
+  </p>
+  <p>
+    So if you are logged into your bank, and you visit a malicious website, that website can make your browser send a request to <code>bank.com/transfer?to=attacker&amount=10000</code> — and your browser will helpfully attach your session cookie, making it look like a legitimate request from you.
+  </p>
+  <p>
+    The bank's server sees a valid session cookie and processes the transfer. It has no way to know the request came from <code>evil.com</code> instead of the bank's own page. The browser is the "confused deputy" — it has the authority to act on your behalf (via the session cookie) but is tricked into using that authority for the attacker's benefit.
   </p>
 
-  <h3>The Attack Flow</h3>
+  <h3>The Attack Flow, Step by Step</h3>
   <ol>
-    <li>Victim logs into <code>bank.com</code> and receives a session cookie.</li>
-    <li>Victim visits <code>evil.com</code> while still logged in.</li>
-    <li><code>evil.com</code> contains a hidden form that auto-submits a POST to <code>bank.com/transfer</code>.</li>
-    <li>The browser attaches the session cookie, and the bank processes the transfer.</li>
+    <li>Victim logs into <code>bank.com</code> and receives a session cookie (<code>session=abc123</code>).</li>
+    <li>Victim visits <code>evil.com</code> (via a link in an email, a forum post, an ad, etc.) while still logged into the bank.</li>
+    <li><code>evil.com</code> contains a hidden, auto-submitting form that POSTs to <code>bank.com/transfer</code>.</li>
+    <li>The victim's browser submits the form. Because the target is <code>bank.com</code>, the browser attaches the <code>session=abc123</code> cookie.</li>
+    <li>The bank's server sees a valid session and a valid transfer request. It processes the transfer. The victim never sees anything — the form submission happened automatically and invisibly.</li>
   </ol>
 
-  <h3>Same-Origin Policy Gaps</h3>
-  <p>
-    The same-origin policy prevents JavaScript on <code>evil.com</code> from reading responses from
-    <code>bank.com</code>, but it does <strong>not</strong> prevent cross-origin form submissions or
-    image/script requests. The attacker does not need to read the response; the side effect (transfer,
-    password change) is the goal.
-  </p>
+  <pre><code class="language-html">&lt;!-- The attacker's page (evil.com) --&gt;
+&lt;html&gt;
+&lt;body onload="document.forms[0].submit()"&gt;
+  &lt;form method="POST" action="https://bank.com/transfer"&gt;
+    &lt;input type="hidden" name="to" value="attacker-account"&gt;
+    &lt;input type="hidden" name="amount" value="10000"&gt;
+  &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
 
-  <h2>Vulnerable Code: No CSRF Protection</h2>
+  <div class="callout callout-info">
+    <strong>Why Does This Work?</strong> The Same-Origin Policy prevents JavaScript on <code>evil.com</code> from <em>reading</em> responses from <code>bank.com</code>. But it does NOT prevent cross-origin form submissions, image loads, or script loads. The attacker does not need to read the response — the <em>side effect</em> (the money transfer) is the goal.
+  </div>
+
+  <h2>Vulnerable Code</h2>
   <pre><code class="language-python"># Flask — VULNERABLE: no CSRF token validation
 @app.route('/transfer', methods=['POST'])
 @login_required
 def transfer():
     to_account = request.form['to']
     amount = request.form['amount']
+    # The server trusts the request because the session cookie is valid
+    # But it never verifies that the request came from the bank's own page
     db.execute("UPDATE accounts SET balance = balance - ? WHERE user_id = ?",
                (amount, current_user.id))
     db.execute("UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
@@ -43,7 +56,11 @@ def transfer():
     db.commit()
     return redirect('/dashboard')</code></pre>
 
-  <h2>Safe Code: Flask-WTF CSRF Protection</h2>
+  <h2>Defense #1: CSRF Tokens</h2>
+  <p>
+    The most common defense. The server generates a random, unpredictable token and includes it in every form as a hidden field. When the form is submitted, the server verifies that the token is present and correct. Because the attacker cannot read the bank's pages (SOP blocks this), they cannot obtain the token, so their forged form submission will be missing the token and get rejected.
+  </p>
+
   <pre><code class="language-python"># Flask — SAFE: CSRF token required
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import StringField, DecimalField
@@ -59,60 +76,60 @@ class TransferForm(FlaskForm):
 def transfer():
     form = TransferForm()
     if form.validate_on_submit():  # validates CSRF token automatically
-        # process transfer
+        # process transfer — token is valid, request is genuine
         pass
     return redirect('/dashboard')</code></pre>
 
   <pre><code class="language-html">&lt;!-- Template includes hidden CSRF token --&gt;
 &lt;form method="POST" action="/transfer"&gt;
-  {{ form.hidden_tag() }}
+  {{ form.hidden_tag() }}  &lt;!-- renders: &lt;input type="hidden" name="csrf_token" value="random-token-here"&gt; --&gt;
   &lt;input name="to" placeholder="Recipient"&gt;
   &lt;input name="amount" placeholder="Amount"&gt;
   &lt;button type="submit"&gt;Transfer&lt;/button&gt;
 &lt;/form&gt;</code></pre>
 
-  <h2>Defense Mechanisms</h2>
-
-  <h3>CSRF Tokens</h3>
+  <h2>Defense #2: SameSite Cookies</h2>
   <p>
-    A unique, unpredictable token is embedded in each form and validated on the server. Because the
-    attacker cannot read the target page (same-origin policy), they cannot obtain the token.
-  </p>
-
-  <h3>SameSite Cookies</h3>
-  <p>
-    The <code>SameSite</code> cookie attribute controls whether cookies are sent with cross-site requests:
+    The <code>SameSite</code> cookie attribute is a browser-level defense that controls whether cookies are sent with cross-site requests. It is arguably the single biggest improvement to CSRF defense in the last decade.
   </p>
   <ul>
-    <li><strong>Strict:</strong> Cookie is never sent on cross-site requests. Strongest protection but can break legitimate flows.</li>
-    <li><strong>Lax:</strong> Cookie is sent on top-level GET navigations but not on POST or embedded requests. Default in modern browsers.</li>
-    <li><strong>None:</strong> Cookie is always sent (requires <code>Secure</code> flag). No CSRF protection.</li>
+    <li><strong>Strict:</strong> Cookie is NEVER sent on cross-site requests. Maximum protection, but can break legitimate flows (e.g., clicking a link to the site from an email will not have the session cookie, so the user appears logged out).</li>
+    <li><strong>Lax:</strong> Cookie is sent on top-level GET navigations (clicking a link) but NOT on POST forms, iframes, or AJAX requests from other sites. This is the <strong>default in modern browsers</strong> (Chrome, Firefox, Edge) and provides good CSRF protection for state-changing POST endpoints.</li>
+    <li><strong>None:</strong> Cookie is always sent cross-site (requires the <code>Secure</code> flag). No CSRF protection. Only use this for cookies that explicitly need to work cross-site (e.g., OAuth, embedded widgets).</li>
   </ul>
 
-  <h3>Referer / Origin Header Validation</h3>
-  <p>
-    The server can check the <code>Origin</code> or <code>Referer</code> header to verify the request
-    originates from the same site. However, these headers can be stripped by privacy extensions, proxies,
-    or meta-refresh redirects, so this should not be the sole defense.
-  </p>
+  <div class="callout callout-success">
+    <strong>Good News:</strong> Since 2020, Chrome, Firefox, and Edge default cookies to <code>SameSite=Lax</code> when no SameSite attribute is specified. This means most new web applications get basic CSRF protection "for free." However, you should still implement CSRF tokens as defense-in-depth, because Lax does not protect against GET-based state changes, and older browsers may not enforce SameSite.
+  </div>
 
-  <h3>JSON CSRF</h3>
+  <h2>Defense #3: Origin/Referer Validation</h2>
   <p>
-    APIs accepting JSON bodies are sometimes assumed safe from CSRF because forms cannot natively send
-    JSON. However, if the server does not validate the <code>Content-Type</code> header, an attacker
-    can use <code>navigator.sendBeacon()</code> or <code>fetch()</code> with <code>no-cors</code> mode
-    to send form-encoded data that the server parses as JSON.
+    The server can check the <code>Origin</code> or <code>Referer</code> HTTP header to verify that the request originated from the same site. This is a useful supplementary defense, but it should not be your only protection because:
   </p>
+  <ul>
+    <li>Privacy extensions may strip the Referer header</li>
+    <li>Some proxies and firewalls modify or remove Origin headers</li>
+    <li>Meta-refresh redirects can bypass Referer checks</li>
+  </ul>
+
+  <h2>JSON APIs and CSRF</h2>
+  <p>
+    A common misconception: "My API only accepts JSON, so it is not vulnerable to CSRF because HTML forms cannot send JSON." This is <em>mostly</em> true in modern browsers with SameSite=Lax, but there are edge cases:
+  </p>
+  <ul>
+    <li>If the server accepts <code>Content-Type: text/plain</code> and parses the body as JSON, a form can send <code>enctype="text/plain"</code> with a crafted body</li>
+    <li><code>navigator.sendBeacon()</code> can send arbitrary content types in some configurations</li>
+    <li>If <code>SameSite=None</code> is set on the session cookie, <code>fetch()</code> with <code>credentials: 'include'</code> can send JSON cross-origin (though the server must also set permissive CORS headers)</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Best Practice:</strong> For JSON APIs, require a custom header like <code>X-Requested-With: XMLHttpRequest</code>. Custom headers cannot be set by HTML forms, so their presence proves the request came from JavaScript on your own site (or a site allowed by your CORS policy). This is sometimes called the "double-submit" pattern for APIs.
+  </div>
 
   <div class="callout callout-danger">
-    <strong>CSRF Impact:</strong> Account takeover (password/email change), unauthorized fund transfers,
-    privilege escalation (adding admin accounts), data modification, and social engineering amplification.
+    <strong>CSRF Impact:</strong> Account takeover (changing the victim's email or password), unauthorized fund transfers, privilege escalation (making the victim add the attacker as an admin), data modification (deleting resources, changing settings), and social engineering amplification (making the victim post content they did not write).
   </div>
 
-  <div class="callout callout-info">
-    <strong>Detection Tip:</strong> Look for state-changing endpoints that accept POST/PUT/DELETE without
-    a CSRF token parameter or custom header. Check if <code>SameSite=None</code> is set on session cookies.
-  </div>
 </section>
 
 <section class="quiz-section">

