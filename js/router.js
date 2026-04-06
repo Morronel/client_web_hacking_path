@@ -15,19 +15,23 @@ const Router = (() => {
     'intro-killchain':  { file: 'content/intro/killchain.html',   handler: 'introKillchain',  title: 'Cyber Kill Chain',     labs: 1 },
     'intro-setup':      { file: 'content/intro/setup.html',       handler: 'introSetup',      title: 'Lab Setup',            labs: 0 },
 
-    // ── Vulnerabilities (13) ──
+    // ── Category A: Authentication & Authorization (2) ──
+    'vuln-auth':         { file: 'content/vuln/auth.html',         handler: 'vulnAuth',         title: 'Broken Auth',       labs: 2 },
+    'vuln-idor':         { file: 'content/vuln/idor.html',         handler: 'vulnIdor',         title: 'IDOR',              labs: 2 },
+
+    // ── Category B: Injection (7) ──
     'vuln-sqli':         { file: 'content/vuln/sqli.html',         handler: 'vulnSqli',         title: 'SQL Injection',      labs: 4 },
     'vuln-xss':          { file: 'content/vuln/xss.html',          handler: 'vulnXss',          title: 'XSS',               labs: 3 },
     'vuln-ssti':         { file: 'content/vuln/ssti.html',         handler: 'vulnSsti',         title: 'SSTI',              labs: 2 },
-    'vuln-idor':         { file: 'content/vuln/idor.html',         handler: 'vulnIdor',         title: 'IDOR',              labs: 2 },
-    'vuln-auth':         { file: 'content/vuln/auth.html',         handler: 'vulnAuth',         title: 'Broken Auth',       labs: 2 },
-    'vuln-csrf':         { file: 'content/vuln/csrf.html',         handler: 'vulnCsrf',         title: 'CSRF',              labs: 1 },
-    'vuln-ssrf':         { file: 'content/vuln/ssrf.html',         handler: 'vulnSsrf',         title: 'SSRF',              labs: 2 },
-    'vuln-traversal':    { file: 'content/vuln/traversal.html',    handler: 'vulnTraversal',    title: 'Path Traversal',    labs: 3 },
     'vuln-cmdi':         { file: 'content/vuln/cmdi.html',         handler: 'vulnCmdi',         title: 'Command Injection', labs: 5 },
     'vuln-xxe':          { file: 'content/vuln/xxe.html',          handler: 'vulnXxe',          title: 'XXE',               labs: 2 },
-    'vuln-race':         { file: 'content/vuln/race.html',         handler: 'vulnRace',         title: 'Race Conditions',   labs: 2 },
     'vuln-deserial':     { file: 'content/vuln/deserial.html',     handler: 'vulnDeserial',     title: 'Deserialization',   labs: 1 },
+    'vuln-csrf':         { file: 'content/vuln/csrf.html',         handler: 'vulnCsrf',         title: 'CSRF',              labs: 1 },
+
+    // ── Category C: Logic & Configuration (4) ──
+    'vuln-ssrf':         { file: 'content/vuln/ssrf.html',         handler: 'vulnSsrf',         title: 'SSRF',              labs: 2 },
+    'vuln-traversal':    { file: 'content/vuln/traversal.html',    handler: 'vulnTraversal',    title: 'Path Traversal',    labs: 3 },
+    'vuln-race':         { file: 'content/vuln/race.html',         handler: 'vulnRace',         title: 'Race Conditions',   labs: 2 },
     'vuln-graphql':      { file: 'content/vuln/graphql.html',      handler: 'vulnGraphql',      title: 'GraphQL',           labs: 6 },
 
     // ── Aftermath (4) ──
@@ -40,9 +44,9 @@ const Router = (() => {
   // Category groupings for sidebar and game unlocks
   const CATEGORIES = {
     intro:  ['intro-welcome', 'intro-legal', 'intro-networking', 'intro-encoding', 'intro-cookies', 'intro-sop', 'intro-history', 'intro-killchain', 'intro-setup'],
-    vuln:   ['vuln-sqli', 'vuln-xss', 'vuln-ssti', 'vuln-idor', 'vuln-auth',
-             'vuln-csrf', 'vuln-ssrf', 'vuln-traversal',
-             'vuln-cmdi', 'vuln-xxe', 'vuln-race', 'vuln-deserial', 'vuln-graphql'],
+    vuln:   ['vuln-auth', 'vuln-idor',
+             'vuln-sqli', 'vuln-xss', 'vuln-ssti', 'vuln-cmdi', 'vuln-xxe', 'vuln-deserial', 'vuln-csrf',
+             'vuln-ssrf', 'vuln-traversal', 'vuln-race', 'vuln-graphql'],
     after:  ['after-reporting', 'after-obfuscation', 'after-recon', 'after-next']
   };
 
