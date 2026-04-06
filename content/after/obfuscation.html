@@ -5,6 +5,14 @@
      THEORY SECTION
      ============================================ -->
 <section class="theory-section">
+  <h2>The Cat and Mouse Game</h2>
+  <p>
+    Imagine you have found a SQL injection vulnerability. You craft your payload, send the request, and... the server returns <code>403 Forbidden</code>. Your payload was blocked. Not by the application itself, but by a <strong>Web Application Firewall (WAF)</strong> sitting in front of it, inspecting every request for anything that looks malicious.
+  </p>
+  <p>
+    WAF evasion is one of the most creative aspects of offensive security. It is a constant arms race: WAF vendors add new detection rules, researchers find ways around them, vendors update their rules, researchers find new bypasses. Understanding WAF evasion is essential for penetration testers (because real-world targets have WAFs) and for defenders (because knowing how WAFs can be bypassed helps you not rely on them as your only defense).
+  </p>
+
   <h2>What Are WAFs?</h2>
   <p>
     A <strong>Web Application Firewall (WAF)</strong> is a security layer that sits between users and a web
@@ -14,7 +22,7 @@
   </p>
   <p>
     Popular WAFs include Cloudflare, AWS WAF, ModSecurity, Imperva, and Akamai. While they are valuable
-    defensive tools, they are not a substitute for writing secure code.
+    defensive tools, <strong>they are not a substitute for writing secure code</strong>. A WAF is a bandage, not a cure. If the underlying vulnerability exists, a sufficiently skilled attacker will find a way around the WAF.
   </p>
 
   <h2>Signature-Based Detection</h2>
