@@ -1,0 +1,232 @@
+<!-- Module: History of Hacking -->
+<h1>Історія хакерства</h1>
+
+<!-- ============================================
+     THEORY SECTION
+     ============================================ -->
+<section class="theory-section">
+  <h2>Чому історія важлива</h2>
+  <p>
+    «Ті, хто не пам'ятає минулого, приречені його повторювати.» Ця цитата Джорджа Сантаяни могла б бути написана спеціально про кібербезпеку. Одні й ті самі класи вразливостей — SQL-ін'єкції, переповнення буфера, слабка автентифікація — з'являються десятиліття за десятиліттям, бо ті самі фундаментальні помилки повторюються знову і знову.
+  </p>
+  <p>
+    Вивчення історії хакерства — це не просто цікаві факти (хоча вони справді захопливі). Воно вчить тебе розпізнавати патерни. Ти помітиш, що кожен великий злам відбувається за впізнаваною формулою: відомий тип вразливості, який експлуатують, бо хтось не поставив патч, не валідував вхідні дані, не застосував принцип найменших привілеїв або просто не знав про існування атаки. Техніки змінюються — патерни ні.
+  </p>
+  <p>
+    Хакерство не почалося з комп'ютерів. Хакерський дух — допитливість, дослідження та випробування систем за межами їхніх можливостей — бере початок із ранніх телефонних мереж. Розуміння цієї історії дає контекст для сучасних практик безпеки та допомагає оцінити, як еволюціонували техніки атак.
+  </p>
+
+  <h2>Хронологія ключових подій</h2>
+
+  <div class="panel">
+    <h3>1970-ті — Фрікінг телефонних мереж</h3>
+    <p>
+      До появи комп'ютерного хакерства існував «фрікінг» — експлуатація телефонних систем. Джон Дрейпер
+      («Капітан Кранч») виявив, що іграшковий свисток із коробки пластівців видавав тон частотою 2600 Гц,
+      який міг маніпулювати комутаційними системами AT&amp;T, дозволяючи робити безкоштовні міжміські дзвінки.
+      Стів Возняк і Стів Джобс, як відомо, збирали та продавали «блакитні коробки» (blue boxes), що
+      відтворювали цю техніку, ще до заснування Apple.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>1988 — Хробак Морріса</h3>
+    <p>
+      Роберт Теппан Морріс, аспірант Корнеллського університету, випустив першого великого інтернет-хробака.
+      Той експлуатував вразливості в Unix-програмах <code>sendmail</code>, <code>fingerd</code> та слабкі
+      паролі через <code>rsh/rexec</code>. Хробак інфікував приблизно 6 000 машин — близько 10% тогочасного
+      Інтернету — і завдав збитків на суму від 10 до 100 мільйонів доларів. Морріс став першою людиною,
+      засудженою за Законом про комп'ютерне шахрайство та зловживання (CFAA). Цей інцидент призвів до
+      створення CERT/CC (Computer Emergency Response Team).
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>1990-ті — Кевін Мітнік</h3>
+    <p>
+      Кевін Мітнік став найвідомішим хакером 1990-х, зламуючи мережі великих корпорацій, зокрема Nokia,
+      Motorola та Sun Microsystems. Він використовував соціальну інженерію не менше, ніж технічні експлойти.
+      Після широко розголошеного переслідування з боку ФБР (за допомогою дослідника безпеки Цутому Шімомури)
+      Мітніка заарештували в 1995 році, і він відбув п'ять років ув'язнення. Пізніше він став консультантом
+      з безпеки та письменником, продемонструвавши, що межа між атакуючим і захисником — це часто питання
+      вибору, а не навичок.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2003 — Хробак SQL Slammer</h3>
+    <p>
+      Хробак SQL Slammer експлуатував переповнення буфера в Microsoft SQL Server 2000. Всього за 10 хвилин
+      він інфікував 75 000 серверів і спричинив масштабне уповільнення Інтернету по всьому світу. Увесь
+      payload хробака складав лише 376 байтів — достатньо мало, щоб поміститися в один UDP-пакет. Це
+      продемонструвало, як проста вразливість може каскадно перерости у глобальний інцидент.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2010 — Stuxnet</h3>
+    <p>
+      Stuxnet — складний хробак, авторство якого широко приписують Сполученим Штатам та Ізраїлю. Він був
+      розроблений для саботажу іранської програми збагачення урану. Хробак атакував системи SCADA компанії
+      Siemens, що керували центрифугами на об'єкті в Натанзі, змушуючи їх обертатися з руйнівною швидкістю,
+      водночас показуючи операторам нормальні показники. Stuxnet використовував чотири zero-day експлойти
+      та вкрадені цифрові сертифікати. Це була перша відома кіберзброя, що завдала фізичної шкоди, і вона
+      позначила початок кібервійни на рівні держав.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2011 — Anonymous &amp; LulzSec</h3>
+    <p>
+      Хактивістське угруповання Anonymous та його відгалуження LulzSec провели резонансні атаки проти
+      урядів, корпорацій та організацій. LulzSec зламали Sony Pictures (злили 1 мільйон акаунтів), PBS,
+      сайт ЦРУ та інші ресурси — часто використовуючи базові техніки на кшталт SQL-ін'єкцій. Їхнє гасло
+      «doing it for the lulz» наочно показало, як навіть нескладні атаки можуть завдати масштабної шкоди,
+      коли базова гігієна безпеки ігнорується.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2013 — Викриття Сноудена</h3>
+    <p>
+      Едвард Сноуден, колишній підрядник АНБ, злив тисячі засекречених документів, що розкрили масштаби
+      урядових програм стеження. Викриття показали, що АНБ збирало метадані телефонних дзвінків мільйонів
+      американців, підключалося до дата-центрів великих технологічних компаній (програма PRISM) і навмисно
+      послаблювало стандарти шифрування. Витоки Сноудена кардинально змінили публічну дискусію про
+      конфіденційність і безпеку, прискорили впровадження HTTPS повсюдно та спонукали технологічні компанії
+      реалізувати наскрізне шифрування.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2017 — WannaCry &amp; NotPetya</h3>
+    <p>
+      Дві атаки програм-вимагачів, що сталися одна за одною, продемонстрували руйнівний вплив витоку
+      інструментів державного рівня. WannaCry, використовуючи вкрадений експлойт АНБ EternalBlue
+      (спрямований на вразливість Windows SMB), інфікував понад 200 000 комп'ютерів у 150 країнах за
+      один вікенд, паралізувавши Національну службу охорони здоров'я Великої Британії. NotPetya, спочатку
+      замаскований під програму-вимагач, насправді був деструктивним вайпером, авторство якого приписують
+      російській військовій розвідці. Він завдав збитків на понад 10 мільярдів доларів — найдорожча
+      кібератака в історії — вразивши Maersk, Merck, FedEx та багато інших компаній.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2020 — Атака на ланцюг постачання SolarWinds</h3>
+    <p>
+      Російська розвідка (APT29/Cozy Bear) скомпрометувала систему збірки SolarWinds — широко використовуваного
+      інструменту IT-моніторингу — та впровадила бекдор в оновлення програмного забезпечення. Понад 18 000
+      організацій встановили шкідливе оновлення, включаючи численні державні установи США (Міністерство
+      фінансів, Міністерство торгівлі, Міністерство внутрішньої безпеки) та великі корпорації. Зловмисники
+      мали доступ до цих мереж місяцями до виявлення. Це стало переломним моментом для безпеки ланцюгів
+      постачання та продемонструвало, що навіть найбільш захищені організації можуть бути скомпрометовані
+      через своїх постачальників.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h3>2012 — дотепер — Ера Bug Bounty</h3>
+    <p>
+      Запуск платформ HackerOne (2012) та Bugcrowd (2012) перетворив дослідження вразливостей на легітимну
+      кар'єру. Компанії почали платити дослідникам за знаходження багів замість того, щоб переслідувати їх
+      юридично. Програма винагород за вразливості Google виплатила понад 40 мільйонів доларів. Міністерство
+      оборони США запустило програму «Hack the Pentagon» у 2016 році. Сьогодні тисячі організацій мають
+      програми bug bounty, а найкращі дослідники заробляють шестизначні суми лише на винагородах.
+    </p>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Урок з історії:</strong> Найруйнівніші атаки часто експлуатують добре відомі вразливості,
+    яким можна було запобігти. SQL-ін'єкція — виявлена наприкінці 1990-х — досі залишається у OWASP Top 10.
+    Розуміння минулого допомагає тобі розпізнавати патерни, що повторюються в сучасних системах.
+  </div>
+</section>
+
+<!-- ============================================
+     LAB 1: History Quiz
+     ============================================ -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title">
+      <span class="lab-num">Lab 1</span> History of Hacking Quiz
+    </div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> Answer at least 4 out of 5 questions correctly to demonstrate your
+    knowledge of hacking history.
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">Lab complete — you know your hacking history!</div>
+
+  <div class="lab-body">
+    <!-- Question 1 -->
+    <div class="panel" id="q1-panel">
+      <h3>Question 1</h3>
+      <p>What technique did early "phone phreakers" use to make free long-distance calls?</p>
+      <div class="quiz-options" id="q1-options">
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="a">SQL injection on telephone switching software</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="b">A 2600 Hz tone to manipulate AT&amp;T's switching systems</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="c">Buffer overflow exploits on landline firmware</button>
+        <button class="btn btn-secondary quiz-option" data-q="1" data-val="d">Social engineering telephone operators</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="panel" id="q2-panel">
+      <h3>Question 2</h3>
+      <p>The Morris Worm (1988) led to the creation of which organization?</p>
+      <div class="quiz-options" id="q2-options">
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="a">OWASP</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="b">HackerOne</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="c">CERT/CC (Computer Emergency Response Team)</button>
+        <button class="btn btn-secondary quiz-option" data-q="2" data-val="d">NSA Cyber Command</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="panel" id="q3-panel">
+      <h3>Question 3</h3>
+      <p>What was unique about the Stuxnet worm discovered in 2010?</p>
+      <div class="quiz-options" id="q3-options">
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="a">It was the largest DDoS attack in history</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="b">It was the first known cyberweapon to cause physical damage</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="c">It stole more credit cards than any previous breach</button>
+        <button class="btn btn-secondary quiz-option" data-q="3" data-val="d">It was written entirely in JavaScript</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="panel" id="q4-panel">
+      <h3>Question 4</h3>
+      <p>Which hacking group compromised Sony Pictures and the CIA website in 2011, often using basic SQL injection?</p>
+      <div class="quiz-options" id="q4-options">
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="a">Equation Group</button>
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="b">Fancy Bear (APT28)</button>
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="c">LulzSec</button>
+        <button class="btn btn-secondary quiz-option" data-q="4" data-val="d">Lazarus Group</button>
+      </div>
+      <div class="quiz-feedback" id="q4-feedback"></div>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="panel" id="q5-panel">
+      <h3>Question 5</h3>
+      <p>The SQL Slammer worm (2003) fit its entire payload into how many bytes?</p>
+      <div class="quiz-options" id="q5-options">
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="a">4,096 bytes</button>
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="b">376 bytes</button>
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="c">64,000 bytes</button>
+        <button class="btn btn-secondary quiz-option" data-q="5" data-val="d">1,024 bytes</button>
+      </div>
+      <div class="quiz-feedback" id="q5-feedback"></div>
+    </div>
+
+    <button class="btn btn-primary" id="lab1-submit">Submit Answers</button>
+    <div id="lab1-result" class="quiz-result"></div>
+  </div>
+</div>
