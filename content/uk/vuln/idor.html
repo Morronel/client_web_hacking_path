@@ -1,0 +1,221 @@
+<section class="module-header">
+  <h1>Модуль 10 — Insecure Direct Object Reference (IDOR)</h1>
+  <p>Дізнайся, як порушений контроль доступу дозволяє зловмисникам отримати несанкціонований доступ до даних, маніпулюючи ідентифікаторами об'єктів.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Найпоширеніша вразливість, про яку ти ніколи не чув</h2>
+  <p>
+    Якщо запитати більшість людей про веб-вразливості, вони згадають SQL injection та XSS. Але в програмах bug bounty <strong>IDOR стабільно залишається класом вразливостей №1 за кількістю звітів</strong>. На нього припадає більше валідних звітів, ніж на будь-який інший тип помилок, і його часто найлегше знайти та проексплуатувати.
+  </p>
+  <p>
+    Чому? Тому що IDOR — це не хитрий технічний трюк. Це <em>відсутність</em> перевірки. Розробник просто забув перевірити, чи авторизований поточний користувач для доступу до ресурсу, який він запитує. Ось і все. Ніякого складного payload, ніяких трюків з кодуванням, ніяких спеціальних інструментів. Просто... зміни число в URL.
+  </p>
+
+  <h2>Authentication vs. Authorization — ключова різниця</h2>
+  <p>
+    У попередньому модулі ми розглядали <strong>authentication</strong>: підтвердження того, хто ти є. IDOR — це помилка <strong>authorization</strong>: перевірки того, що тобі дозволено робити. Це абсолютно різні механізми безпеки, і їх плутанина — одна з найпоширеніших помилок у веб-розробці.
+  </p>
+  <p>
+    Уяви собі готель. Authentication — це стійка реєстрації, де перевіряють твою особу та видають картку-ключ. Authorization — це гарантія того, що твоя картка відкриває лише ТВІЙ номер, а не кожен номер на поверсі. Вразливість IDOR — це як готель, де кожна картка відкриває будь-які двері — вони знають, хто ти, але їм байдуже, в який номер ти намагаєшся увійти.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Ментальна модель:</strong> Кожного разу, коли застосунок використовує ідентифікатор із запиту користувача (параметр URL, тіло POST, cookie, заголовок) для пошуку ресурсу, запитай себе: <em>«Чи перевіряє сервер, що ЦЕЙ користувач має право доступу до ЦЬОГО конкретного ресурсу?»</em> Якщо відповідь «ні» — ти знайшов IDOR.
+  </div>
+
+  <h2>Як працює IDOR</h2>
+  <p>
+    Патерн майже завжди однаковий. Застосунок надає endpoint, який приймає ідентифікатор об'єкта як вхідні дані та повертає відповідні дані. Ідентифікатор може бути в шляху URL, параметрі запиту, тілі POST або навіть у cookie.
+  </p>
+
+  <pre><code class="language-python"># VULNERABLE — no authorization check
+@app.route('/api/user/&lt;int:id&gt;')
+@login_required
+def get_user(id):
+    # The user is authenticated (login_required), but we never check
+    # if they are AUTHORIZED to view this specific user's data
+    user = db.query("SELECT * FROM users WHERE id = ?", id)
+    return jsonify(user)
+
+# An attacker logged in as user 3 can simply request:
+# GET /api/user/1  → gets admin's data
+# GET /api/user/2  → gets another user's data
+# GET /api/user/4  → gets yet another user's data</code></pre>
+
+  <pre><code class="language-python"># SAFE — proper authorization check
+@app.route('/api/user/&lt;int:id&gt;')
+@login_required
+def get_user(id):
+    if current_user.id != id and not current_user.is_admin:
+        return jsonify({"error": "Forbidden"}), 403
+    user = db.query("SELECT * FROM users WHERE id = ?", id)
+    return jsonify(user)</code></pre>
+
+  <p>
+    Зверни увагу — виправлення займає лише два рядки коду. Ось що дратує в IDOR — його тривіально легко виправити, але він залишається однією з найпоширеніших вразливостей, тому що розробники просто забувають додати перевірку. Коли ти будуєш фічу, ти думаєш про те, щоб вона працювала, а не про те, хто НЕ повинен мати до неї доступ.
+  </p>
+
+  <h2>Горизонтальна та вертикальна ескалація привілеїв</h2>
+  <p>IDOR буває двох видів, і розуміння різниці між ними важливе для оцінки впливу:</p>
+  <ul>
+    <li><strong>Горизонтальна ескалація привілеїв:</strong> Доступ до даних іншого користувача <em>з тим самим рівнем привілеїв</em>. Користувач A читає профіль, рахунки або повідомлення Користувача B. Зловмисник не отримує права адміністратора, але може отримати доступ до чужих даних.</li>
+    <li><strong>Вертикальна ескалація привілеїв:</strong> Доступ до даних або функціоналу, зарезервованого для <em>вищого рівня привілеїв</em>. Звичайний користувач отримує доступ до адмінпанелі, змінює дозволи іншого користувача або видаляє ресурси, до яких не повинен мати доступу.</li>
+  </ul>
+  <p>
+    Вертикальна ескалація, очевидно, серйозніша, але не варто недооцінювати горизонтальну. Доступ до медичних записів, фінансових даних або приватних повідомлень іншого користувача може бути руйнівним навіть без прав адміністратора.
+  </p>
+
+  <h2>Де ховаються IDOR</h2>
+  <p>
+    IDOR зустрічаються скрізь. Кожне місце, де застосунок використовує ідентифікатор для посилання на конкретний ресурс, є потенційним IDOR. Ось найпоширеніші місця:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Розташування</th><th>Приклад</th><th>Що спробувати</th></tr></thead>
+      <tbody>
+        <tr><td>Шлях URL</td><td><code>/api/user/123/profile</code></td><td>Зміни <code>123</code> на <code>1</code>, <code>2</code> тощо</td></tr>
+        <tr><td>Параметр запиту</td><td><code>/invoice?id=456</code></td><td>Зміни <code>456</code> на сусідні значення</td></tr>
+        <tr><td>Тіло POST/PUT</td><td><code>{"userId": 123, "action": "delete"}</code></td><td>Зміни <code>userId</code> на ID іншого користувача</td></tr>
+        <tr><td>Cookie</td><td><code>user_id=123</code></td><td>Зміни значення cookie</td></tr>
+        <tr><td>Користувацький заголовок</td><td><code>X-User-Id: 123</code></td><td>Зміни значення заголовка</td></tr>
+        <tr><td>Шлях до файлу</td><td><code>/download?file=report_123.pdf</code></td><td>Зміни ім'я файлу на звіти інших користувачів</td></tr>
+        <tr><td>Витоки в API-відповідях</td><td>Відповідь містить ID інших ресурсів</td><td>Використай витечені ID у наступних запитах</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Типи ідентифікаторів та передбачуваність</h2>
+  <p>
+    Тип ідентифікатора, який використовує застосунок, впливає на те, наскільки легко проексплуатувати IDOR:
+  </p>
+  <ul>
+    <li><strong>Послідовні цілі числа</strong> (1, 2, 3...): Найлегше експлуатувати. Просто збільшуй або зменшуй. Можна перебрати кожен об'єкт у системі.</li>
+    <li><strong>Base64-кодовані ID</strong>: Безпека через неясність. <code>MTIz</code> — це просто base64 для <code>123</code>. Декодуй, зміни, закодуй назад.</li>
+    <li><strong>UUID</strong> (наприклад, <code>550e8400-e29b-41d4-a716-446655440000</code>): Набагато складніше вгадати, але все одно вразливі, якщо ID витікають десь ще в застосунку (в URL, API-відповідях, HTML-коді тощо).</li>
+    <li><strong>Хешовані ID</strong> (наприклад, MD5 від послідовного ID): Якщо вхідні дані для хешу передбачувані, можна обчислити хеш для будь-якого ID.</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>UUID — це не захисний механізм:</strong> Використання UUID замість послідовних цілих чисел ускладнює перебір, але не виправляє основну вразливість. Якщо UUID витече будь-де — в посиланні з електронного листа, спільному URL, API-відповіді чи навіть заголовку Referer — IDOR все одно можна проексплуатувати. <strong>Завжди реалізуй належні перевірки authorization</strong>, незалежно від типу ідентифікатора.
+  </div>
+
+  <h2>Методологія тестування</h2>
+  <p>Ось систематичний підхід до пошуку IDOR у будь-якому застосунку:</p>
+  <ol>
+    <li><strong>Склади карту всіх endpoint:</strong> Використай Burp Suite або інструменти розробника в браузері, щоб визначити кожен запит, який посилається на об'єкт за ID.</li>
+    <li><strong>Створи два тестові акаунти:</strong> Акаунт A та Акаунт B. Увійди в Акаунт A та запиши всі ID, пов'язані з твоїми ресурсами (ID профілю, ID замовлень, ID файлів тощо).</li>
+    <li><strong>Перехресна перевірка:</strong> Будучи залогіненим як Акаунт B, спробуй отримати доступ до ресурсів Акаунта A, використовуючи ID від A.</li>
+    <li><strong>Перевір усі HTTP-методи:</strong> Endpoint може коректно перевіряти authorization для GET, але забути про перевірку для PUT або DELETE.</li>
+    <li><strong>Перевір операції зі зміною стану:</strong> Читання даних — це погано, але зміна або видалення даних іншого користувача — це критична серйозність.</li>
+  </ol>
+
+  <h2>Реальні історії з IDOR</h2>
+  <ul>
+    <li><strong>First American Financial (2019):</strong> IDOR у їхньому порталі документів відкрив доступ до <strong>885 мільйонів конфіденційних записів</strong>, включаючи номери соціального страхування, банківські виписки та іпотечні документи. Будь-хто міг отримати доступ до будь-якого документа, просто змінивши послідовний ID в URL. Навіть authentication не була потрібна.</li>
+    <li><strong>Facebook (2015):</strong> Мисливець за багами виявив, що зміна параметра <code>photo_id</code> у функції «Переглянути як» дозволяла переглядати приватні фото будь-якого користувача. Facebook виплатив винагороду $12 500.</li>
+    <li><strong>Uber (2019):</strong> IDOR дозволяв будь-якому водієві переглядати заробітки та історію поїздок будь-якого іншого водія, змінюючи UUID водія в API-запиті.</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>Як виправити:</strong> Кожен endpoint, що отримує доступ до ресурсу за ID, повинен перевіряти, що поточний користувач авторизований для доступу до цього конкретного ресурсу. Ця перевірка повинна відбуватися на стороні сервера, при кожному запиті, незалежно від типу ідентифікатора. Використовуй middleware authorization свого фреймворку — не пиши власний. У Rails використовуй <code>current_user.orders.find(params[:id])</code> замість <code>Order.find(params[:id])</code>. У Django використовуй <code>get_object_or_404(Order, id=pk, user=request.user)</code>.
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>Ешелонований захист:</strong> Найкращий захист від IDOR поєднує: (1) належні перевірки authorization на кожному endpoint, (2) непередбачувані ідентифікатори (UUID), щоб ускладнити перебір, (3) rate limiting для уповільнення автоматичного сканування та (4) логування й моніторинг для виявлення підозрілих патернів доступу.
+  </div>
+
+</section>
+
+<!-- ========== LABS ========== -->
+<h2>Labs</h2>
+
+<!-- Lab 1: Account Portal IDOR -->
+<div class="lab-container" id="lab1">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 1</span> Account Portal — User IDOR</div>
+    <span class="lab-status" id="lab1-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> You are logged in as user ID 3. The API has no authorization checks. Find the admin's API key by accessing other user profiles. The admin is user ID 1.
+  </div>
+
+  <div class="panel mb-md">
+    <p class="text-muted" style="font-size:0.85rem;">Your session: <code>user_id = 3 (alice)</code></p>
+  </div>
+
+  <div class="input-group">
+    <label>API Endpoint:</label>
+    <div class="flex gap-sm">
+      <span style="padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-md) 0 0 var(--radius-md);border:1px solid var(--border-default);color:var(--text-muted);font-family:var(--font-mono);font-size:0.85rem;white-space:nowrap;">GET /api/user/</span>
+      <input type="text" class="input-field" id="idor-user-id" value="3" style="flex:1;min-width:60px;max-width:120px;border-radius:0 var(--radius-md) var(--radius-md) 0;">
+      <button class="btn btn-primary" id="idor-fetch-btn">Send Request</button>
+    </div>
+  </div>
+
+  <div class="mt-md">
+    <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Response:</label>
+    <div class="json-response" id="idor-response">// Click "Send Request" to fetch user data</div>
+  </div>
+
+  <div class="banner banner-success" id="lab1-banner">
+    &#9989; IDOR exploited! You accessed the admin's API key without authorization.
+  </div>
+</div>
+
+<!-- Lab 2: Order IDOR -->
+<div class="lab-container" id="lab2">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num">Lab 2</span> Order IDOR — Discount Discovery</div>
+    <span class="lab-status" id="lab2-status"></span>
+  </div>
+
+  <div class="lab-objective">
+    <strong>Objective:</strong> You can see your own orders (IDs 1005, 1008). Another user has an order containing a secret discount code. Iterate through order IDs to find it.
+  </div>
+
+  <div class="panel mb-md">
+    <p class="text-muted" style="font-size:0.85rem;">Your orders: <code>#1005</code>, <code>#1008</code></p>
+  </div>
+
+  <div class="input-group">
+    <label>API Endpoint:</label>
+    <div class="flex gap-sm">
+      <span style="padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-md) 0 0 var(--radius-md);border:1px solid var(--border-default);color:var(--text-muted);font-family:var(--font-mono);font-size:0.85rem;white-space:nowrap;">GET /api/order/</span>
+      <input type="text" class="input-field" id="idor-order-id" value="1005" style="flex:1;min-width:60px;max-width:140px;border-radius:0 var(--radius-md) var(--radius-md) 0;">
+      <button class="btn btn-primary" id="idor-order-btn">Send Request</button>
+    </div>
+  </div>
+
+  <div class="mt-md">
+    <label style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;">Response:</label>
+    <div class="json-response" id="idor-order-response">// Click "Send Request" to fetch order data</div>
+  </div>
+
+  <div class="banner banner-success" id="lab2-banner">
+    &#9989; Found it! You accessed another user's order and found the discount code.
+  </div>
+</div>
+
+<!-- ============================================
+     FLASK LAB SECTION
+     ============================================ -->
+<div class="lab-card" style="border-color: var(--accent-blue); background: linear-gradient(135deg, #0d1117 0%, #111827 100%);">
+  <div class="lab-header">
+    <div class="lab-title"><span class="lab-num flask">Flask Lab</span> NeonShop — Real IDOR Practice</div>
+  </div>
+  <div class="lab-body">
+    <p>Access unauthorized data in a <strong>real Flask marketplace</strong>. Manipulate object references to view admin profiles, orders, and files.</p>
+    <div class="panel" style="margin-top: 12px;">
+      <strong>Setup:</strong>
+      <pre><code class="language-bash">cd labs/idor
+pip install flask
+python app.py
+# Visit http://localhost:5004</code></pre>
+    </div>
+    <p class="text-muted" style="margin-top: 8px;">Challenges: User Profile IDOR, Order IDOR, Message IDOR, File Download IDOR, API Key IDOR</p>
+  </div>
+</div>

