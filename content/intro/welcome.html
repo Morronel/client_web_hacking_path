@@ -63,17 +63,17 @@
 
   <h2>How This Course Works</h2>
   <p>
-    WebHack Academy is split into three sections, like a really satisfying sandwich:
+    WebHack Academy is organized into five sections — like a heist movie with proper act structure:
   </p>
 
   <div class="panel">
-    <h3>🍞 Section 1: Introduction (Modules 01-07)</h3>
+    <h3>Section 1: Introduction (Modules 00-08)</h3>
     <p>
-      The bread. The foundation. Before you can exploit anything, you need to understand how the web works.
-      We'll cover the legal stuff (so you don't go to jail — kind of important), networking basics (HTTP, DNS,
+      The foundation. Before you can exploit anything, you need to understand how the web works.
+      We cover the legal stuff (so you don't go to jail — kind of important), networking basics (HTTP, DNS,
       how your browser talks to servers), encoding (Base64, URL encoding, the stuff that makes URLs look weird),
       cookies and sessions (how websites remember who you are), the Same-Origin Policy (the browser's bouncer),
-      the history of hacking (it's wild), and the Cyber Kill Chain (how real attacks happen, step by step).
+      the history of hacking (it's wild), the Cyber Kill Chain (how real attacks unfold), and lab setup.
     </p>
     <p>
       This section might seem boring compared to the "actual hacking" part, but trust me — <strong>every single
@@ -82,33 +82,54 @@
     </p>
   </div>
 
-  <div class="panel">
-    <h3>🥩 Section 2: Vulnerabilities (Modules 08-22)</h3>
+  <div class="panel" style="border-left: 4px solid var(--accent-red);">
+    <h3>Section 2A: Auth &amp; Authorization (Modules 09-10)</h3>
     <p>
-      The meat. The good stuff. Fifteen different types of web vulnerabilities, each with:
+      The front door. Authentication and authorization are the #1 attack surface on any web application.
+      You'll learn how login forms leak information, how password attacks work, and how changing a single
+      number in a URL can expose another user's data. These two modules cover the vulnerabilities that
+      cause the most real-world breaches.
     </p>
-    <ul>
-      <li><strong>Theory</strong> — What is this vulnerability? Why does it exist? How does the code go wrong?</li>
-      <li><strong>Examples</strong> — Real-world code (vulnerable AND safe versions) so you can see exactly what's happening</li>
-      <li><strong>Quizzes</strong> — Test yourself before you wreck yourself</li>
-      <li><strong>Flask Labs</strong> — Actual vulnerable web applications running in Docker containers that you can hack for real. Each lab has hidden flags (like <code>FLAG{...}</code>) that you need to find by exploiting the vulnerabilities.</li>
-    </ul>
+  </div>
+
+  <div class="panel" style="border-left: 4px solid var(--accent-amber);">
+    <h3>Section 2B: Injection (Modules 11-17)</h3>
     <p>
-      We'll cover the OWASP Top 10 classics — SQL Injection, XSS, CSRF — plus cool stuff like
-      Race Conditions, Deserialization attacks, and GraphQL hacking. By the end, you'll look at websites
-      differently. You'll notice things. You'll see attack surfaces everywhere. (This is both a blessing
-      and a curse. You've been warned.)
+      The heavy artillery. Seven types of injection attacks — from the classic SQL injection to template
+      injection, command injection, XML attacks, deserialization, and cross-site request forgery. Each one
+      exploits the same fundamental mistake: <strong>mixing user data with code</strong>. Different languages,
+      different contexts, same root cause.
+    </p>
+  </div>
+
+  <div class="panel" style="border-left: 4px solid var(--accent-blue);">
+    <h3>Section 2C: Logic &amp; Configuration (Modules 18-21)</h3>
+    <p>
+      The clever attacks. These vulnerabilities don't involve injecting code — they exploit <em>how the
+      application thinks</em>. Making the server fetch internal resources (SSRF), escaping file system
+      boundaries (path traversal), exploiting timing gaps (race conditions), and abusing the flexibility
+      of GraphQL APIs. These are the bugs that require creativity, not just payload lists.
     </p>
   </div>
 
   <div class="panel">
-    <h3>🍞 Section 3: Aftermath (Modules 23-26)</h3>
+    <h3>Section 3: Aftermath (Modules 22-25)</h3>
     <p>
-      The other piece of bread. What happens AFTER you find a vulnerability? How do you report it responsibly?
-      How do attackers try to hide their exploits from Web Application Firewalls (WAFs)? How do you do
-      reconnaissance to find targets (legally, through bug bounty programs)? And where do you go from here?
+      What happens AFTER you find a vulnerability? How do you report it so it gets fixed (and gets you paid)?
+      How do attackers evade Web Application Firewalls? How do you do reconnaissance to map attack surfaces?
+      And where do you go from here — certifications, career paths, and the road ahead.
     </p>
   </div>
+
+  <p>
+    Every vulnerability module includes:
+  </p>
+  <ul>
+    <li><strong>Deep theory</strong> — What is this vulnerability? Why does it exist? Real-world stories of breaches it caused.</li>
+    <li><strong>Code examples</strong> — Vulnerable AND safe versions so you can see exactly what's happening.</li>
+    <li><strong>Interactive labs</strong> — Built-in exercises you can try right in your browser.</li>
+    <li><strong>Flask Labs</strong> — Real vulnerable web applications running in Docker that you can hack. Each has hidden flags (<code>FLAG{...}</code>) to find.</li>
+  </ul>
 
   <div class="callout callout-success">
     <strong>Plus: Shadow Terminal</strong> — Complete enough modules and you'll unlock a bonus card game
@@ -182,40 +203,49 @@
 
   <h2>Your Journey Map</h2>
   <p>
-    Here's what you're about to learn, in order:
+    Here's every module you're about to learn, organized by category:
   </p>
   <div class="table-wrapper">
     <table>
       <thead>
-        <tr><th>#</th><th>Module</th><th>What You'll Learn</th><th>Fun Level</th></tr>
+        <tr><th>#</th><th>Module</th><th>What You'll Learn</th><th>Vibe</th></tr>
       </thead>
       <tbody>
+        <tr><td colspan="4" style="background:var(--bg-tertiary);color:var(--text-secondary);font-weight:700;font-size:0.85rem;letter-spacing:0.05em;">INTRODUCTION</td></tr>
+        <tr><td>00</td><td>Welcome</td><td>You are here. The hacker mindset, tools, and rules.</td><td>Let's go</td></tr>
         <tr><td>01</td><td>Legal &amp; Ethics</td><td>How not to go to jail</td><td>Important but dry</td></tr>
         <tr><td>02</td><td>Networking</td><td>HTTP, DNS, how the internet actually works</td><td>Foundational</td></tr>
         <tr><td>03</td><td>Encoding</td><td>Base64, URL encoding, why URLs look weird</td><td>Surprisingly useful</td></tr>
         <tr><td>04</td><td>Cookies</td><td>How websites remember you (and how to trick them)</td><td>Getting interesting</td></tr>
         <tr><td>05</td><td>SOP &amp; CORS</td><td>The browser's security guard (and how to sneak past it)</td><td>Mind-bending</td></tr>
-        <tr><td>06</td><td>History</td><td>The wildest hacks in history</td><td>Story time!</td></tr>
+        <tr><td>06</td><td>History</td><td>From phone phreaking to SolarWinds — the wildest hacks ever</td><td>Story time!</td></tr>
         <tr><td>07</td><td>Kill Chain</td><td>How real attacks unfold, step by step</td><td>Like a heist movie</td></tr>
-        <tr><td>08</td><td>SQL Injection</td><td>Talking to databases they didn't want you to talk to</td><td>Classic hacking</td></tr>
-        <tr><td>09</td><td>XSS</td><td>Making websites run YOUR code in other people's browsers</td><td>Deviously fun</td></tr>
-        <tr><td>10</td><td>SSTI</td><td>Tricking template engines into executing commands</td><td>Clever</td></tr>
-        <tr><td>11</td><td>IDOR</td><td>Changing a number in a URL to see someone else's data</td><td>Embarrassingly simple</td></tr>
-        <tr><td>12</td><td>Broken Auth</td><td>Passwords, sessions, and why "admin/admin" still works</td><td>Face-palmingly real</td></tr>
-        <tr><td>13</td><td>CSRF</td><td>Making someone else's browser do things for you</td><td>Sneaky</td></tr>
-        <tr><td>14</td><td>Clickjacking</td><td>Invisible buttons and transparent trickery</td><td>Visual hacking</td></tr>
-        <tr><td>15</td><td>SSRF</td><td>Making the server fetch things it shouldn't</td><td>Cloud killer</td></tr>
-        <tr><td>16</td><td>Path Traversal</td><td>Reading files you're not supposed to see</td><td>../../../fun</td></tr>
-        <tr><td>17</td><td>File Upload</td><td>Uploading code instead of cat pictures</td><td>Shell time</td></tr>
-        <tr><td>18</td><td>Command Injection</td><td>Making the server run YOUR terminal commands</td><td>Power trip</td></tr>
-        <tr><td>19</td><td>XXE</td><td>Weaponizing boring XML files</td><td>Unexpectedly dangerous</td></tr>
+        <tr><td>08</td><td>Lab Setup</td><td>Docker, Burp Suite, and getting your lab environment ready</td><td>Setup time</td></tr>
+
+        <tr><td colspan="4" style="background:var(--bg-tertiary);color:var(--accent-red);font-weight:700;font-size:0.85rem;letter-spacing:0.05em;">AUTH &amp; AUTHORIZATION</td></tr>
+        <tr><td>09</td><td>Broken Auth</td><td>Passwords, sessions, and why "admin/password" still works</td><td>Face-palmingly real</td></tr>
+        <tr><td>10</td><td>IDOR</td><td>Changing a number in a URL to see someone else's data</td><td>Embarrassingly simple</td></tr>
+
+        <tr><td colspan="4" style="background:var(--bg-tertiary);color:var(--accent-amber);font-weight:700;font-size:0.85rem;letter-spacing:0.05em;">INJECTION</td></tr>
+        <tr><td>11</td><td>SQL Injection</td><td>Talking to databases they didn't want you to talk to</td><td>Classic hacking</td></tr>
+        <tr><td>12</td><td>XSS</td><td>Making websites run YOUR code in other people's browsers</td><td>Deviously fun</td></tr>
+        <tr><td>13</td><td>SSTI</td><td>Tricking template engines into executing commands</td><td>Clever</td></tr>
+        <tr><td>14</td><td>Command Injection</td><td>Making the server run YOUR terminal commands</td><td>Power trip</td></tr>
+        <tr><td>15</td><td>XXE</td><td>Weaponizing boring XML files</td><td>Unexpectedly dangerous</td></tr>
+        <tr><td>16</td><td>Deserialization</td><td>Poisoning data objects to run arbitrary code</td><td>Brain-melting</td></tr>
+        <tr><td>17</td><td>CSRF</td><td>Making someone else's browser do things for you</td><td>Sneaky</td></tr>
+
+        <tr><td colspan="4" style="background:var(--bg-tertiary);color:var(--accent-blue);font-weight:700;font-size:0.85rem;letter-spacing:0.05em;">LOGIC &amp; CONFIGURATION</td></tr>
+        <tr><td>18</td><td>SSRF</td><td>Making the server fetch things it shouldn't</td><td>Cloud killer</td></tr>
+        <tr><td>19</td><td>Path Traversal</td><td>Reading files you're not supposed to see</td><td>../../../fun</td></tr>
         <tr><td>20</td><td>Race Conditions</td><td>Being faster than the server's security checks</td><td>Speed hacking</td></tr>
-        <tr><td>21</td><td>Deserialization</td><td>Poisoning data objects to run arbitrary code</td><td>Brain-melting</td></tr>
-        <tr><td>22</td><td>GraphQL</td><td>The cool new API format that everyone forgets to secure</td><td>Modern hacking</td></tr>
-        <tr><td>23</td><td>Reporting</td><td>How to write a vulnerability report that gets you paid</td><td>Career skills</td></tr>
-        <tr><td>24</td><td>WAF Evasion</td><td>Sneaking past security filters</td><td>Cat and mouse</td></tr>
-        <tr><td>25</td><td>Web Recon</td><td>Finding targets and mapping attack surfaces</td><td>Detective work</td></tr>
-        <tr><td>26</td><td>Next Steps</td><td>Where to go from here</td><td>Your adventure begins</td></tr>
+        <tr><td>21</td><td>GraphQL</td><td>The cool new API format that everyone forgets to secure</td><td>Modern hacking</td></tr>
+
+        <tr><td colspan="4" style="background:var(--bg-tertiary);color:var(--text-secondary);font-weight:700;font-size:0.85rem;letter-spacing:0.05em;">AFTERMATH</td></tr>
+        <tr><td>22</td><td>Reporting</td><td>How to write a vulnerability report that gets you paid</td><td>Career skills</td></tr>
+        <tr><td>23</td><td>WAF Evasion</td><td>Sneaking past security filters</td><td>Cat and mouse</td></tr>
+        <tr><td>24</td><td>Web Recon</td><td>Finding targets and mapping attack surfaces</td><td>Detective work</td></tr>
+        <tr><td>25</td><td>Next Steps</td><td>Certifications, career paths, where to go from here</td><td>Your adventure begins</td></tr>
       </tbody>
     </table>
   </div>
