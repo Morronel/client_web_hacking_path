@@ -170,12 +170,61 @@ const introCookies = (() => {
   function init(container) {
     initLab1(container);
     initLab2(container);
+
+    QuizEngine.init(container, 'intro-cookies', {
+      questions: [
+        {
+          type: 'mc',
+          text: 'What does the HttpOnly cookie flag prevent?',
+          options: [
+            'The cookie from being sent over HTTP',
+            'JavaScript from accessing the cookie via document.cookie',
+            'The cookie from being stored on disk',
+            'Cross-site requests from including the cookie'
+          ],
+          answer: 1
+        },
+        {
+          type: 'mc',
+          text: 'What does the Secure flag on a cookie do?',
+          options: [
+            'Encrypts the cookie value',
+            'Prevents JavaScript access to the cookie',
+            'Ensures the cookie is only sent over HTTPS connections',
+            'Makes the cookie expire after the session ends'
+          ],
+          answer: 2
+        },
+        {
+          type: 'tf',
+          text: 'Setting SameSite=Strict on a cookie prevents it from being sent with any cross-site requests.',
+          answer: true
+        },
+        {
+          type: 'mc',
+          text: 'Why is storing session data in a Base64-encoded cookie (without server-side validation) dangerous?',
+          options: [
+            'Base64 is too slow for real-time decoding',
+            'Attackers can decode, modify, and re-encode the cookie to escalate privileges',
+            'Base64 cookies are too large for browsers to store',
+            'It violates the HTTP specification'
+          ],
+          answer: 1
+        },
+        {
+          type: 'tf',
+          text: 'A session cookie (one without an explicit Expires or Max-Age) is deleted when the browser is closed.',
+          answer: true
+        }
+      ]
+    });
   }
 
   function cleanup() {
     listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
     listeners = [];
     sessionData = null;
+    QuizEngine.cleanup('intro-cookies');
   }
 
   return { init, cleanup };

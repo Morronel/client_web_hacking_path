@@ -3,100 +3,58 @@
    ============================================ */
 
 window.introLegal = (() => {
-  const { $ } = Utils;
-
-  let listeners = [];
-  let container = null;
-
-  function listen(el, event, handler) {
-    if (!el) return;
-    el.addEventListener(event, handler);
-    listeners.push({ el, event, handler });
-  }
-
-  function showBanner(labNum) {
-    const banner = $(`#lab${labNum}-banner`, container);
-    if (banner) banner.classList.add('visible');
-  }
-
-  function syncLabStatus(labNum) {
-    const statusEl = $(`#lab${labNum}-status`, container);
-    if (statusEl && Storage.isLabCompleted('intro-legal', `lab${labNum}`)) {
-      statusEl.textContent = 'Completed';
-      statusEl.classList.add('completed');
-    }
-  }
-
-  // ---- Lab 1: Legal Scenarios Quiz ----
-
-  function initLab1() {
-    const correctAnswers = { 1: 'b', 2: 'a', 3: 'b' };
-    const selected = {};
-
-    // Wire up option buttons
-    const options = container.querySelectorAll('.quiz-option');
-    options.forEach(btn => {
-      listen(btn, 'click', () => {
-        const q = btn.dataset.q;
-        // Deselect siblings
-        const siblings = container.querySelectorAll(`.quiz-option[data-q="${q}"]`);
-        siblings.forEach(s => s.classList.remove('active'));
-        btn.classList.add('active');
-        selected[q] = btn.dataset.val;
-      });
-    });
-
-    const submitBtn = $('#lab1-submit', container);
-    const resultEl = $('#lab1-result', container);
-
-    listen(submitBtn, 'click', () => {
-      // Check that all questions answered
-      if (Object.keys(selected).length < 3) {
-        resultEl.innerHTML = '<span class="text-red">Please answer all 3 questions before submitting.</span>';
-        return;
-      }
-
-      let score = 0;
-      for (const q of ['1', '2', '3']) {
-        const feedbackEl = $(`#q${q}-feedback`, container);
-        const isCorrect = selected[q] === correctAnswers[q];
-        if (isCorrect) {
-          score++;
-          if (feedbackEl) feedbackEl.innerHTML = '<span class="text-green">Correct!</span>';
-        } else {
-          if (feedbackEl) feedbackEl.innerHTML = '<span class="text-red">Incorrect.</span>';
+  function init(container) {
+    QuizEngine.init(container, 'intro-legal', {
+      questions: [
+        {
+          type: 'mc',
+          text: 'You discover a vulnerability in a company\'s website. What should you do first?',
+          options: [
+            'Exploit it to prove impact',
+            'Report it through the company\'s responsible disclosure program',
+            'Post it on social media',
+            'Sell the information'
+          ],
+          answer: 1
+        },
+        {
+          type: 'mc',
+          text: 'Which law primarily governs unauthorized computer access in the United States?',
+          options: [
+            'GDPR',
+            'CFAA (Computer Fraud and Abuse Act)',
+            'HIPAA',
+            'SOX'
+          ],
+          answer: 1
+        },
+        {
+          type: 'tf',
+          text: 'Testing a website for vulnerabilities without authorization is legal as long as you report what you find.',
+          answer: false
+        },
+        {
+          type: 'mc',
+          text: 'What is the primary purpose of a bug bounty program?',
+          options: [
+            'To train internal security teams',
+            'To provide a legal framework for security researchers to report vulnerabilities',
+            'To replace penetration testing',
+            'To publicly shame companies with vulnerabilities'
+          ],
+          answer: 1
+        },
+        {
+          type: 'tf',
+          text: 'A written scope agreement (Rules of Engagement) is essential before performing any authorized penetration test.',
+          answer: true
         }
-      }
-
-      if (score === 3) {
-        resultEl.innerHTML = '<span class="text-green">Perfect score! 3/3 — All correct.</span>';
-        if (!Storage.isLabCompleted('intro-legal', 'lab1')) {
-          Router.markLabComplete('intro-legal', 'lab1');
-          showBanner(1);
-          syncLabStatus(1);
-        }
-      } else {
-        resultEl.innerHTML = `<span class="text-red">You got ${score}/3. You need all 3 correct to pass. Try again!</span>`;
-      }
+      ]
     });
-
-    syncLabStatus(1);
-    if (Storage.isLabCompleted('intro-legal', 'lab1')) showBanner(1);
-  }
-
-  // ---- Public interface ----
-
-  function init(cont) {
-    container = cont;
-    initLab1();
   }
 
   function cleanup() {
-    for (const { el, event, handler } of listeners) {
-      el.removeEventListener(event, handler);
-    }
-    listeners = [];
-    container = null;
+    QuizEngine.cleanup('intro-legal');
   }
 
   return { init, cleanup };

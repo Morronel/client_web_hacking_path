@@ -334,6 +334,49 @@ window.introEncoding = (() => {
     initLab2();
     initLab3();
     initLab4();
+
+    QuizEngine.init(container, 'intro-encoding', {
+      questions: [
+        {
+          type: 'mc',
+          text: 'What does Base64 encoding do?',
+          options: [
+            'Encrypts data so it cannot be read',
+            'Represents binary data in an ASCII string format',
+            'Compresses data to reduce size',
+            'Hashes data into a fixed-length digest'
+          ],
+          answer: 1
+        },
+        {
+          type: 'tf',
+          text: 'URL encoding replaces unsafe characters with a percent sign followed by two hex digits (e.g., %20 for a space).',
+          answer: true
+        },
+        {
+          type: 'mc',
+          text: 'Which of the following is a cryptographic hash function?',
+          options: ['Base64', 'ROT13', 'SHA-256', 'XOR'],
+          answer: 2
+        },
+        {
+          type: 'tf',
+          text: 'Hashing is reversible — you can always recover the original input from a hash.',
+          answer: false
+        },
+        {
+          type: 'mc',
+          text: 'What is the "alg: none" attack in JWT?',
+          options: [
+            'Using no algorithm makes the token expire faster',
+            'Setting the algorithm to "none" bypasses signature verification',
+            'It encrypts the token with a null cipher',
+            'It compresses the payload to zero bytes'
+          ],
+          answer: 1
+        }
+      ]
+    });
   }
 
   function cleanup() {
@@ -346,6 +389,8 @@ window.introEncoding = (() => {
     // Clear any pending timers
     clearTimeout(hashDebounceTimer);
     hashDebounceTimer = null;
+
+    QuizEngine.cleanup('intro-encoding');
 
     container = null;
   }

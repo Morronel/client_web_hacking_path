@@ -3,59 +3,80 @@
    ============================================ */
 
 window.vulnXxe = (() => {
-  let listeners = [];
 
-  function listen(el, evt, fn) {
-    el.addEventListener(evt, fn);
-    listeners.push({ el, evt, fn });
-  }
-
-  const quizAnswers = { 1: 'b', 2: 'a', 3: 'c' };
-
-  function initQuiz(container) {
-    const opts = container.querySelectorAll('.quiz-opt');
-    const resultEl = container.querySelector('#quiz-result');
-    let answers = {};
-
-    opts.forEach(btn => {
-      listen(btn, 'click', () => {
-        const q = btn.dataset.q;
-        const val = btn.dataset.val;
-        answers[q] = val;
-
-        // Highlight selected
-        container.querySelectorAll(`.quiz-opt[data-q="${q}"]`).forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-
-        // Show feedback
-        const fb = container.querySelector(`#q${q}-feedback`);
-        if (fb) {
-          if (val === quizAnswers[q]) {
-            fb.innerHTML = '<span class="text-green">Correct!</span>';
-            fb.className = 'quiz-feedback correct';
-          } else {
-            fb.innerHTML = '<span class="text-red">Incorrect. Try again.</span>';
-            fb.className = 'quiz-feedback incorrect';
-          }
+  function init(container) {
+    QuizEngine.init(container, 'vuln-xxe', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'What XML feature is exploited in XXE attacks?',
+          options: [
+            { value: 'a', label: 'XML namespaces' },
+            { value: 'b', label: 'External entity declarations in the DTD' },
+            { value: 'c', label: 'XML attributes' },
+            { value: 'd', label: 'CDATA sections' }
+          ],
+          answer: 'b',
+          hint: 'The Document Type Definition allows declaring entities that reference external files or URLs.'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'How is blind XXE data exfiltrated when entity values aren\'t displayed?',
+          options: [
+            { value: 'a', label: 'Using parameter entities that trigger HTTP requests to an attacker-controlled server carrying the data' },
+            { value: 'b', label: 'Using JavaScript inside XML comments' },
+            { value: 'c', label: 'Embedding the data in XML attributes' },
+            { value: 'd', label: 'Sending the data via email' }
+          ],
+          answer: 'a',
+          hint: 'Parameter entities can make out-of-band HTTP requests with stolen data in the URL.'
+        },
+        {
+          type: 'mc', id: 'q3',
+          text: 'What is the best way to prevent XXE in Python?',
+          options: [
+            { value: 'a', label: 'Filtering the string "ENTITY" from input' },
+            { value: 'b', label: 'Limiting XML file size' },
+            { value: 'c', label: 'Using <code>defusedxml</code> or disabling DTD loading and entity resolution' },
+            { value: 'd', label: 'Encoding XML in base64 before parsing' }
+          ],
+          answer: 'c',
+          hint: 'A library that disables dangerous XML features by default is the most reliable approach.'
+        },
+        {
+          type: 'tf', id: 'q4',
+          text: 'SVG image files can be used as an XXE attack vector because SVG is an XML-based format that may be parsed with entity resolution enabled.',
+          answer: true,
+          hint: 'SVG, DOCX, XLSX, and other XML-based file formats can all carry XXE payloads.'
+        },
+        {
+          type: 'fill', id: 'q5',
+          text: 'What Python library is a drop-in replacement for standard XML parsers that blocks all dangerous XML features by default? (one word, lowercase)',
+          placeholder: 'Type the library name...',
+          // SHA-256 of "defusedxml"
+          answerHash: '8018460bcbbfee4b69f0e3a3cf6d1b89e0fb9429d45231eddc41b73b649c3efa',
+          hint: 'The name suggests it makes XML parsing safe — "defused."'
         }
-
-        // Check if all answered correctly
-        const allCorrect = Object.keys(quizAnswers).every(k => answers[k] === quizAnswers[k]);
-        if (allCorrect && resultEl) {
-          resultEl.innerHTML = '<div class="alert alert-success">All correct! Quiz completed.</div>';
-          Router.markLabComplete('vuln-xxe', 'lab1');
+      ],
+      flags: [
+        {
+          id: 'f1', label: 'Challenge 1 — Basic Entity Injection',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10
+        },
+        {
+          id: 'f2', label: 'Challenge 2 — Blind OOB XXE',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 15
+        },
+        {
+          id: 'f3', label: 'Challenge 3 — SVG-Based XXE',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 20
         }
-      });
+      ]
     });
   }
 
-  function init(container) {
-    initQuiz(container);
-  }
-
   function cleanup() {
-    listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
-    listeners = [];
+    QuizEngine.cleanup('vuln-xxe');
   }
 
   return { init, cleanup };

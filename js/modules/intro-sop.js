@@ -186,6 +186,54 @@ window.introSop = (() => {
     container = cont;
     initLab1();
     initLab2();
+
+    QuizEngine.init(container, 'intro-sop', {
+      questions: [
+        {
+          type: 'mc',
+          text: 'What three components define an "origin" in the Same-Origin Policy?',
+          options: [
+            'Domain, path, and query string',
+            'Scheme, host, and port',
+            'Protocol, domain, and path',
+            'Host, port, and cookie domain'
+          ],
+          answer: 1
+        },
+        {
+          type: 'tf',
+          text: 'http://example.com and https://example.com are considered the same origin.',
+          answer: false
+        },
+        {
+          type: 'mc',
+          text: 'What does CORS stand for?',
+          options: [
+            'Cookie Origin Resource Standard',
+            'Cross-Origin Resource Sharing',
+            'Client-Operated Request System',
+            'Centralized Origin Relay Service'
+          ],
+          answer: 1
+        },
+        {
+          type: 'mc',
+          text: 'Which CORS header specifies which origins are allowed to access a resource?',
+          options: [
+            'Access-Control-Allow-Methods',
+            'Access-Control-Allow-Origin',
+            'Access-Control-Allow-Headers',
+            'Access-Control-Max-Age'
+          ],
+          answer: 1
+        },
+        {
+          type: 'tf',
+          text: 'Setting Access-Control-Allow-Origin to * (wildcard) while also allowing credentials is a dangerous CORS misconfiguration.',
+          answer: true
+        }
+      ]
+    });
   }
 
   function cleanup() {
@@ -194,6 +242,7 @@ window.introSop = (() => {
     }
     listeners = [];
     container = null;
+    QuizEngine.cleanup('intro-sop');
   }
 
   return { init, cleanup };

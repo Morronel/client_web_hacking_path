@@ -387,11 +387,56 @@ const introNetworking = (() => {
     initDns(container);
     initSop(container);
     initCidr(container);
+
+    QuizEngine.init(container, 'intro-networking', {
+      questions: [
+        {
+          type: 'mc',
+          text: 'Which HTTP method is considered "safe" and should only retrieve data?',
+          options: ['POST', 'GET', 'PUT', 'DELETE'],
+          answer: 1
+        },
+        {
+          type: 'mc',
+          text: 'What does HTTP status code 403 indicate?',
+          options: [
+            'Not Found',
+            'Internal Server Error',
+            'Forbidden — server understood the request but refuses to authorize it',
+            'Redirect to another URL'
+          ],
+          answer: 2
+        },
+        {
+          type: 'tf',
+          text: 'DNS resolves domain names to IP addresses.',
+          answer: true
+        },
+        {
+          type: 'mc',
+          text: 'Which DNS record type maps a domain name to an IPv4 address?',
+          options: ['CNAME', 'MX', 'A', 'TXT'],
+          answer: 2
+        },
+        {
+          type: 'mc',
+          text: 'What is the purpose of the TCP three-way handshake?',
+          options: [
+            'To encrypt data in transit',
+            'To establish a reliable connection between client and server',
+            'To resolve domain names',
+            'To authenticate the server certificate'
+          ],
+          answer: 1
+        }
+      ]
+    });
   }
 
   function cleanup() {
     listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
     listeners = [];
+    QuizEngine.cleanup('intro-networking');
   }
 
   return { init, cleanup };

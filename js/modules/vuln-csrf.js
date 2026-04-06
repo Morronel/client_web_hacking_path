@@ -3,59 +3,80 @@
    ============================================ */
 
 window.vulnCsrf = (() => {
-  let listeners = [];
 
-  function listen(el, evt, fn) {
-    el.addEventListener(evt, fn);
-    listeners.push({ el, evt, fn });
-  }
-
-  const quizAnswers = { 1: 'b', 2: 'c', 3: 'a' };
-
-  function initQuiz(container) {
-    const opts = container.querySelectorAll('.quiz-opt');
-    const resultEl = container.querySelector('#quiz-result');
-    let answers = {};
-
-    opts.forEach(btn => {
-      listen(btn, 'click', () => {
-        const q = btn.dataset.q;
-        const val = btn.dataset.val;
-        answers[q] = val;
-
-        // Highlight selected
-        container.querySelectorAll(`.quiz-opt[data-q="${q}"]`).forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-
-        // Show feedback
-        const fb = container.querySelector(`#q${q}-feedback`);
-        if (fb) {
-          if (val === quizAnswers[q]) {
-            fb.innerHTML = '<span class="text-green">Correct!</span>';
-            fb.className = 'quiz-feedback correct';
-          } else {
-            fb.innerHTML = '<span class="text-red">Incorrect. Try again.</span>';
-            fb.className = 'quiz-feedback incorrect';
-          }
+  function init(container) {
+    QuizEngine.init(container, 'vuln-csrf', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'What is the primary purpose of a CSRF token?',
+          options: [
+            { value: 'a', label: 'Encrypt form data in transit' },
+            { value: 'b', label: 'Prove the request originated from the application\'s own form' },
+            { value: 'c', label: 'Prevent SQL injection in form fields' },
+            { value: 'd', label: 'Authenticate the user\'s identity' }
+          ],
+          answer: 'b',
+          hint: 'CSRF tokens verify the form submission came from the legitimate site, not an attacker\'s page.'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'Which SameSite cookie value provides the strongest CSRF protection?',
+          options: [
+            { value: 'a', label: 'None' },
+            { value: 'b', label: 'Lax' },
+            { value: 'c', label: 'Strict' },
+            { value: 'd', label: 'Secure' }
+          ],
+          answer: 'c',
+          hint: 'This value never sends the cookie on cross-site requests, regardless of the HTTP method.'
+        },
+        {
+          type: 'mc', id: 'q3',
+          text: 'Which HTTP methods are most commonly targeted in CSRF attacks?',
+          options: [
+            { value: 'a', label: 'GET and HEAD because they are idempotent' },
+            { value: 'b', label: 'POST, PUT, and DELETE because they cause state changes' },
+            { value: 'c', label: 'OPTIONS and TRACE because they bypass CORS' },
+            { value: 'd', label: 'Only PATCH because it allows partial updates' }
+          ],
+          answer: 'b',
+          hint: 'CSRF is most dangerous when it triggers actions that modify server-side state.'
+        },
+        {
+          type: 'tf', id: 'q4',
+          text: 'Modern browsers default cookies to <code>SameSite=Lax</code> when no SameSite attribute is specified, which provides basic CSRF protection for POST-based endpoints.',
+          answer: true,
+          hint: 'Since 2020, Chrome, Firefox, and Edge treat cookies without a SameSite attribute as Lax by default.'
+        },
+        {
+          type: 'fill', id: 'q5',
+          text: 'What cookie attribute (one word, lowercase) controls whether cookies are sent with cross-site requests?',
+          placeholder: 'Type the attribute name...',
+          // SHA-256 of "samesite"
+          answerHash: '3edbd67a4e33cd9d9d30d7e8e2e915f1557deb987a1e3f5b4dc29fffc67a2a09',
+          hint: 'This attribute can be set to Strict, Lax, or None.'
         }
-
-        // Check if all answered correctly
-        const allCorrect = Object.keys(quizAnswers).every(k => answers[k] === quizAnswers[k]);
-        if (allCorrect && resultEl) {
-          resultEl.innerHTML = '<div class="alert alert-success">All correct! Quiz completed.</div>';
-          Router.markLabComplete('vuln-csrf', 'lab1');
+      ],
+      flags: [
+        {
+          id: 'f1', label: 'Challenge 1 — Token Bypass',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10
+        },
+        {
+          id: 'f2', label: 'Challenge 2 — SameSite Abuse',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 15
+        },
+        {
+          id: 'f3', label: 'Challenge 3 — JSON CSRF',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 20
         }
-      });
+      ]
     });
   }
 
-  function init(container) {
-    initQuiz(container);
-  }
-
   function cleanup() {
-    listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
-    listeners = [];
+    QuizEngine.cleanup('vuln-csrf');
   }
 
   return { init, cleanup };

@@ -3,59 +3,80 @@
    ============================================ */
 
 window.vulnRace = (() => {
-  let listeners = [];
 
-  function listen(el, evt, fn) {
-    el.addEventListener(evt, fn);
-    listeners.push({ el, evt, fn });
-  }
-
-  const quizAnswers = { 1: 'a', 2: 'd', 3: 'b' };
-
-  function initQuiz(container) {
-    const opts = container.querySelectorAll('.quiz-opt');
-    const resultEl = container.querySelector('#quiz-result');
-    let answers = {};
-
-    opts.forEach(btn => {
-      listen(btn, 'click', () => {
-        const q = btn.dataset.q;
-        const val = btn.dataset.val;
-        answers[q] = val;
-
-        // Highlight selected
-        container.querySelectorAll(`.quiz-opt[data-q="${q}"]`).forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-
-        // Show feedback
-        const fb = container.querySelector(`#q${q}-feedback`);
-        if (fb) {
-          if (val === quizAnswers[q]) {
-            fb.innerHTML = '<span class="text-green">Correct!</span>';
-            fb.className = 'quiz-feedback correct';
-          } else {
-            fb.innerHTML = '<span class="text-red">Incorrect. Try again.</span>';
-            fb.className = 'quiz-feedback incorrect';
-          }
+  function init(container) {
+    QuizEngine.init(container, 'vuln-race', {
+      questions: [
+        {
+          type: 'mc', id: 'q1',
+          text: 'What does TOCTOU stand for?',
+          options: [
+            { value: 'a', label: 'Time of Check to Time of Use' },
+            { value: 'b', label: 'Transfer of Control to Other Users' },
+            { value: 'c', label: 'Thread Orchestration and Concurrent Transactions Under Update' },
+            { value: 'd', label: 'Token of Credit to Offset Usage' }
+          ],
+          answer: 'a',
+          hint: 'The name describes the timing gap between verifying a condition and acting on it.'
+        },
+        {
+          type: 'mc', id: 'q2',
+          text: 'What is the most effective database-level prevention for race conditions?',
+          options: [
+            { value: 'a', label: 'Adding more indexes' },
+            { value: 'b', label: 'Using <code>time.sleep()</code> between queries' },
+            { value: 'c', label: 'Increasing connection pool size' },
+            { value: 'd', label: 'Atomic <code>UPDATE ... WHERE</code> that combines check and modification in one query' }
+          ],
+          answer: 'd',
+          hint: 'Combining the check and modification into a single atomic query eliminates the timing gap.'
+        },
+        {
+          type: 'mc', id: 'q3',
+          text: 'Which mechanism ensures that concurrent transactions don\'t read stale data?',
+          options: [
+            { value: 'a', label: 'Connection pooling' },
+            { value: 'b', label: 'Database transactions with row-level locking (<code>SELECT FOR UPDATE</code>)' },
+            { value: 'c', label: 'Rate limiting' },
+            { value: 'd', label: 'Using a NoSQL database instead' }
+          ],
+          answer: 'b',
+          hint: 'Row-level locking prevents other transactions from reading or modifying the locked row.'
+        },
+        {
+          type: 'tf', id: 'q4',
+          text: 'Rate limiting is a sufficient defense against race conditions because it prevents concurrent requests from reaching the server simultaneously.',
+          answer: false,
+          hint: 'Rate limiting reduces volume but does not eliminate the TOCTOU gap — atomic operations are needed.'
+        },
+        {
+          type: 'fill', id: 'q5',
+          text: 'What is the abbreviated name for the timing flaw pattern where a condition is verified then acted upon with a gap in between? (acronym, lowercase)',
+          placeholder: 'Type the acronym...',
+          // SHA-256 of "toctou"
+          answerHash: 'd11df3e418d44fc3a68ba8f369ffafc17b18c8cbb5b7b40050f838eb0b37ea44',
+          hint: 'Time-of-Check to Time-of-Use — the core pattern behind race conditions.'
         }
-
-        // Check if all answered correctly
-        const allCorrect = Object.keys(quizAnswers).every(k => answers[k] === quizAnswers[k]);
-        if (allCorrect && resultEl) {
-          resultEl.innerHTML = '<div class="alert alert-success">All correct! Quiz completed.</div>';
-          Router.markLabComplete('vuln-race', 'lab1');
+      ],
+      flags: [
+        {
+          id: 'f1', label: 'Challenge 1 — Voucher Double-Spend',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 10
+        },
+        {
+          id: 'f2', label: 'Challenge 2 — Overdraft Withdrawal',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 15
+        },
+        {
+          id: 'f3', label: 'Challenge 3 — Duplicate Registration',
+          hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', points: 20
         }
-      });
+      ]
     });
   }
 
-  function init(container) {
-    initQuiz(container);
-  }
-
   function cleanup() {
-    listeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
-    listeners = [];
+    QuizEngine.cleanup('vuln-race');
   }
 
   return { init, cleanup };
