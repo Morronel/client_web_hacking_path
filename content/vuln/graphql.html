@@ -1,89 +1,178 @@
 <section class="module-header">
-  <h1>Module 22 — GraphQL Vulnerabilities</h1>
+  <h1>Module 21 — GraphQL Vulnerabilities</h1>
   <p>Learn how GraphQL APIs introduce unique attack surfaces including introspection leaks, depth attacks, injection, and authorization bypasses.</p>
 </section>
 
 <section class="theory-section">
-  <h2>GraphQL Basics</h2>
-  <p>GraphQL is a query language for APIs that lets clients specify exactly what data they need. Unlike REST, it uses a single endpoint and a typed schema. While powerful, it introduces security challenges not present in traditional REST APIs.</p>
 
-  <pre><code class="language-graphql"># Basic query
+  <h2>A Different Kind of API, A Different Kind of Attack</h2>
+  <p>
+    GraphQL was developed by Facebook in 2012 and open-sourced in 2015. It solves a real problem with REST APIs: over-fetching and under-fetching data. Instead of hitting multiple REST endpoints and getting fixed response shapes, the client sends a single query specifying exactly what data it needs, and the server returns exactly that.
+  </p>
+  <p>
+    This power comes at a cost. GraphQL introduces attack surfaces that simply do not exist in REST:
+  </p>
+  <ul>
+    <li>A <strong>single endpoint</strong> handles all operations — WAF rules designed for REST paths do not work</li>
+    <li><strong>Introspection</strong> reveals the entire schema to anyone who asks</li>
+    <li>Clients control <strong>query depth and complexity</strong>, enabling DoS attacks</li>
+    <li><strong>Authorization</strong> must be enforced per-field in every resolver, not just per-endpoint</li>
+    <li><strong>Batching</strong> lets attackers send thousands of operations in a single HTTP request</li>
+  </ul>
+  <p>
+    If you encounter a <code>/graphql</code> endpoint during a pentest or bug bounty, pay close attention. GraphQL APIs are commonly misconfigured, and the vulnerabilities can be severe.
+  </p>
+
+  <h2>GraphQL Fundamentals (Quick Primer)</h2>
+  <pre><code class="language-graphql"># Query — read data (like GET in REST)
 {
   users {
     id
     username
     email
+    posts {
+      title
+    }
   }
 }
 
-# Mutation
+# Mutation — modify data (like POST/PUT/DELETE in REST)
 mutation {
   createPost(title: "Hello", content: "World") {
     id
+    createdAt
   }
-}</code></pre>
+}
 
-  <h2>Attack Vectors</h2>
+# The response mirrors the query structure:
+# { "data": { "users": [{ "id": 1, "username": "alice", "email": "...", "posts": [...] }] } }</code></pre>
 
-  <h3>1. Introspection</h3>
-  <p>GraphQL allows clients to query the full schema, revealing all types, fields, and relationships — including hidden or admin-only types:</p>
-  <pre><code class="language-graphql">{
+  <h2>Attack #1: Introspection — The Schema Giveaway</h2>
+  <p>
+    GraphQL has a built-in feature called <strong>introspection</strong> that allows any client to query the complete schema — every type, every field, every relationship, every mutation. This is incredibly useful during development. It is also incredibly useful for attackers.
+  </p>
+  <pre><code class="language-graphql"># The introspection query — reveals EVERYTHING
+{
   __schema {
     types {
       name
-      fields { name type { name } }
+      fields {
+        name
+        type { name kind }
+      }
     }
   }
-}</code></pre>
+}
 
-  <h3>2. Nested Query / Depth Attack</h3>
-  <p>Without depth limiting, recursive relationships allow exponentially expensive queries:</p>
-  <pre><code class="language-graphql">{
+# Find all queries and mutations
+{
+  __schema {
+    queryType { fields { name } }
+    mutationType { fields { name } }
+  }
+}</code></pre>
+  <p>
+    When you run this against a misconfigured production API, you might discover types like <code>AdminUser</code>, <code>InternalConfig</code>, <code>DebugLog</code>, or mutations like <code>deleteUser</code>, <code>promoteToAdmin</code>, <code>resetPassword</code>. The schema is essentially a roadmap of the entire API — including parts the developers assumed nobody would find.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Tools:</strong> Use <strong>GraphQL Voyager</strong> to visualize the schema as an interactive graph, or <strong>InQL</strong> (Burp Suite extension) to automatically extract and analyze GraphQL schemas. For CLI testing, <code>graphql-cop</code> performs automated security checks against GraphQL endpoints.
+  </div>
+
+  <h2>Attack #2: Depth and Complexity DoS</h2>
+  <p>
+    GraphQL relationships can be nested recursively. If a <code>User</code> has <code>posts</code> and a <code>Post</code> has an <code>author</code>, you can nest them infinitely:
+  </p>
+  <pre><code class="language-graphql"># This query is exponentially expensive
+{
   users {
     posts {
       author {
         posts {
           author {
-            posts { ... } # infinite nesting
+            posts {
+              author {
+                # ... keeps going — each level multiplies the work
+              }
+            }
           }
         }
       }
     }
   }
 }</code></pre>
+  <p>
+    Without depth limiting, this query can consume massive amounts of server resources — CPU, memory, and database connections. A single malicious query can take down the entire API. This is a <strong>Denial of Service (DoS)</strong> attack unique to GraphQL.
+  </p>
 
-  <h3>3. Authorization Bypass</h3>
-  <p>GraphQL resolvers must enforce per-field authorization. A common mistake is securing the mutation but not the query, or protecting a resource at one query path but not another:</p>
-  <pre><code class="language-python"># DANGEROUS: no auth check in resolver
+  <h2>Attack #3: Authorization Bypass</h2>
+  <p>
+    In REST, authorization is often enforced at the endpoint level: "only admins can access <code>/api/admin/users</code>." In GraphQL, there is only one endpoint. Authorization must be enforced <strong>in every resolver</strong>, for every field.
+  </p>
+  <pre><code class="language-python"># DANGEROUS: no auth check — returns ALL posts including private ones
 def resolve_posts(root, info):
     return db.execute('SELECT * FROM posts').fetchall()
-    # Returns ALL posts, including private ones!</code></pre>
 
-  <h3>4. Injection in Resolvers</h3>
-  <pre><code class="language-python"># DANGEROUS: string interpolation in SQL
+# SAFE: filter by current user's permissions
+def resolve_posts(root, info):
+    user = info.context['user']
+    if user.is_admin:
+        return db.execute('SELECT * FROM posts').fetchall()
+    return db.execute('SELECT * FROM posts WHERE author_id=? OR public=1',
+                      (user.id,)).fetchall()</code></pre>
+  <p>
+    Common mistakes: securing a mutation like <code>deleteUser</code> but not the corresponding query that reveals user data, or protecting a resource at one query path (<code>user.privateEmail</code>) but not another (<code>post.author.privateEmail</code>).
+  </p>
+
+  <h2>Attack #4: SQL Injection via Resolvers</h2>
+  <p>
+    GraphQL does not magically prevent injection. If a resolver builds SQL queries by concatenating user-supplied arguments, it is vulnerable to the same SQL injection as any other application:
+  </p>
+  <pre><code class="language-python"># DANGEROUS: string interpolation in resolver
 def resolve_search_users(root, info, name):
-    return db.execute(f"SELECT * FROM users WHERE name LIKE '%{name}%'").fetchall()
-    # SQL injection via GraphQL argument!</code></pre>
+    return db.execute(
+        f"SELECT * FROM users WHERE name LIKE '%{name}%'"
+    ).fetchall()
+    # GraphQL query: { searchUsers(name: "' UNION SELECT * FROM secrets--") { ... } }
+    # → SQL injection!</code></pre>
 
-  <h3>5. Batching Attacks</h3>
-  <p>Many GraphQL servers accept arrays of queries in a single request, bypassing rate limiters that count HTTP requests rather than query operations.</p>
-
-  <h3>6. Field Suggestion Information Disclosure</h3>
-  <p>When a field name is misspelled, error messages may suggest valid field names, leaking schema information even when introspection is disabled.</p>
-
-  <h2>Prevention</h2>
+  <h2>Attack #5: Batching and Brute Force</h2>
+  <p>
+    Many GraphQL servers accept arrays of queries in a single HTTP request. This enables:
+  </p>
   <ul>
-    <li><strong>Disable introspection</strong> in production</li>
-    <li><strong>Implement query depth limiting</strong> (max depth 5-10)</li>
-    <li><strong>Per-field authorization</strong> in every resolver</li>
-    <li><strong>Parameterized queries</strong> in resolvers (never string interpolation)</li>
-    <li><strong>Query cost analysis</strong> to prevent expensive operations</li>
-    <li><strong>Batch size limits</strong> on array queries</li>
+    <li><strong>Rate limit bypass:</strong> Send 1,000 login attempts in a single HTTP request — if the rate limiter counts HTTP requests, it sees only one</li>
+    <li><strong>Brute force acceleration:</strong> Try thousands of passwords, OTP codes, or API keys in batch</li>
+  </ul>
+  <pre><code class="language-json">// Single HTTP request, 100 login attempts
+[
+  { "query": "mutation { login(email: \"admin@x.com\", pass: \"pass1\") { token } }" },
+  { "query": "mutation { login(email: \"admin@x.com\", pass: \"pass2\") { token } }" },
+  { "query": "mutation { login(email: \"admin@x.com\", pass: \"pass3\") { token } }" }
+  // ... 97 more
+]</code></pre>
+
+  <h2>Attack #6: Field Suggestion Leaks</h2>
+  <p>
+    Even when introspection is disabled, many GraphQL implementations suggest valid field names when you misspell one. Query for <code>{ users { passwor } }</code> and the error might say: <em>"Did you mean 'password' or 'passwordHash'?"</em> This leaks schema information through the back door.
+  </p>
+
+  <h2>Defense Checklist</h2>
+  <ul>
+    <li><strong>Disable introspection in production</strong> — most frameworks have a one-line config for this</li>
+    <li><strong>Implement query depth limiting</strong> — cap at 5-10 levels</li>
+    <li><strong>Query cost analysis</strong> — assign costs to fields and reject queries exceeding a budget</li>
+    <li><strong>Per-field authorization in every resolver</strong> — never assume a field is "hidden"</li>
+    <li><strong>Parameterized queries in resolvers</strong> — same rules as any SQL code</li>
+    <li><strong>Batch size limits</strong> — cap array queries at 10-20 operations</li>
+    <li><strong>Rate limiting per operation</strong>, not just per HTTP request</li>
+    <li><strong>Disable field suggestions</strong> in error messages for production</li>
   </ul>
 
-  <div class="callout callout-warning">
-    <strong>Impact:</strong> GraphQL vulnerabilities can leak entire database schemas, expose private data, enable DoS through expensive queries, and serve as injection vectors. The single-endpoint nature means traditional WAF rules often miss these attacks.
+  <div class="callout callout-danger">
+    <strong>Impact:</strong> GraphQL vulnerabilities can leak entire database schemas, expose private data via authorization gaps, enable DoS through expensive queries, serve as injection vectors through unsafe resolvers, and bypass rate limiting via batching. The single-endpoint architecture means traditional WAF rules and API gateways often miss these attacks entirely.
   </div>
+
 </section>
 
 <section class="quiz-section">

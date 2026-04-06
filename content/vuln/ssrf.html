@@ -1,26 +1,24 @@
-<!-- Module 15: Server-Side Request Forgery -->
+<!-- Module 18: Server-Side Request Forgery -->
 <section class="module-header">
-  <h1>Module 15 — Server-Side Request Forgery (SSRF)</h1>
+  <h1>Module 18 — Server-Side Request Forgery (SSRF)</h1>
   <p>Learn how attackers abuse server-side HTTP requests to access internal services, cloud metadata, and bypass network firewalls.</p>
 </section>
 
 <section class="theory-section">
-  <h2>What is SSRF?</h2>
+
+  <h2>Turning the Server Into Your Proxy</h2>
   <p>
-    Server-Side Request Forgery occurs when an application fetches a remote resource using a
-    user-supplied URL without adequate validation. The attacker controls where the server makes
-    requests, turning it into a proxy that can reach internal networks, cloud metadata services,
-    and other resources that are inaccessible from the outside.
+    Imagine you are standing outside a corporate office building. You cannot get past the lobby. But there is a helpful receptionist who will fetch any document you ask for — from any department, any floor, any filing cabinet. They trust you because you are making a "normal" request through the front desk. That receptionist is the web server, and the attack is SSRF.
+  </p>
+  <p>
+    Server-Side Request Forgery occurs when an application takes a user-supplied URL and makes an HTTP request to that URL <strong>from the server itself</strong>. The attacker does not directly access the target — they trick the server into accessing it on their behalf. And because the server sits inside the trusted network, it can reach things the attacker never could: internal services, cloud metadata, admin panels, databases, and other infrastructure hidden behind the firewall.
   </p>
 
-  <h3>Why SSRF is Dangerous</h3>
-  <p>
-    The server typically sits inside a trusted network zone with access to internal services,
-    databases, and cloud infrastructure APIs. An SSRF vulnerability lets an external attacker
-    reach these resources through the server.
-  </p>
+  <div class="callout callout-success">
+    <strong>Real Story — Capital One (2019):</strong> An SSRF vulnerability in a web application firewall allowed an attacker to access the AWS metadata endpoint (<code>169.254.169.254</code>) and steal IAM credentials. With those credentials, the attacker accessed S3 buckets containing <strong>106 million customer records</strong> including Social Security numbers and bank account numbers. Capital One was fined $80 million. This single SSRF was the root cause of one of the largest data breaches in financial services history.
+  </div>
 
-  <h2>Vulnerable Code: Unrestricted URL Fetch</h2>
+  <h2>Vulnerable Code</h2>
   <pre><code class="language-python"># Flask — VULNERABLE: user controls the URL
 import urllib.request
 
@@ -28,81 +26,105 @@ import urllib.request
 def fetch_url():
     url = request.args.get('url')
     response = urllib.request.urlopen(url)  # attacker controls destination
-    return response.read()</code></pre>
+    return response.read()
 
-  <p>An attacker can supply internal URLs:</p>
-  <pre><code class="language-http">GET /fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/
-GET /fetch?url=http://localhost:6379/   (Redis)
-GET /fetch?url=file:///etc/passwd</code></pre>
+# Normal use: /fetch?url=https://api.example.com/data
+# Attack:     /fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/
+# Attack:     /fetch?url=http://localhost:6379/  (Redis)
+# Attack:     /fetch?url=file:///etc/passwd</code></pre>
+
+  <p>
+    The pattern is common: "fetch a URL," "preview a link," "import from URL," "check if a URL is alive," "download a profile image from a URL." Any feature where the server makes an HTTP request to a user-supplied address is a potential SSRF.
+  </p>
+
+  <h2>What Can SSRF Access?</h2>
+
+  <h3>Cloud Metadata — The Crown Jewels</h3>
+  <p>
+    Every major cloud provider exposes an instance metadata service at <code>http://169.254.169.254/</code>. This is a link-local address only reachable from within the cloud instance. It returns IAM credentials, instance configuration, user data scripts, and more. With SSRF, an attacker can reach it:
+  </p>
+  <ul>
+    <li><strong>AWS:</strong> <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/[role-name]</code> — returns temporary AWS credentials (access key, secret key, session token)</li>
+    <li><strong>GCP:</strong> <code>http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token</code> (requires <code>Metadata-Flavor: Google</code> header)</li>
+    <li><strong>Azure:</strong> <code>http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/</code></li>
+  </ul>
+
+  <h3>Internal Services</h3>
+  <ul>
+    <li><strong>Databases:</strong> Redis (<code>:6379</code>), Memcached (<code>:11211</code>), Elasticsearch (<code>:9200</code>), MongoDB (<code>:27017</code>)</li>
+    <li><strong>Admin panels:</strong> Kubernetes API (<code>:6443</code>), Docker API (<code>:2375</code>), Jenkins (<code>:8080</code>)</li>
+    <li><strong>Internal microservices:</strong> Service-to-service APIs on private IPs that assume all traffic is trusted</li>
+  </ul>
+
+  <h2>SSRF Filter Bypasses</h2>
+  <p>
+    Most developers' first instinct is to block <code>127.0.0.1</code> and <code>169.254.169.254</code> in user input. But there are dozens of ways to represent the same addresses:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Bypass Technique</th><th>Example</th><th>Resolves To</th></tr></thead>
+      <tbody>
+        <tr><td>Decimal IP</td><td><code>http://2130706433/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>Hex IP</td><td><code>http://0x7f000001/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>Octal IP</td><td><code>http://0177.0.0.1/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>IPv6 loopback</td><td><code>http://[::1]/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>IPv6 mapped</td><td><code>http://[::ffff:127.0.0.1]/</code></td><td>127.0.0.1</td></tr>
+        <tr><td>DNS rebinding</td><td>Domain that flips between public and private IPs</td><td>127.0.0.1 (on second resolve)</td></tr>
+        <tr><td>Redirect bypass</td><td><code>http://evil.com/redirect?to=http://169.254.169.254/</code></td><td>169.254.169.254</td></tr>
+        <tr><td>URL authority</td><td><code>http://evil.com@127.0.0.1/</code></td><td>127.0.0.1 (some parsers)</td></tr>
+        <tr><td>Short URL</td><td>Shortened URL that redirects to internal address</td><td>Any target</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>DNS Rebinding Explained:</strong> The attacker registers a domain that alternates between returning a public IP (passing the server's validation check) and a private IP like 127.0.0.1 (when the server actually makes the request). The server checks the hostname → gets a safe IP → approves the request → makes the actual HTTP call → DNS returns a different (internal) IP. The tool <code>rebind.network</code> demonstrates this attack.
+  </div>
+
+  <h3>Blind SSRF</h3>
+  <p>
+    When the server's response is not returned to the attacker, the vulnerability still exists. Blind SSRF is confirmed using:
+  </p>
+  <ul>
+    <li><strong>DNS lookups:</strong> Point the URL to your Burp Collaborator/Interactsh domain and watch for DNS queries</li>
+    <li><strong>Timing:</strong> Internal hosts respond faster than non-existent ones (useful for port scanning)</li>
+    <li><strong>Error differences:</strong> "Connection refused" vs "Connection timeout" reveals whether a port is open</li>
+  </ul>
 
   <h2>Safe Code: URL Allowlisting</h2>
-  <pre><code class="language-python"># Flask — SAFE: strict URL validation
+  <pre><code class="language-python"># Flask — SAFE: strict URL validation + DNS resolution check
 from urllib.parse import urlparse
+import socket
 
 ALLOWED_HOSTS = {'api.example.com', 'cdn.example.com'}
+BLOCKED_RANGES = [
+    '127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12',
+    '192.168.0.0/16', '169.254.0.0/16', '::1/128'
+]
 
 @app.route('/fetch')
 def fetch_url():
     url = request.args.get('url')
     parsed = urlparse(url)
 
-    # Enforce HTTPS and allowlisted hosts only
-    if parsed.scheme != 'https':
-        return 'Only HTTPS allowed', 400
+    if parsed.scheme not in ('http', 'https'):
+        return 'Only HTTP(S) allowed', 400
     if parsed.hostname not in ALLOWED_HOSTS:
         return 'Host not allowed', 403
+
+    # Resolve hostname BEFORE making the request to prevent DNS rebinding
+    ip = socket.getaddrinfo(parsed.hostname, None)[0][4][0]
+    if is_private_ip(ip):
+        return 'Internal addresses blocked', 403
 
     response = urllib.request.urlopen(url)
     return response.read()</code></pre>
 
-  <h2>Common SSRF Targets</h2>
-
-  <h3>Cloud Metadata Endpoints</h3>
-  <p>
-    Most cloud providers expose instance metadata at <code>http://169.254.169.254/</code>. This
-    endpoint returns IAM credentials, instance identity, and configuration data:
-  </p>
-  <ul>
-    <li><strong>AWS:</strong> <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/</code></li>
-    <li><strong>GCP:</strong> <code>http://metadata.google.internal/computeMetadata/v1/</code> (requires header)</li>
-    <li><strong>Azure:</strong> <code>http://169.254.169.254/metadata/instance?api-version=2021-02-01</code></li>
-  </ul>
-
-  <h3>Internal Services</h3>
-  <ul>
-    <li>Databases: Redis (<code>:6379</code>), Memcached (<code>:11211</code>), Elasticsearch (<code>:9200</code>)</li>
-    <li>Admin panels: Kubernetes API (<code>:6443</code>), Docker API (<code>:2375</code>)</li>
-    <li>Internal microservices on private IPs</li>
-  </ul>
-
-  <h2>Filter Bypass Techniques</h2>
-  <ul>
-    <li><strong>IP encoding:</strong> <code>0x7f000001</code>, <code>2130706433</code>, <code>0177.0.0.1</code> all resolve to 127.0.0.1</li>
-    <li><strong>DNS rebinding:</strong> A domain resolves to a public IP on first lookup, then to 127.0.0.1 on subsequent lookups</li>
-    <li><strong>URL scheme abuse:</strong> <code>file://</code>, <code>gopher://</code>, <code>dict://</code> protocols</li>
-    <li><strong>Redirects:</strong> An external URL that 302-redirects to an internal address bypasses hostname checks</li>
-    <li><strong>IPv6:</strong> <code>[::1]</code> is equivalent to <code>127.0.0.1</code></li>
-    <li><strong>URL parsing inconsistencies:</strong> <code>http://evil.com@127.0.0.1/</code> may resolve to localhost</li>
-  </ul>
-
-  <h3>Blind SSRF</h3>
-  <p>
-    When the response is not returned to the attacker, the vulnerability still exists. Blind SSRF
-    is confirmed using out-of-band techniques: DNS lookups to attacker-controlled domains, timing
-    differences, or error message variations.
-  </p>
-
   <div class="callout callout-danger">
-    <strong>SSRF Impact:</strong> Cloud credential theft (full account takeover via stolen IAM keys),
-    internal port scanning, reading sensitive files, accessing internal admin interfaces, pivoting
-    deeper into the network, and remote code execution via vulnerable internal services.
+    <strong>Defense in Depth:</strong> No single defense is sufficient against SSRF. Combine: (1) URL allowlisting at the application layer, (2) DNS resolution validation before requests, (3) network segmentation (the web server should not have access to cloud metadata), (4) IMDSv2 on AWS (requires a session token, making metadata theft via SSRF much harder), (5) disable unnecessary URL schemes like <code>file://</code>, <code>gopher://</code>, <code>dict://</code>.
   </div>
 
-  <div class="callout callout-info">
-    <strong>Defense in Depth:</strong> Combine URL allowlisting with network-level controls. Use
-    IMDSv2 on AWS (requires session tokens), disable unnecessary URL schemes, and resolve the
-    hostname before making the request to prevent DNS rebinding.
-  </div>
 </section>
 
 <section class="quiz-section">

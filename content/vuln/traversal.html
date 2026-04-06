@@ -1,20 +1,32 @@
 <section class="module-header">
-  <h1>Module 16 — Path Traversal</h1>
+  <h1>Module 19 — Path Traversal</h1>
   <p>Learn how attackers escape intended directories to read arbitrary files on the server.</p>
 </section>
 
 <section class="theory-section">
-  <h2>What Is Path Traversal?</h2>
-  <p>Path traversal (also called directory traversal) exploits insufficient security validation of user-supplied file paths. By injecting <code>../</code> sequences, attackers navigate outside the intended directory to access sensitive files like <code>/etc/passwd</code>, application configs, or source code.</p>
 
-  <h2>The Core Problem</h2>
+  <h2>Escaping the Sandbox</h2>
+  <p>
+    Path traversal is beautifully simple. The application serves files from a specific directory — say, <code>/app/documents/public/</code>. Users request files by name: <code>/view?file=report.pdf</code>. The server concatenates the filename onto the base path and opens the file. Simple, right?
+  </p>
+  <p>
+    But what happens when the user requests <code>/view?file=../../../etc/passwd</code>? The server constructs the path <code>/app/documents/public/../../../etc/passwd</code>. The operating system resolves the <code>../</code> sequences, climbing up three directory levels, and ends up at <code>/etc/passwd</code>. The attacker just read a file they were never supposed to access.
+  </p>
+  <p>
+    This is path traversal (also called directory traversal or dot-dot-slash attacks). It exploits the simple fact that <code>../</code> means "go up one directory" in every operating system, and many applications do not validate that the resulting path stays within the intended directory.
+  </p>
+
+  <h2>The Vulnerable Pattern</h2>
   <h3 class="text-red">Vulnerable Code</h3>
   <pre><code class="language-python">@app.route('/view')
 def view():
     filename = request.args.get('file')
-    # DANGEROUS: user controls the entire path
+    # DANGEROUS: user controls the filename, can use ../ to escape
     with open(f'documents/public/{filename}') as f:
-        return f.read()</code></pre>
+        return f.read()
+
+# Normal:  /view?file=report.pdf  → opens documents/public/report.pdf
+# Attack:  /view?file=../../../etc/passwd → opens /etc/passwd</code></pre>
 
   <h3 class="text-green">Safe Code</h3>
   <pre><code class="language-python">import os
@@ -22,44 +34,83 @@ def view():
 @app.route('/view')
 def view():
     filename = request.args.get('file')
-    # SAFE: strip path components + validate against whitelist
+    # Step 1: Strip any path components — only keep the filename
     safe_name = os.path.basename(filename)
+    # Step 2: Construct the full path
     full_path = os.path.join('documents/public', safe_name)
+    # Step 3: Resolve symlinks and verify the path is still within bounds
     real_path = os.path.realpath(full_path)
     if not real_path.startswith(os.path.realpath('documents/public')):
         abort(403)
     with open(real_path) as f:
         return f.read()</code></pre>
 
-  <h2>Common Traversal Sequences</h2>
+  <p>
+    The safe version does three things: (1) <code>os.path.basename()</code> strips all directory components — <code>../../../etc/passwd</code> becomes just <code>passwd</code>. (2) <code>os.path.realpath()</code> resolves any remaining symlinks or <code>../</code> sequences. (3) The <code>startswith()</code> check verifies the resolved path is still within the allowed directory.
+  </p>
+
+  <h2>Traversal Bypass Techniques</h2>
+  <p>
+    Developers often try to block <code>../</code> with simple string replacement. This is almost always bypassable:
+  </p>
+
   <div class="table-wrapper">
     <table>
-      <thead><tr><th>Payload</th><th>Purpose</th><th>Bypasses</th></tr></thead>
+      <thead><tr><th>Payload</th><th>How It Works</th><th>Bypasses</th></tr></thead>
       <tbody>
-        <tr><td><code>../</code></td><td>Basic directory up</td><td>No filters</td></tr>
-        <tr><td><code>....//</code></td><td>After single-pass <code>../</code> removal → becomes <code>../</code></td><td>Naive replace</td></tr>
-        <tr><td><code>%2e%2e%2f</code></td><td>URL-encoded <code>../</code></td><td>Pre-decode validation</td></tr>
-        <tr><td><code>..%252f</code></td><td>Double URL-encoding</td><td>Single decode + check</td></tr>
-        <tr><td><code>%00</code></td><td>Null byte (legacy)</td><td>Extension append</td></tr>
-        <tr><td><code>..\/</code></td><td>Mixed separators</td><td>Windows normalization</td></tr>
+        <tr><td><code>../</code></td><td>Basic directory-up</td><td>No filters</td></tr>
+        <tr><td><code>....//</code></td><td>After <code>../</code> is removed once, becomes <code>../</code></td><td>Single-pass string replace</td></tr>
+        <tr><td><code>..././</code></td><td>Same trick, different arrangement</td><td>Single-pass replace</td></tr>
+        <tr><td><code>%2e%2e%2f</code></td><td>URL-encoded <code>../</code></td><td>Validation before URL decoding</td></tr>
+        <tr><td><code>..%252f</code></td><td>Double URL-encoded (<code>%25</code> = <code>%</code>)</td><td>Single decode + check</td></tr>
+        <tr><td><code>%00</code></td><td>Null byte — truncates string in C-based languages</td><td>Extension append (<code>.pdf</code>)</td></tr>
+        <tr><td><code>..\/</code></td><td>Backslash — Windows treats both <code>/</code> and <code>\</code> as separators</td><td>Filters checking only <code>/</code></td></tr>
+        <tr><td><code>..%5c</code></td><td>URL-encoded backslash</td><td>Windows + URL decode</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h2>High-Value Targets</h2>
-  <pre><code class="language-bash"># Linux targets
-/etc/passwd          # User accounts
-/etc/shadow          # Password hashes (requires root)
-/proc/self/environ   # Environment variables (secrets, API keys)
-/app/.env            # Application secrets
+  <div class="callout callout-info">
+    <strong>The Null Byte Trick:</strong> In older versions of PHP, Java, and other C-based runtimes, a null byte (<code>%00</code>) would terminate the string. So if the server appends <code>.pdf</code> to the filename: <code>../../../etc/passwd%00.pdf</code> → the OS sees <code>../../../etc/passwd</code> (null byte truncates the rest). Modern runtimes largely fixed this, but it still appears in CTFs and older systems.
+  </div>
 
-# Windows targets
-C:\Windows\win.ini
-C:\inetpub\wwwroot\web.config</code></pre>
+  <h2>High-Value Target Files</h2>
+  <p>When you confirm path traversal, these are the files to go after:</p>
+
+  <pre><code class="language-bash"># === Linux ===
+/etc/passwd              # User accounts (always readable, confirms traversal)
+/etc/shadow              # Password hashes (requires root)
+/proc/self/environ       # Environment variables — often contains API keys, secrets
+/proc/self/cmdline       # How the process was started
+/app/.env                # Application secrets (DB credentials, API keys)
+/app/config/database.yml # Rails database config
+~/.ssh/id_rsa            # SSH private key
+~/.bash_history          # Command history
+
+# === Windows ===
+C:\Windows\win.ini       # Always exists, confirms traversal
+C:\Windows\system.ini
+C:\inetpub\wwwroot\web.config   # IIS configuration with connection strings
+C:\Users\Administrator\.ssh\id_rsa</code></pre>
 
   <div class="callout callout-warning">
-    <strong>Impact:</strong> Path traversal can expose source code, configuration files, credentials, API keys, and in some cases can be chained with file upload or log injection for remote code execution.
+    <strong>Pro Tip:</strong> <code>/proc/self/environ</code> is a goldmine on Linux. It contains all environment variables of the current process, which in modern deployments often include database passwords, API keys, JWT secrets, and cloud credentials. If you can read this file, you likely have enough to fully compromise the application.
   </div>
+
+  <h2>Path Traversal Beyond File Reads</h2>
+  <p>
+    Reading files is the most common impact, but path traversal can be more dangerous when combined with other features:
+  </p>
+  <ul>
+    <li><strong>File write + traversal:</strong> If the application lets you upload/write files and has a traversal bug, you can write a webshell to the web root</li>
+    <li><strong>Log poisoning:</strong> Inject PHP code into a log file via a crafted User-Agent header, then use traversal to include the log file via a Local File Inclusion (LFI) vulnerability</li>
+    <li><strong>Source code disclosure:</strong> Read the application's source code to find hardcoded credentials, other vulnerabilities, or business logic flaws</li>
+  </ul>
+
+  <div class="callout callout-danger">
+    <strong>Impact:</strong> Path traversal exposes source code, configuration files, credentials, API keys, SSH keys, and environment secrets. When chained with file upload or log injection, it can escalate to Remote Code Execution. OWASP rates it as a high-severity vulnerability.
+  </div>
+
 </section>
 
 <section class="quiz-section">

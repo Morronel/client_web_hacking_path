@@ -4,14 +4,26 @@
 </section>
 
 <section class="theory-section">
-  <h2>What Are Race Conditions?</h2>
-  <p>Race conditions occur when two or more operations on shared state happen concurrently without proper synchronization. In web apps, this typically manifests as a <strong>TOCTOU</strong> vulnerability: the server checks a condition (e.g., "does the user have enough balance?"), then acts on it (e.g., "deduct balance"), but the gap between check and action allows concurrent requests to all pass the check.</p>
 
-  <h2>The TOCTOU Pattern</h2>
+  <h2>The Vulnerability Scanners Cannot Find</h2>
+  <p>
+    Race conditions are fundamentally different from every other vulnerability in this course. SQLi, XSS, SSRF — they are all about <em>what</em> you send. Race conditions are about <em>when</em> you send it. The payload is a perfectly normal request. The exploit is sending it at exactly the right moment — or more precisely, sending many copies of it at the same moment.
+  </p>
+  <p>
+    This is why automated vulnerability scanners almost never find race conditions. They test one request at a time and observe the response. Race conditions only manifest when multiple requests hit the same endpoint <strong>simultaneously</strong>, creating a window where the application's assumptions about state are temporarily wrong.
+  </p>
+
+  <h2>TOCTOU — Time-of-Check to Time-of-Use</h2>
+  <p>
+    The core pattern is called TOCTOU: the server <strong>checks</strong> a condition (does the user have enough balance? Is the coupon still valid?), then <strong>uses</strong> that condition to take action (deduct balance, mark coupon as redeemed). Between the check and the action, there is a gap — maybe a few milliseconds, maybe longer if there is a database query or network call in between. If another request slides into that gap, it will also pass the check, because the first request has not yet updated the state.
+  </p>
+
   <h3 class="text-red">Vulnerable Code</h3>
   <pre><code class="language-python">@app.route('/redeem', methods=['POST'])
 def redeem():
     code = request.form['code']
+
+    # CHECK: is the voucher valid and unredeemed?
     voucher = db.execute(
         'SELECT * FROM vouchers WHERE code=? AND redeemed=0', (code,)
     ).fetchone()
@@ -19,64 +31,108 @@ def redeem():
     if not voucher:
         return 'Invalid or already redeemed'
 
-    # TOCTOU GAP: another request can pass the check above
-    # before this update executes
-    time.sleep(0.1)  # Network latency / DB delay widens the window
+    # ← TOCTOU GAP: between the CHECK above and the USE below,
+    #   another request can also pass the check
+    #   because redeemed is still 0 in the database
 
+    # USE: mark as redeemed and credit the account
     db.execute('UPDATE vouchers SET redeemed=1 WHERE code=?', (code,))
     db.execute('UPDATE accounts SET balance=balance+? WHERE id=?',
                (voucher['value'], user_id))
     db.commit()
     return 'Voucher redeemed!'</code></pre>
 
-  <h3 class="text-green">Safe Code</h3>
+  <p>
+    If 20 requests arrive simultaneously, they all execute the SELECT at roughly the same time. They all see <code>redeemed=0</code>. They all pass the check. They all credit the account. One voucher, 20 credits. That is the race condition.
+  </p>
+
+  <h3 class="text-green">Safe Code — Atomic Operations</h3>
   <pre><code class="language-python">@app.route('/redeem', methods=['POST'])
 def redeem():
     code = request.form['code']
-    # SAFE: atomic update — check and modify in single query
+
+    # SAFE: check and modify in a SINGLE atomic query
+    # Only ONE of the concurrent requests will match the WHERE clause
     result = db.execute(
         'UPDATE vouchers SET redeemed=1 WHERE code=? AND redeemed=0', (code,)
     )
+
     if result.rowcount == 0:
         return 'Invalid or already redeemed'
 
+    # Only the winning request reaches here
     db.execute('UPDATE accounts SET balance=balance+? WHERE id=?',
                (voucher_value, user_id))
     db.commit()
     return 'Voucher redeemed!'</code></pre>
 
-  <h2>Real-World Examples</h2>
+  <p>
+    The fix combines the check and the modification into a single <code>UPDATE...WHERE</code> query. The database guarantees this is atomic — only one of the concurrent requests will successfully update the row (because after the first one sets <code>redeemed=1</code>, the others' WHERE clause no longer matches).
+  </p>
+
+  <h2>Real-World Race Condition Scenarios</h2>
   <ul>
-    <li><strong>Double-spend:</strong> Redeem the same gift card/voucher multiple times</li>
-    <li><strong>Overdraft:</strong> Withdraw more money than account balance by racing withdrawals</li>
-    <li><strong>Duplicate registration:</strong> Create multiple accounts with "unique" username</li>
-    <li><strong>Like/vote inflation:</strong> "Like" a post hundreds of times before the check catches up</li>
+    <li><strong>Double-spend:</strong> Redeem the same gift card, coupon, or promotional code multiple times</li>
+    <li><strong>Overdraft:</strong> Submit multiple withdrawal requests simultaneously to drain more than the available balance</li>
+    <li><strong>Duplicate registration:</strong> Create multiple accounts with a "unique" username or email by racing the uniqueness check</li>
+    <li><strong>Like/vote inflation:</strong> "Like" a post hundreds of times by sending concurrent requests before the duplicate check runs</li>
+    <li><strong>Invitation abuse:</strong> Use a single-use invite link multiple times</li>
+    <li><strong>File upload overwrite:</strong> Upload two files simultaneously with name collision logic that fails under concurrency</li>
   </ul>
 
-  <h2>Exploitation Technique</h2>
-  <pre><code class="language-bash"># Send 20 concurrent requests using curl + xargs
+  <div class="callout callout-success">
+    <strong>Real Story:</strong> In 2023, James Kettle from PortSwigger published groundbreaking research on "single-packet attacks" for HTTP/2. By sending multiple HTTP/2 requests in a single TCP packet, he could eliminate network jitter and create extremely tight race windows — often just a few microseconds. This made race conditions exploitable even when the TOCTOU gap was vanishingly small. The technique was added to Burp Suite's Turbo Intruder tool.
+  </div>
+
+  <h2>Exploitation Techniques</h2>
+  <pre><code class="language-bash"># Method 1: curl with xargs for parallel requests
 seq 20 | xargs -P20 -I{} curl -sX POST http://localhost:5013/redeem \
   -d "code=GIFT-CARD-123"
 
-# Or with Python threading
+# Method 2: Python threading for precise timing
 import threading, requests
+
 def redeem():
-    requests.post('http://localhost:5013/redeem', data={'code': 'GIFT-CARD-123'})
+    requests.post('http://localhost:5013/redeem',
+                  data={'code': 'GIFT-CARD-123'})
+
 threads = [threading.Thread(target=redeem) for _ in range(20)]
-for t in threads: t.start()
-for t in threads: t.join()</code></pre>
+for t in threads: t.start()   # Launch all at once
+for t in threads: t.join()    # Wait for completion</code></pre>
 
-  <h2>Prevention</h2>
-  <ul>
-    <li><strong>Atomic operations:</strong> Use <code>UPDATE ... WHERE condition</code> to check and modify in one query</li>
-    <li><strong>Database transactions:</strong> Use <code>SELECT ... FOR UPDATE</code> to lock rows</li>
-    <li><strong>Optimistic locking:</strong> Use version columns to detect concurrent modifications</li>
-    <li><strong>Idempotency keys:</strong> Assign unique IDs to operations to detect duplicates</li>
-  </ul>
+  <pre><code class="language-python"># Method 3: asyncio for maximum concurrency
+import asyncio, aiohttp
 
-  <div class="callout callout-warning">
-    <strong>Impact:</strong> Race conditions can cause financial loss (double-spend), data corruption, privilege escalation, and bypass of security checks. They are notoriously difficult to detect with automated scanning.
+async def race():
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            session.post('http://localhost:5013/redeem',
+                        data={'code': 'GIFT-CARD-123'})
+            for _ in range(50)
+        ]
+        responses = await asyncio.gather(*tasks)
+        for r in responses:
+            print(r.status, await r.text())</code></pre>
+
+  <h2>Prevention Strategies</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Strategy</th><th>How It Works</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Atomic UPDATE</strong></td><td><code>UPDATE ... WHERE condition</code> — check and modify in one query</td><td>Simple state transitions (voucher redemption)</td></tr>
+        <tr><td><strong>SELECT FOR UPDATE</strong></td><td>Locks the row until the transaction commits</td><td>Complex multi-step operations</td></tr>
+        <tr><td><strong>Optimistic locking</strong></td><td>Version column checked on update; retry if stale</td><td>Low-contention scenarios</td></tr>
+        <tr><td><strong>Idempotency keys</strong></td><td>Unique request ID; server rejects duplicates</td><td>Payment processing, API operations</td></tr>
+        <tr><td><strong>Database constraints</strong></td><td>UNIQUE constraint prevents duplicate inserts</td><td>Registration, one-time operations</td></tr>
+      </tbody>
+    </table>
   </div>
+
+  <div class="callout callout-danger">
+    <strong>Impact:</strong> Race conditions cause financial loss (double-spend), data corruption, privilege escalation, and bypass of security checks. They are notoriously difficult to detect with automated scanning and often require manual testing with concurrent request tools. In bug bounty programs, race conditions on financial operations (payments, credits, transfers) are typically rated as High or Critical severity.
+  </div>
+
 </section>
 
 <section class="quiz-section">
