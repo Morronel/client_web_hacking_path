@@ -34,6 +34,16 @@
   font-size: 0.85rem;
 }
 
+.lab-title .lab-num.flask {
+  background: var(--accent-green);
+  color: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
 .lab-status {
   font-size: 0.8rem;
   font-weight: 600;
