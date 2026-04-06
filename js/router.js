@@ -56,7 +56,11 @@ const Router = (() => {
   let currentModule = null;
   let contentEl = null;
 
+  let initialized = false;
+
   function init() {
+    if (initialized) return;
+    initialized = true;
     contentEl = Utils.$('#content');
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
@@ -160,10 +164,18 @@ const Router = (() => {
     const mod = modules[key];
 
     // Show loading
-    contentEl.innerHTML = '<div class="loading-indicator"><div class="spinner"></div>Loading module...</div>';
+    const loadingText = (window.I18n ? I18n.t('loading') : 'Loading module...');
+    contentEl.innerHTML = `<div class="loading-indicator"><div class="spinner"></div>${loadingText}</div>`;
+
+    // Resolve content path for current language
+    const contentFile = (window.I18n ? I18n.contentPath(mod.file) : mod.file);
 
     try {
-      const resp = await fetch(mod.file);
+      let resp = await fetch(contentFile);
+      // Fallback to English if Ukrainian file doesn't exist
+      if (!resp.ok && contentFile !== mod.file) {
+        resp = await fetch(mod.file);
+      }
       if (!resp.ok) throw new Error(`Failed to load ${mod.file}`);
       const html = await resp.text();
 
@@ -239,7 +251,13 @@ const Router = (() => {
     });
   }
 
-  return { init, loadModule, updateProgressBadges, markLabComplete, modules, CATEGORIES, isCategoryComplete };
+  function reloadCurrentModule() {
+    if (currentModule && currentModule !== 'game' && modules[currentModule]) {
+      loadModule(currentModule);
+    }
+  }
+
+  return { init, loadModule, reloadCurrentModule, updateProgressBadges, markLabComplete, modules, CATEGORIES, isCategoryComplete };
 })();
 
 // Initialize on DOM ready

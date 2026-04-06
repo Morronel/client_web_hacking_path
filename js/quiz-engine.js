@@ -49,8 +49,20 @@ const QuizEngine = (() => {
     listeners.get(moduleId).push({ el, evt, fn });
   }
 
+  // Resolve text for current language: prefer _uk suffix when Ukrainian
+  function _t(obj, field) {
+    const lang = (window.I18n ? I18n.get() : 'en');
+    if (lang === 'uk' && obj[field + '_uk']) return obj[field + '_uk'];
+    return obj[field] || '';
+  }
+
+  // Get I18n UI string
+  function _ui(key) {
+    return (window.I18n ? I18n.t(key) : key);
+  }
+
   function _createQuizHTML(config) {
-    const label = config.quizLabel || 'Knowledge Check';
+    const label = config.quizLabel || _ui('quizKnowledgeCheck');
     const questions = config.questions || [];
     const flags = config.flags || [];
 
@@ -63,26 +75,26 @@ const QuizEngine = (() => {
       html += `<div class="qe-question" data-qid="${q.id}" id="qe-${q.id}">`;
       html += `<div class="qe-q-header"><span class="qe-q-num">${i + 1}</span>`;
       html += `<span class="qe-q-status" id="qe-status-${q.id}"></span></div>`;
-      html += `<p class="qe-q-text">${q.text}</p>`;
+      html += `<p class="qe-q-text">${_t(q, 'text')}</p>`;
 
       if (q.type === 'mc') {
         html += `<div class="qe-options">`;
         q.options.forEach(opt => {
           html += `<button class="qe-opt" data-qid="${q.id}" data-val="${opt.value}">`
             + `<span class="qe-opt-letter">${opt.value.toUpperCase()}</span>`
-            + `<span class="qe-opt-text">${opt.label}</span>`
+            + `<span class="qe-opt-text">${_t(opt, 'label')}</span>`
             + `</button>`;
         });
         html += `</div>`;
       } else if (q.type === 'tf') {
         html += `<div class="qe-options qe-tf">`;
-        html += `<button class="qe-opt" data-qid="${q.id}" data-val="true"><span class="qe-opt-letter">T</span><span class="qe-opt-text">True</span></button>`;
-        html += `<button class="qe-opt" data-qid="${q.id}" data-val="false"><span class="qe-opt-letter">F</span><span class="qe-opt-text">False</span></button>`;
+        html += `<button class="qe-opt" data-qid="${q.id}" data-val="true"><span class="qe-opt-letter">T</span><span class="qe-opt-text">${_ui('quizTrue')}</span></button>`;
+        html += `<button class="qe-opt" data-qid="${q.id}" data-val="false"><span class="qe-opt-letter">F</span><span class="qe-opt-text">${_ui('quizFalse')}</span></button>`;
         html += `</div>`;
       } else if (q.type === 'fill') {
         html += `<div class="qe-fill">`;
         html += `<input type="text" class="qe-fill-input" id="qe-input-${q.id}" placeholder="${q.placeholder || 'Type your answer...'}" autocomplete="off" spellcheck="false">`;
-        html += `<button class="qe-fill-btn" data-qid="${q.id}">Check</button>`;
+        html += `<button class="qe-fill-btn" data-qid="${q.id}">${_ui('quizCheckBtn')}</button>`;
         html += `</div>`;
       } else if (q.type === 'order') {
         html += `<div class="qe-order" id="qe-order-${q.id}">`;
@@ -97,7 +109,7 @@ const QuizEngine = (() => {
             + `<span class="qe-drag-handle">&#9776;</span>${item}</div>`;
         });
         html += `</div>`;
-        html += `<button class="qe-order-check" data-qid="${q.id}">Check Order</button>`;
+        html += `<button class="qe-order-check" data-qid="${q.id}">${_ui('quizCheckOrder')}</button>`;
       }
 
       html += `<div class="qe-feedback" id="qe-fb-${q.id}"></div>`;
@@ -107,14 +119,14 @@ const QuizEngine = (() => {
     // Flag inputs
     if (flags.length > 0) {
       html += `<div class="qe-flags-section">`;
-      html += `<h3 class="qe-flags-title">Flask Lab Flags</h3>`;
-      html += `<p class="qe-flags-desc">Complete the Flask lab challenges and enter the flags you find below.</p>`;
+      html += `<h3 class="qe-flags-title">${_ui('quizFlaskFlags')}</h3>`;
+      html += `<p class="qe-flags-desc">${_ui('quizFlaskFlagsDesc')}</p>`;
       flags.forEach(f => {
         html += `<div class="qe-flag" data-fid="${f.id}" id="qe-flag-${f.id}">`;
         html += `<div class="qe-flag-label">${f.label}</div>`;
         html += `<div class="qe-flag-input-row">`;
         html += `<input type="text" class="qe-flag-input" id="qe-finput-${f.id}" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">`;
-        html += `<button class="qe-flag-btn" data-fid="${f.id}">Submit</button>`;
+        html += `<button class="qe-flag-btn" data-fid="${f.id}">${_ui('quizSubmitBtn')}</button>`;
         html += `</div>`;
         html += `<div class="qe-flag-feedback" id="qe-ffb-${f.id}"></div>`;
         html += `</div>`;
@@ -185,7 +197,7 @@ const QuizEngine = (() => {
         const fEl = mount.querySelector(`#qe-flag-${f.id}`);
         if (fEl) fEl.classList.add('qe-flag-done');
         const fbEl = mount.querySelector(`#qe-ffb-${f.id}`);
-        if (fbEl) fbEl.innerHTML = '<span class="qe-correct-text">Flag accepted!</span>';
+        if (fbEl) fbEl.innerHTML = `<span class="qe-correct-text">${_ui('quizFlagAccepted')}</span>`;
       }
     });
     _updateProgress(mount, state);
@@ -210,7 +222,7 @@ const QuizEngine = (() => {
         if (val === expected) {
           btn.classList.add('qe-correct-opt');
           state.answers[qid] = true;
-          if (fb) fb.innerHTML = '<span class="qe-correct-text">Correct!</span>';
+          if (fb) fb.innerHTML = `<span class="qe-correct-text">${_ui('quizCorrect')}</span>`;
           const qEl = mount.querySelector(`#qe-${qid}`);
           if (qEl) qEl.classList.add('qe-correct');
           const statusEl = mount.querySelector(`#qe-status-${qid}`);
@@ -221,8 +233,8 @@ const QuizEngine = (() => {
         } else {
           btn.classList.add('qe-wrong');
           if (fb) {
-            let hint = q.hint ? ` <span class="qe-hint">${q.hint}</span>` : '';
-            fb.innerHTML = `<span class="qe-wrong-text">Not quite.</span>${hint}`;
+            let hint = _t(q, 'hint') ? ` <span class="qe-hint">${_t(q, 'hint')}</span>` : '';
+            fb.innerHTML = `<span class="qe-wrong-text">${_ui('quizIncorrect')}</span>${hint}`;
           }
         }
       });
@@ -247,7 +259,7 @@ const QuizEngine = (() => {
           input.classList.add('qe-input-correct');
           input.disabled = true;
           btn.disabled = true;
-          if (fb) fb.innerHTML = '<span class="qe-correct-text">Correct!</span>';
+          if (fb) fb.innerHTML = `<span class="qe-correct-text">${_ui('quizCorrect')}</span>`;
           const qEl = mount.querySelector(`#qe-${qid}`);
           if (qEl) qEl.classList.add('qe-correct');
           const statusEl = mount.querySelector(`#qe-status-${qid}`);
@@ -259,8 +271,8 @@ const QuizEngine = (() => {
           input.classList.add('qe-input-wrong');
           setTimeout(() => input.classList.remove('qe-input-wrong'), 600);
           if (fb) {
-            let hint = q.hint ? ` <span class="qe-hint">${q.hint}</span>` : '';
-            fb.innerHTML = `<span class="qe-wrong-text">Incorrect.</span>${hint}`;
+            let hint = _t(q, 'hint') ? ` <span class="qe-hint">${_t(q, 'hint')}</span>` : '';
+            fb.innerHTML = `<span class="qe-wrong-text">${_ui('quizIncorrect')}</span>${hint}`;
           }
         }
       });
@@ -322,7 +334,7 @@ const QuizEngine = (() => {
           state.answers[qid] = true;
           orderEl.classList.add('qe-order-correct');
           btn.disabled = true;
-          if (fb) fb.innerHTML = '<span class="qe-correct-text">Correct order!</span>';
+          if (fb) fb.innerHTML = `<span class="qe-correct-text">${_ui('quizCorrectOrder')}</span>`;
           const qEl = mount.querySelector(`#qe-${qid}`);
           if (qEl) qEl.classList.add('qe-correct');
           const statusEl = mount.querySelector(`#qe-status-${qid}`);
@@ -334,8 +346,8 @@ const QuizEngine = (() => {
           orderEl.classList.add('qe-order-wrong');
           setTimeout(() => orderEl.classList.remove('qe-order-wrong'), 600);
           if (fb) {
-            let hint = q.hint ? ` <span class="qe-hint">${q.hint}</span>` : '';
-            fb.innerHTML = `<span class="qe-wrong-text">Wrong order.</span>${hint}`;
+            let hint = _t(q, 'hint') ? ` <span class="qe-hint">${_t(q, 'hint')}</span>` : '';
+            fb.innerHTML = `<span class="qe-wrong-text">${_ui('quizWrongOrder')}</span>${hint}`;
           }
         }
       });
@@ -369,7 +381,7 @@ const QuizEngine = (() => {
         } else {
           input.classList.add('qe-input-wrong');
           setTimeout(() => input.classList.remove('qe-input-wrong'), 600);
-          if (fb) fb.innerHTML = '<span class="qe-wrong-text">Invalid flag. Keep trying!</span>';
+          if (fb) fb.innerHTML = `<span class="qe-wrong-text">${_ui('quizFlagInvalid')}</span>`;
         }
       });
 
@@ -401,7 +413,7 @@ const QuizEngine = (() => {
     if (allQ && allF) {
       const resultEl = mount.querySelector('#qe-result');
       if (resultEl) {
-        resultEl.innerHTML = '<div class="qe-complete">All challenges completed! Module mastered.</div>';
+        resultEl.innerHTML = `<div class="qe-complete">${_ui('quizAllComplete')}</div>`;
         resultEl.classList.add('qe-visible');
       }
       if (config.onComplete) config.onComplete();

@@ -23,7 +23,8 @@
     <button class="hamburger" aria-label="Toggle navigation">
       <span></span><span></span><span></span>
     </button>
-    <div class="app-title"><span class="prompt">$</span> WebHack Academy</div>
+    <div class="app-title"><span class="prompt">$</span> <span class="app-title-text">WebHack Academy</span></div>
+    <button class="lang-toggle" id="lang-toggle" title="Switch language">UK</button>
   </header>
 
   <!-- Sidebar overlay (mobile) -->
@@ -34,55 +35,55 @@
 
     <!-- Introduction -->
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Introduction</div>
+      <div class="sidebar-section-title" data-i18n="sectionIntro">Introduction</div>
       <a class="nav-item" href="#intro-welcome" data-module="intro-welcome">
-        <span class="module-num">00</span> Welcome
+        <span class="module-num">00</span> <span class="module-title">Welcome</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-legal" data-module="intro-legal">
-        <span class="module-num">01</span> Legal &amp; Ethics
+        <span class="module-num">01</span> <span class="module-title">Legal &amp; Ethics</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-networking" data-module="intro-networking">
-        <span class="module-num">02</span> Networking
+        <span class="module-num">02</span> <span class="module-title">Networking</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-encoding" data-module="intro-encoding">
-        <span class="module-num">03</span> Encoding &amp; Crypto
+        <span class="module-num">03</span> <span class="module-title">Encoding &amp; Crypto</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-cookies" data-module="intro-cookies">
-        <span class="module-num">04</span> Cookies &amp; Sessions
+        <span class="module-num">04</span> <span class="module-title">Cookies &amp; Sessions</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-sop" data-module="intro-sop">
-        <span class="module-num">05</span> SOP &amp; CORS
+        <span class="module-num">05</span> <span class="module-title">SOP &amp; CORS</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-history" data-module="intro-history">
-        <span class="module-num">06</span> History of Hacking
+        <span class="module-num">06</span> <span class="module-title">History of Hacking</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-killchain" data-module="intro-killchain">
-        <span class="module-num">07</span> Cyber Kill Chain
+        <span class="module-num">07</span> <span class="module-title">Cyber Kill Chain</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#intro-setup" data-module="intro-setup">
-        <span class="module-num">08</span> Lab Setup
+        <span class="module-num">08</span> <span class="module-title">Lab Setup</span>
         <span class="progress-dot"></span>
       </a>
     </div>
 
     <!-- Auth & Authorization -->
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Auth &amp; Authorization</div>
+      <div class="sidebar-section-title" data-i18n="sectionAuthAuthz">Auth &amp; Authorization</div>
       <a class="nav-item" href="#vuln-auth" data-module="vuln-auth">
-        <span class="module-num">09</span> Broken Auth
+        <span class="module-num">09</span> <span class="module-title">Broken Auth</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-idor" data-module="vuln-idor">
-        <span class="module-num">10</span> IDOR
+        <span class="module-num">10</span> <span class="module-title">IDOR</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
@@ -90,39 +91,39 @@
 
     <!-- Injection -->
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Injection</div>
+      <div class="sidebar-section-title" data-i18n="sectionInjection">Injection</div>
       <a class="nav-item" href="#vuln-sqli" data-module="vuln-sqli">
-        <span class="module-num">11</span> SQL Injection
+        <span class="module-num">11</span> <span class="module-title">SQL Injection</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-xss" data-module="vuln-xss">
-        <span class="module-num">12</span> XSS
+        <span class="module-num">12</span> <span class="module-title">XSS</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-ssti" data-module="vuln-ssti">
-        <span class="module-num">13</span> SSTI
+        <span class="module-num">13</span> <span class="module-title">SSTI</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-cmdi" data-module="vuln-cmdi">
-        <span class="module-num">14</span> Command Injection
+        <span class="module-num">14</span> <span class="module-title">Command Injection</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-xxe" data-module="vuln-xxe">
-        <span class="module-num">15</span> XXE
+        <span class="module-num">15</span> <span class="module-title">XXE</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-deserial" data-module="vuln-deserial">
-        <span class="module-num">16</span> Deserialization
+        <span class="module-num">16</span> <span class="module-title">Deserialization</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-csrf" data-module="vuln-csrf">
-        <span class="module-num">17</span> CSRF
+        <span class="module-num">17</span> <span class="module-title">CSRF</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
@@ -130,24 +131,24 @@
 
     <!-- Logic & Configuration -->
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Logic &amp; Config</div>
+      <div class="sidebar-section-title" data-i18n="sectionLogicConfig">Logic &amp; Config</div>
       <a class="nav-item" href="#vuln-ssrf" data-module="vuln-ssrf">
-        <span class="module-num">18</span> SSRF
+        <span class="module-num">18</span> <span class="module-title">SSRF</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-traversal" data-module="vuln-traversal">
-        <span class="module-num">19</span> Path Traversal
+        <span class="module-num">19</span> <span class="module-title">Path Traversal</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-race" data-module="vuln-race">
-        <span class="module-num">20</span> Race Conditions
+        <span class="module-num">20</span> <span class="module-title">Race Conditions</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#vuln-graphql" data-module="vuln-graphql">
-        <span class="module-num">21</span> GraphQL
+        <span class="module-num">21</span> <span class="module-title">GraphQL</span>
         <span class="flask-badge">Flask Lab</span>
         <span class="progress-dot"></span>
       </a>
@@ -155,21 +156,21 @@
 
     <!-- Aftermath -->
     <div class="sidebar-section">
-      <div class="sidebar-section-title">Aftermath</div>
+      <div class="sidebar-section-title" data-i18n="sectionAftermath">Aftermath</div>
       <a class="nav-item" href="#after-reporting" data-module="after-reporting">
-        <span class="module-num">22</span> Reporting
+        <span class="module-num">22</span> <span class="module-title">Reporting</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#after-obfuscation" data-module="after-obfuscation">
-        <span class="module-num">23</span> WAF Evasion
+        <span class="module-num">23</span> <span class="module-title">WAF Evasion</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#after-recon" data-module="after-recon">
-        <span class="module-num">24</span> Web Recon
+        <span class="module-num">24</span> <span class="module-title">Web Recon</span>
         <span class="progress-dot"></span>
       </a>
       <a class="nav-item" href="#after-next" data-module="after-next">
-        <span class="module-num">25</span> Next Steps
+        <span class="module-num">25</span> <span class="module-title">Next Steps</span>
         <span class="progress-dot"></span>
       </a>
     </div>
@@ -204,6 +205,7 @@
   <!-- Core app scripts -->
   <script src="js/utils.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/db.js"></script>
   <script src="js/quiz-engine.js"></script>
   <script src="js/router.js"></script>
@@ -259,6 +261,15 @@
   <script src="game/scenes/BossScene.js"></script>
   <script src="game/scenes/GameOverScene.js"></script>
   <script src="game/game.js"></script>
+
+  <!-- Boot -->
+  <script>
+    I18n.init();
+    Router.init();
+    document.getElementById('lang-toggle').addEventListener('click', () => {
+      I18n.set(I18n.get() === 'en' ? 'uk' : 'en');
+    });
+  </script>
 
   <!-- Game container (hidden by default, shown when #game route active) -->
   <div id="game-container">

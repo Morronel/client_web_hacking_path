@@ -142,6 +142,30 @@ code, pre, kbd {
   color: var(--text-muted);
 }
 
+/* Language toggle */
+.lang-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lang-toggle:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
 .sidebar {
   position: fixed;
   top: var(--header-height);
