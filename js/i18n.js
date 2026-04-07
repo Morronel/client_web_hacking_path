@@ -140,7 +140,7 @@ const I18n = (() => {
     localStorage.setItem(STORAGE_KEY, lang);
     _applyUI();
     // Reload current module in new language
-    if (window.Router) Router.reloadCurrentModule();
+    if (typeof Router !== 'undefined') Router.reloadCurrentModule();
   }
 
   function t(key) {

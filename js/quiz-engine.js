@@ -51,14 +51,14 @@ const QuizEngine = (() => {
 
   // Resolve text for current language: prefer _uk suffix when Ukrainian
   function _t(obj, field) {
-    const lang = (window.I18n ? I18n.get() : 'en');
+    const lang = (typeof I18n !== 'undefined' ? I18n.get() : 'en');
     if (lang === 'uk' && obj[field + '_uk']) return obj[field + '_uk'];
     return obj[field] || '';
   }
 
   // Get I18n UI string
   function _ui(key) {
-    return (window.I18n ? I18n.t(key) : key);
+    return (typeof I18n !== 'undefined' ? I18n.t(key) : key);
   }
 
   function _createQuizHTML(config) {

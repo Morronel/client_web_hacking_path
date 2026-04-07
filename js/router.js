@@ -164,12 +164,12 @@ const Router = (() => {
     const mod = modules[key];
 
     // Show loading
-    const loadingText = (window.I18n ? I18n.t('loading') : 'Loading module...');
+    const loadingText = (typeof I18n !== 'undefined' ? I18n.t('loading') : 'Loading module...');
     contentEl.innerHTML = `<div class="loading-indicator"><div class="spinner"></div>${loadingText}</div>`;
 
     // Resolve content path for current language
-    const contentFile = (window.I18n ? I18n.contentPath(mod.file) : mod.file);
-    console.log('[Router] Loading:', contentFile, '(lang:', window.I18n ? I18n.get() : 'n/a', ')');
+    const contentFile = (typeof I18n !== 'undefined' ? I18n.contentPath(mod.file) : mod.file);
+    console.log('[Router] Loading:', contentFile, '(lang:', typeof I18n !== 'undefined' ? I18n.get() : 'n/a', ')');
 
     try {
       let resp = await fetch(contentFile);
