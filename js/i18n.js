@@ -157,7 +157,7 @@ const I18n = (() => {
   function _applyUI() {
     // Update language switcher button
     const btn = document.querySelector('#lang-toggle');
-    if (btn) btn.textContent = current === 'en' ? 'UK' : 'EN';
+    if (btn) btn.textContent = current === 'en' ? 'UA' : 'EN';
 
     // Update sidebar section titles
     document.querySelectorAll('.sidebar-section-title').forEach(el => {

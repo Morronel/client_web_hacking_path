@@ -253,7 +253,12 @@ const Router = (() => {
 
   function reloadCurrentModule() {
     if (currentModule && currentModule !== 'game' && modules[currentModule]) {
-      loadModule(currentModule);
+      // Force cleanup before reload so loadModule treats it as a fresh load
+      const handler = window[modules[currentModule].handler];
+      if (handler && handler.cleanup) handler.cleanup();
+      const key = currentModule;
+      currentModule = null;
+      loadModule(key);
     }
   }
 
