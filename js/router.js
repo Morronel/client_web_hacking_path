@@ -172,12 +172,16 @@ const Router = (() => {
 
     try {
       let resp = await fetch(contentFile);
-      // Fallback to English if Ukrainian file doesn't exist
-      if (!resp.ok && contentFile !== mod.file) {
-        resp = await fetch(mod.file);
+      let html = '';
+      if (resp.ok) {
+        html = await resp.text();
       }
-      if (!resp.ok) throw new Error(`Failed to load ${mod.file}`);
-      const html = await resp.text();
+      // Fallback to English if Ukrainian file missing or returned a non-module page
+      if ((!resp.ok || (!html.includes('<section') && !html.includes('<h1'))) && contentFile !== mod.file) {
+        resp = await fetch(mod.file);
+        if (resp.ok) html = await resp.text();
+      }
+      if (!html) throw new Error(`Failed to load ${mod.file}`);
 
       contentEl.innerHTML = html;
 
