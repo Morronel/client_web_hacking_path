@@ -175,8 +175,8 @@ const I18n = (() => {
     });
 
     // Update header title
-    const titleEl = document.querySelector('.app-title');
-    if (titleEl) titleEl.textContent = t('appTitle');
+    const titleTextEl = document.querySelector('.app-title-text');
+    if (titleTextEl) titleTextEl.textContent = t('appTitle');
   }
 
   return { init, get, set, t, contentPath, SUPPORTED };
