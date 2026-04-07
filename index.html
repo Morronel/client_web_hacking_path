@@ -24,7 +24,10 @@
       <span></span><span></span><span></span>
     </button>
     <div class="app-title"><span class="prompt">$</span> <span class="app-title-text">WebHack Academy</span></div>
-    <button class="lang-toggle" id="lang-toggle" title="Switch language">UA</button>
+    <div class="header-controls">
+      <button class="header-btn" id="theme-toggle" title="Switch theme">&#9789;</button>
+      <button class="header-btn" id="lang-toggle" title="Switch language">UA</button>
+    </div>
   </header>
 
   <!-- Sidebar overlay (mobile) -->
@@ -264,6 +267,22 @@
 
   <!-- Boot -->
   <script>
+    // Theme
+    (function() {
+      const saved = localStorage.getItem('webhack_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+      const btn = document.getElementById('theme-toggle');
+      btn.textContent = saved === 'dark' ? '\u263D' : '\u2600';
+      btn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('webhack_theme', next);
+        btn.textContent = next === 'dark' ? '\u263D' : '\u2600';
+      });
+    })();
+
+    // i18n + Router
     I18n.init();
     Router.init();
     document.getElementById('lang-toggle').addEventListener('click', () => {

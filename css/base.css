@@ -2,7 +2,7 @@
    Base Styles — Reset, Typography, Layout
    ============================================ */
 
-:root {
+:root, [data-theme="dark"] {
   --bg-primary: #0d1117;
   --bg-secondary: #161b22;
   --bg-tertiary: #21262d;
@@ -27,6 +27,28 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
+  --code-bg: #161b22;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --bg-hover: #d0d7de;
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-muted: #8b949e;
+  --accent-green: #1a7f37;
+  --accent-green-dim: #2da44e;
+  --accent-amber: #9a6700;
+  --accent-amber-dim: #bf8700;
+  --accent-red: #cf222e;
+  --accent-blue: #0969da;
+  --border-default: #d0d7de;
+  --border-muted: #eaeef2;
+  --shadow-card: 0 1px 3px rgba(31,35,40,0.12);
+  --code-bg: #f6f8fa;
 }
 
 /* Reset */
@@ -40,6 +62,7 @@ html {
   font-size: 16px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
@@ -142,12 +165,18 @@ code, pre, kbd {
   color: var(--text-muted);
 }
 
-/* Language toggle */
-.lang-toggle {
+/* Header controls (theme + language) */
+.header-controls {
   position: absolute;
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.header-btn {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   border: 1px solid var(--border-default);
@@ -159,11 +188,17 @@ code, pre, kbd {
   letter-spacing: 1px;
   cursor: pointer;
   transition: all 0.15s ease;
+  line-height: 1.4;
 }
 
-.lang-toggle:hover {
+.header-btn:hover {
   border-color: var(--accent-blue);
   color: var(--accent-blue);
+}
+
+#theme-toggle {
+  font-size: 1rem;
+  padding: 2px 8px;
 }
 
 .sidebar {

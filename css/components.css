@@ -427,3 +427,28 @@ select.input-field {
   background: rgba(63, 185, 80, 0.08);
   border-color: var(--accent-green);
 }
+
+/* Light theme: override highlight.js dark styles */
+[data-theme="light"] .hljs {
+  background: var(--bg-tertiary) !important;
+  color: #1f2328 !important;
+}
+[data-theme="light"] .hljs-keyword,
+[data-theme="light"] .hljs-selector-tag { color: #cf222e; }
+[data-theme="light"] .hljs-string,
+[data-theme="light"] .hljs-attr { color: #0a3069; }
+[data-theme="light"] .hljs-number,
+[data-theme="light"] .hljs-literal { color: #0550ae; }
+[data-theme="light"] .hljs-comment { color: #6e7781; }
+[data-theme="light"] .hljs-title,
+[data-theme="light"] .hljs-function { color: #8250df; }
+[data-theme="light"] .hljs-built_in { color: #0550ae; }
+[data-theme="light"] .hljs-type,
+[data-theme="light"] .hljs-class { color: #953800; }
+[data-theme="light"] .hljs-meta { color: #0550ae; }
+[data-theme="light"] .hljs-variable { color: #953800; }
+
+/* Light theme: inline code */
+[data-theme="light"] code {
+  color: #953800;
+}
