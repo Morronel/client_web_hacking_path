@@ -169,6 +169,7 @@ const Router = (() => {
 
     // Resolve content path for current language
     const contentFile = (window.I18n ? I18n.contentPath(mod.file) : mod.file);
+    console.log('[Router] Loading:', contentFile, '(lang:', window.I18n ? I18n.get() : 'n/a', ')');
 
     try {
       let resp = await fetch(contentFile);
