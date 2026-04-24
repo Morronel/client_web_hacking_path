@@ -144,11 +144,15 @@ const QuizEngine = (() => {
 
     // Remove ALL old quiz markup to prevent duplicates
     container.querySelectorAll('.quiz-section, .quiz-container, #quiz-container, #career-quiz-container').forEach(el => el.remove());
-    // Also hide old-style lab quiz containers that conflict
+    // Remove lab-containers that are quiz-only (contain quiz-option buttons but no interactive lab elements)
+    container.querySelectorAll('.lab-container').forEach(el => {
+      if (el.querySelector('.quiz-option, .quiz-opt') && !el.querySelector('.iframe-container, .query-display, .encoder-grid, .json-response, .terminal-output')) {
+        el.remove();
+      }
+    });
+    // Remove standalone quiz elements not inside lab containers
     container.querySelectorAll('.quiz-options, .quiz-result, .quiz-feedback').forEach(el => {
-      // Only remove if it's part of an old quiz, not part of interactive labs
-      if (el.closest('.lab-container')) return;
-      el.remove();
+      if (!el.closest('.lab-container')) el.remove();
     });
 
     // Find or create the quiz mount point

@@ -46,7 +46,7 @@
     Коли сервер парсить цей XML, він натрапляє на <code>&amp;xxe;</code> і замінює його вмістом <code>/etc/passwd</code>. Якщо додаток відображає або повертає розпарсений вміст XML, атакуючий бачить файл прямо у відповіді.
   </p>
 
-  <h3 class="text-red">Vulnerable Code</h3>
+  <h3 class="text-red">Вразливий код</h3>
   <pre><code class="language-python">from lxml import etree
 
 @app.route('/parse', methods=['POST'])
@@ -57,7 +57,7 @@ def parse():
     doc = etree.fromstring(xml_data, parser)
     return etree.tostring(doc, pretty_print=True)</code></pre>
 
-  <h3 class="text-green">Safe Code</h3>
+  <h3 class="text-green">Безпечний код</h3>
   <pre><code class="language-python">import defusedxml.ElementTree as ET
 
 @app.route('/parse', methods=['POST'])

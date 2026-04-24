@@ -126,6 +126,7 @@ code, pre, kbd {
   padding: 0 16px;
   z-index: 100;
   gap: 12px;
+  overflow: hidden;
 }
 
 .hamburger {

@@ -21,7 +21,7 @@
     Вразливість виникає щоразу, коли додаток бере введені користувачем дані і включає їх у рядок, який виконується як команда оболонки. Найпоширеніший сценарій — мережеві утиліти: розробники створюють веб-інтерфейс для <code>ping</code>, <code>nslookup</code>, <code>traceroute</code> чи подібних утиліт і передають ввід користувача прямо в shell.
   </p>
 
-  <h3 class="text-red">Vulnerable Code</h3>
+  <h3 class="text-red">Вразливий код</h3>
   <pre><code class="language-python">@app.route('/ping')
 def ping():
     host = request.args.get('host')
@@ -65,7 +65,7 @@ def ping():
     <strong>Windows vs. Linux:</strong> У Windows метасимволи трохи відрізняються. Використовуй <code>&</code> замість <code>;</code> як роздільник команд, а <code>|</code> працює так само. Windows-специфічні пейлоади: <code>& dir</code>, <code>| type C:\windows\win.ini</code>, <code>& whoami</code>.
   </div>
 
-  <h3 class="text-green">Safe Code — No Shell Needed</h3>
+  <h3 class="text-green">Безпечний код — без shell</h3>
   <pre><code class="language-python">import subprocess
 
 @app.route('/ping')

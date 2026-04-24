@@ -169,17 +169,16 @@ const Router = (() => {
 
     // Resolve content path for current language
     const contentFile = (typeof I18n !== 'undefined' ? I18n.contentPath(mod.file) : mod.file);
-    console.log('[Router] Loading:', contentFile, '(lang:', typeof I18n !== 'undefined' ? I18n.get() : 'n/a', ')');
 
     try {
-      let resp = await fetch(contentFile);
+      let resp = await fetch(contentFile, { cache: 'no-cache' });
       let html = '';
       if (resp.ok) {
         html = await resp.text();
       }
       // Fallback to English if Ukrainian file missing or returned a non-module page
       if ((!resp.ok || (!html.includes('<section') && !html.includes('<h1'))) && contentFile !== mod.file) {
-        resp = await fetch(mod.file);
+        resp = await fetch(mod.file, { cache: 'no-cache' });
         if (resp.ok) html = await resp.text();
       }
       if (!html) throw new Error(`Failed to load ${mod.file}`);
